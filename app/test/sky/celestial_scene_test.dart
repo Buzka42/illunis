@@ -1,0 +1,127 @@
+import 'dart:math' as math;
+import 'dart:ui' show Size;
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:illunis/core/sky/celestial_math.dart';
+import 'package:illunis/core/sky/celestial_scene.dart';
+import 'package:illunis/core/sky/sky_camera.dart';
+import 'package:illunis/core/sky/sky_state.dart';
+
+SkyState _state({
+  double t = 0.5,
+  double day = 80,
+  double lat = 0,
+  double moon = 0.5,
+}) => SkyState(timeOfDay: t, dayOfYear: day, latitudeDeg: lat, moonPhase: moon);
+
+void main() {
+  group('sun', () {
+    test('is at the zenith at noon on the equinox at the equator', () {
+      final s = CelestialScene.resolve(_state());
+      expect(s.sunAltitudeRad * radToDeg, closeTo(90, 1.0));
+    });
+
+    test('is below the horizon at midnight in the temperate zone', () {
+      final s = CelestialScene.resolve(_state(t: 0, lat: 52));
+      expect(s.sunAltitudeRad, lessThan(-0.5));
+    });
+
+    test('rises in the east and sets in the west', () {
+      final s = CelestialScene.resolve(_state(lat: 52, day: 172));
+      final rise = s.sunDirectionAt(s.sunrise!);
+      final set = s.sunDirectionAt(s.sunset!);
+      expect(rise.altitude.abs() * radToDeg, lessThan(1.0));
+      expect(set.altitude.abs() * radToDeg, lessThan(1.0));
+      expect(rise.azimuth * radToDeg, inInclusiveRange(30, 90));
+      expect(set.azimuth * radToDeg, inInclusiveRange(270, 330));
+    });
+
+    test('summer day is long, winter day is short at 52°N', () {
+      final summer = CelestialScene.resolve(_state(lat: 52, day: 172));
+      final winter = CelestialScene.resolve(_state(lat: 52, day: 355));
+      expect(summer.dayLength! * 24, inInclusiveRange(16, 17.2));
+      expect(winter.dayLength! * 24, inInclusiveRange(7.4, 8.4));
+    });
+
+    test('never sets at 80°N in June', () {
+      final s = CelestialScene.resolve(_state(lat: 80, day: 172));
+      expect(s.sunrise, isNull);
+      expect(s.sunset, isNull);
+      expect(s.sunDirectionAt(0).altitude, greaterThan(0));
+    });
+  });
+
+  group('moon', () {
+    test('is full opposite the sun', () {
+      final s = CelestialScene.resolve(_state(t: 0.0, lat: 52, moon: 0.5));
+      expect(s.moonIllumination, closeTo(1, 1e-9));
+      expect(s.sunDir.dot(s.moonDir), lessThan(-0.7));
+    });
+
+    test('new moon travels with the sun', () {
+      final s = CelestialScene.resolve(_state(t: 0.5, lat: 52, moon: 0.0));
+      expect(s.moonIllumination, closeTo(0, 1e-9));
+      expect(s.sunDir.dot(s.moonDir), greaterThan(0.95));
+    });
+
+    test('phase from date is in range and advances', () {
+      final a = moonPhaseFor(DateTime.utc(2026, 9, 6));
+      final b = moonPhaseFor(DateTime.utc(2026, 9, 13));
+      expect(a, inInclusiveRange(0, 1));
+      expect(((b - a) % 1.0), closeTo(7 / synodicMonthDays, 0.01));
+    });
+  });
+
+  group('stars', () {
+    test('sidereal time advances with the clock', () {
+      final a = CelestialScene.resolve(_state(t: 0.5, lat: 52));
+      final b = CelestialScene.resolve(_state(t: 0.6, lat: 52));
+      final d = wrapAngle(b.siderealRad - a.siderealRad);
+      expect(d, closeTo(0.1 * 2 * math.pi, 1e-6));
+    });
+  });
+
+  group('camera', () {
+    test('project and unproject round-trip', () {
+      final cam = SkyCamera(size: const Size(390, 844), azimuthRad: 3.0);
+      for (final alt in [-10.0, 0.0, 20.0, 45.0, 70.0]) {
+        for (final dAz in [-25.0, 0.0, 25.0]) {
+          final d = directionFromAltAz(alt * degToRad, 3.0 + dAz * degToRad);
+          final p = cam.project(d)!;
+          final back = cam.unproject(p);
+          expect(back.dot(d), closeTo(1, 1e-9), reason: 'alt $alt dAz $dAz');
+        }
+      }
+    });
+
+    test('horizon is a straight line at the principal point', () {
+      final cam = SkyCamera(size: const Size(390, 844), azimuthRad: 1.0);
+      for (final dAz in [-30.0, -10.0, 10.0, 30.0]) {
+        final p = cam.project(directionFromAltAz(0, 1.0 + dAz * degToRad))!;
+        expect(p.dy, closeTo(cam.principal.dy, 1e-9));
+      }
+    });
+  });
+
+  group('state', () {
+    test('lerp takes the short way round midnight', () {
+      final a = _state(t: 0.98);
+      final b = _state(t: 0.02);
+      final m = SkyState.lerp(a, b, 0.5);
+      expect(m.timeOfDay, closeTo(0.0, 1e-9));
+    });
+
+    test('a null vital snaps instead of fading through a number', () {
+      final a = _state().copyWith(recovery: null);
+      final b = _state().copyWith(recovery: 0.8);
+      expect(SkyState.lerp(a, b, 0.5).recovery, isNull);
+      expect(SkyState.lerp(a, b, 1.0).recovery, 0.8);
+    });
+
+    test('absent vitals leave the atmosphere neutral', () {
+      final none = CelestialScene.resolve(_state(lat: 52));
+      expect(none.turbidity, inInclusiveRange(2.5, 4.0));
+      expect(none.stillness, inInclusiveRange(0.7, 0.9));
+    });
+  });
+}

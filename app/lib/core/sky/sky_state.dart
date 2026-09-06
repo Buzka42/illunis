@@ -1,0 +1,156 @@
+import 'dart:ui' show lerpDouble;
+
+import 'package:flutter/foundation.dart';
+
+/// Everything the sky is allowed to know.
+///
+/// This is the seam between the 3D layer and the rest of the product. The
+/// producer of a [SkyState] owns what the numbers *mean*; the sky owns what
+/// they *look like*. Nothing here is a health record: every vital is already
+/// normalised, and every one of them may be absent.
+///
+/// Absence is rendered as absence. A `null` recovery is a plain sky, never a
+/// bad day — the first three weeks of real use will have nothing to say.
+@immutable
+class SkyState {
+  const SkyState({
+    required this.timeOfDay,
+    required this.dayOfYear,
+    required this.latitudeDeg,
+    required this.moonPhase,
+    this.solarNoon = 0.5,
+    this.sleepScore,
+    this.recovery,
+    this.strain,
+    this.energyBalance,
+  });
+
+  /// Fraction of the local civil day, `0` = midnight, `0.5` = noon.
+  final double timeOfDay;
+
+  /// `1..366`. Drives solar declination and the sun's ecliptic longitude.
+  final double dayOfYear;
+
+  /// Observer latitude, degrees, north positive.
+  final double latitudeDeg;
+
+  /// `0..1` — `0` new, `0.5` full, `1` new again. The moon's position and
+  /// its terminator both follow from this and the sun.
+  final double moonPhase;
+
+  /// Fraction of the day at which the sun crosses the meridian. `0.5` is
+  /// local mean solar time; a real source shifts it by longitude, zone and
+  /// the equation of time.
+  final double solarNoon;
+
+  /// `0..1`, last night. Null when unknown.
+  final double? sleepScore;
+
+  /// `0..1`, readiness this morning. Null when unknown.
+  final double? recovery;
+
+  /// `0..1`, accumulated load today. Null when unknown.
+  final double? strain;
+
+  /// `-1..1`, deficit to surplus over the rolling window. Null when unknown.
+  final double? energyBalance;
+
+  bool get hasVitals =>
+      sleepScore != null ||
+      recovery != null ||
+      strain != null ||
+      energyBalance != null;
+
+  SkyState copyWith({
+    double? timeOfDay,
+    double? dayOfYear,
+    double? latitudeDeg,
+    double? moonPhase,
+    double? solarNoon,
+    Object? sleepScore = _unset,
+    Object? recovery = _unset,
+    Object? strain = _unset,
+    Object? energyBalance = _unset,
+  }) {
+    return SkyState(
+      timeOfDay: timeOfDay ?? this.timeOfDay,
+      dayOfYear: dayOfYear ?? this.dayOfYear,
+      latitudeDeg: latitudeDeg ?? this.latitudeDeg,
+      moonPhase: moonPhase ?? this.moonPhase,
+      solarNoon: solarNoon ?? this.solarNoon,
+      sleepScore: sleepScore == _unset
+          ? this.sleepScore
+          : sleepScore as double?,
+      recovery: recovery == _unset ? this.recovery : recovery as double?,
+      strain: strain == _unset ? this.strain : strain as double?,
+      energyBalance: energyBalance == _unset
+          ? this.energyBalance
+          : energyBalance as double?,
+    );
+  }
+
+  /// Interpolation for the view's easing. Angles that wrap (`timeOfDay`,
+  /// `moonPhase`) take the short way round so midnight is not a full-day
+  /// rewind; a vital that is null on either side snaps rather than fading
+  /// through an invented value.
+  static SkyState lerp(SkyState a, SkyState b, double t) {
+    return SkyState(
+      timeOfDay: _lerpWrapped(a.timeOfDay, b.timeOfDay, t),
+      dayOfYear: lerpDouble(a.dayOfYear, b.dayOfYear, t)!,
+      latitudeDeg: lerpDouble(a.latitudeDeg, b.latitudeDeg, t)!,
+      moonPhase: _lerpWrapped(a.moonPhase, b.moonPhase, t),
+      solarNoon: lerpDouble(a.solarNoon, b.solarNoon, t)!,
+      sleepScore: _lerpNullable(a.sleepScore, b.sleepScore, t),
+      recovery: _lerpNullable(a.recovery, b.recovery, t),
+      strain: _lerpNullable(a.strain, b.strain, t),
+      energyBalance: _lerpNullable(a.energyBalance, b.energyBalance, t),
+    );
+  }
+
+  static double _lerpWrapped(double a, double b, double t) {
+    var d = b - a;
+    if (d > 0.5) d -= 1;
+    if (d < -0.5) d += 1;
+    final v = a + d * t;
+    return v - v.floorToDouble();
+  }
+
+  static double? _lerpNullable(double? a, double? b, double t) {
+    if (a == null || b == null) return t < 1 ? a : b;
+    return lerpDouble(a, b, t);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is SkyState &&
+      other.timeOfDay == timeOfDay &&
+      other.dayOfYear == dayOfYear &&
+      other.latitudeDeg == latitudeDeg &&
+      other.moonPhase == moonPhase &&
+      other.solarNoon == solarNoon &&
+      other.sleepScore == sleepScore &&
+      other.recovery == recovery &&
+      other.strain == strain &&
+      other.energyBalance == energyBalance;
+
+  @override
+  int get hashCode => Object.hash(
+    timeOfDay,
+    dayOfYear,
+    latitudeDeg,
+    moonPhase,
+    solarNoon,
+    sleepScore,
+    recovery,
+    strain,
+    energyBalance,
+  );
+
+  @override
+  String toString() =>
+      'SkyState(t=${timeOfDay.toStringAsFixed(4)} d=${dayOfYear.round()} '
+      'lat=${latitudeDeg.toStringAsFixed(1)} moon=${moonPhase.toStringAsFixed(3)} '
+      'sleep=$sleepScore rec=$recovery strain=$strain energy=$energyBalance)';
+}
+
+const _unset = Object();
