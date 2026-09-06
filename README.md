@@ -10,9 +10,9 @@ and strength training — then surfaces data-driven trends and advice.
   24-hour timeline that scrubs the day and shows last night's sleep
 
 Status: Phase 1 (UI shell) built in `app/` on mock data, visual pass 2 done.
-See `PLAN.md` for architecture and decisions, `docs/VISUAL_PASS_2.md` for
-the latest pass, `docs/BACKEND_PLAN.md` for the backend brief,
-`CURSOR_MANDATE.md` for the original vision.
+The Android nightstand is a `DreamService` (screensaver). See `PLAN.md`,
+`docs/DESIGN.md`, `docs/HANDOFF.md`, `docs/PERF.md`, `docs/VISUAL_PASS_2.md`,
+`docs/BACKEND_PLAN.md`.
 
 ## Run
 
@@ -20,11 +20,16 @@ the latest pass, `docs/BACKEND_PLAN.md` for the backend brief,
 cd app
 flutter run                       # any device; debug builds have the sky debug sheet
 flutter run --dart-define=ILLUNIS_CAPTURE=/tmp/cap   # writes review PNGs across a day
+flutter run --dart-define=ILLUNIS_DREAM=true         # nightstand composition (any device)
 flutter analyze && flutter test
 ```
 
 Drag the timeline under the horizon to scrub the day; tap `LIVE` to return
 to the clock. Debug builds: long-press `ILLUNIS` for day of year, latitude,
-moon phase and vitals presets.
+moon phase, vitals presets, a nightstand preview, and (on Android) a jump
+to screensaver settings.
+
+**Android screensaver.** Settings → Display → Screen saver → Illunis. It
+runs while the phone is docked or charging. Close finishes the dream.
 
 Related: `../eter2` (pattern engine + AI-transport lessons), Hyper Planner workout app.

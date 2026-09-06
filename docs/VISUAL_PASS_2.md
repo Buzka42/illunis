@@ -94,3 +94,10 @@ present on both surfaces.
   bounds, epoch conversion, sleep-band midnight split).
 - Capture matrix with `--dart-define=ILLUNIS_CAPTURE` reviewed as a contact
   sheet: dawn with Venus, dusk with Jupiter/Saturn, night, noon.
+
+## 6. Nightstand
+
+- [x] Android `DreamService` hosts a second Flutter engine on `dreamMain`.
+      Full sky, timeline, large clock; no pager. OLED drift ±3 px / 180 s.
+      Debug sheet: PREVIEW NIGHTSTAND (all platforms) and SET SCREEN SAVER
+      (Android).

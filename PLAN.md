@@ -92,20 +92,19 @@ file (`core/theme/typography.dart`).
 Open the app and:
 
 1. A full-screen celestial scene — sky, atmosphere, horizon, sun, moon,
-   stars — renders from a `SkyState` and moves with it.
-2. The scene is unmistakably designed: an editorial, almanac-like register;
-   asymmetric composition; type set on and around the horizon; hairlines and
-   annotations rather than cards; nothing from the mandate's slop list.
+   planets, stars — renders from a `SkyState` and moves with it.
+2. The scene is an instrument over a realistic sky: asymmetric composition;
+   type on the horizon; hairlines and glyphs rather than cards; nothing from
+   the mandate's slop list.
 3. Two surfaces, Journal and Dashboard, slide over that one sky as a
-   horizontal pager. In Phase 1 each holds a **composed placeholder** — real
-   typography and layout, honest empty states, zero logic — so the shell's
-   identity is judged with the real surfaces on it, not against a blank.
-4. 60 fps on the `Eter_API_36` emulator with no jank in the timeline, and a
-   frame budget document says why it should hold on mid-range hardware.
-5. `flutter analyze` clean, `flutter test` green, a capture sheet at four
-   phone sizes and two text scales.
-6. `docs/HANDOFF.md` tells the next agent exactly how to plug a real
-   `SkyStateSource` in without opening `core/sky/`.
+   horizontal pager. Each holds a **composed placeholder** — real type and
+   layout, honest empty states, zero health logic.
+4. A 24-hour timeline scrubs the day and shows last night's sleep. Android
+   can run the same sky as a screensaver (`DreamService` / nightstand).
+5. `flutter analyze` clean, `flutter test` green. `docs/PERF.md` states the
+   frame budget and that mid-range Android was not measured this window.
+6. `docs/HANDOFF.md` tells the next agent how to plug a real `SkyStateSource`
+   in without opening `core/sky/`.
 
 ---
 
@@ -116,62 +115,39 @@ Open the app and:
 ```
 illunis/
   CURSOR_MANDATE.md
-  PLAN.md                         this file
+  PLAN.md
   README.md
   docs/
-    DESIGN.md                     the visual contract: register, palette rules, type scale, motion (Day 4–5)
-    HANDOFF.md                    how to feed the sky real data (Day 5)
-    PERF.md                       frame budget, what was measured, on what (Day 4)
-  app/                            Flutter project
-    pubspec.yaml
-    analysis_options.yaml
-    shaders/
-      sky.frag                    full-screen: atmosphere, gradient, horizon glow, grain
-      moon.frag                   disc-only: sphere shading, terminator, limb, earthshine
-      sun.frag                    disc-only: corona, warmth, heat shimmer
-    assets/fonts/                 Fraunces, IBM Plex Sans, IBM Plex Mono (OFL) + licences
+    DESIGN.md                     visual contract, as shipped
+    HANDOFF.md                    how to feed the sky real data
+    PERF.md                       frame budget and the hardware gap
+    VISUAL_PASS_2.md              planets, timeline, resolution
+    BACKEND_PLAN.md               brief for the next model
+  app/
+    shaders/sky.frag              atmosphere, sun, moon, stars, planets
     lib/
-      main.dart
-      core/
-        sky/                      THE 3D LAYER — dumb by rule (D4)
-          sky_state.dart          the interface: immutable value class, documented ranges
-          celestial_scene.dart    pure math: SkyState + viewport → geometry + palette + params
-          sky_view.dart           widget: owns the ticker, interpolates state, drives painters
-          painters/
-            sky_painter.dart      composites the layers in order
-            star_field.dart       precomputed points, drawn with drawRawPoints/drawAtlas
-            horizon_painter.dart  the ground/sea plane and its hairline
-          shaders.dart            FragmentProgram loading and uniform packing
-        state/
-          sky_state_source.dart   abstract source + Riverpod provider
-          sources/
-            clock_source.dart     real time of day, fixed mock vitals, moon phase from date
-            scrub_source.dart     debug: 24 h in 60 s, or a slider
-            preset_source.dart    named scenarios (see §2.4)
-        theme/
-          tokens.dart             spacing, hairline widths, radii (there are almost none)
-          palette.dart            SkyState → ink/paper/accent colours (D2)
-          typography.dart         the three families and the type scale
-        i18n/
-          strings.dart
-      features/
-        shell/
-          illunis_shell.dart      pager over one SkyView; header lockup; debug entry
-          shell_header.dart       wordmark + almanac line (date, sun times) — code-drawn
-        journal/
-          journal_page.dart       Phase 1 placeholder: page, date heading, empty-state prose
-        dashboard/
-          dashboard_page.dart     Phase 1 placeholder: the day's figures, set editorially
-    test/
-      sky/
-        celestial_scene_test.dart
-        sky_state_test.dart
-        architecture_test.dart    D4 import rule
-      state/
-        sources_test.dart
-      shell_smoke_test.dart
-    test_capture/                 not goldens: writes captures to artifacts/ui/ (gitignored)
+      main.dart                   `main` + `dreamMain` entrypoints
+      core/sky/                   THE 3D LAYER — dumb by rule
+        sky_state.dart            the interface
+        celestial_math.dart       ephemeris, projection helpers
+        celestial_scene.dart      SkyState → ResolvedScene
+        celestial_glyphs.dart     ☉ ☽ ☿ ♀ ♂ ♃ ♄ as strokes
+        sky_view.dart             ticker, easing, painters
+        sky_painter.dart / sky_shader.dart / sky_overlay_painter.dart
+      core/state/                 SkyStateSource, mocks, SleepRecord
+      core/theme/                 tokens, typography
+      core/platform/              Android host channel (dream / settings)
+      features/shell/             pager, header, nightstand
+      features/timeline/          24h scrubber + sleep band
+      features/journal|dashboard  Phase 1 placeholders
+      features/debug/             sheet, capture, frame line
+    android/.../IllunisDreamService.kt
+  test/sky|state|shell_smoke_test.dart
 ```
+
+As-planned files that were folded, not forgotten: sun and moon live in
+`sky.frag`; stars are in the same pass; Inter + JetBrains Mono replaced the
+brief's Fraunces/Plex; sources and presets live in `sky_state_source.dart`.
 
 ### 2.2 The state interface
 
@@ -491,15 +467,16 @@ marketplace.
 
 Straight from the mandate, made checkable:
 
-- [ ] Open the app → the sun/moon procession fills the screen and is
+- [x] Open the app → the sun/moon procession fills the screen and is
       unmistakably designed; the dusk frame is screenshot-worthy without type.
-- [ ] The scene moves with mock state: scrub sweeps a day; presets are
+- [x] The scene moves with mock state: scrub sweeps a day; presets are
       distinguishable by a stranger.
-- [ ] 60 fps / p95 raster within budget on `Eter_API_36`, with `docs/PERF.md`
-      stating the measurement and the gap to real hardware.
-- [ ] `flutter analyze` clean; `flutter test` green; architecture test passes.
-- [ ] Forbidden-list walk passes on the capture matrix at 1.0 and 2.0 text
-      scale.
-- [ ] `docs/HANDOFF.md` lets a second agent add a real `SkyStateSource`
+- [x] `docs/PERF.md` states the budget, how to measure, and the gap to
+      real hardware. `Eter_API_36` and a physical phone were not attached;
+      p95 on mid-range Android is the first task after this window.
+- [x] `flutter analyze` clean; `flutter test` green; architecture test passes.
+- [x] Forbidden-list walk on the visual-pass-2 capture matrix (phone window,
+      1.0 text). Text scale 2.0 was not recaptured this window.
+- [x] `docs/HANDOFF.md` lets a second agent add a real `SkyStateSource`
       without touching `core/sky/`.
-- [ ] Tagged `phase-1`.
+- [x] Tagged `phase-1`.

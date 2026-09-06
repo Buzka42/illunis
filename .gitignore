@@ -16,3 +16,4 @@ ios/.symlinks/
 .idea/
 .vscode/
 .DS_Store
+captures/

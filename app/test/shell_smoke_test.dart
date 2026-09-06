@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:illunis/core/theme/typography.dart';
+import 'package:illunis/features/shell/dream_shell.dart';
 import 'package:illunis/features/shell/illunis_shell.dart';
 import 'package:illunis/main.dart';
 
@@ -14,6 +15,17 @@ void main() {
     expect(find.text('ILLUNIS'), findsOneWidget);
     expect(find.text('DASHBOARD'), findsOneWidget);
     expect(find.text('JOURNAL'), findsWidgets);
+  });
+
+  testWidgets('the nightstand builds without the pager', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: IllunisApp(home: DreamShell())),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.byType(DreamShell), findsOneWidget);
+    expect(find.text('NIGHTSTAND'), findsOneWidget);
+    expect(find.text('CLOSE'), findsOneWidget);
+    expect(find.text('DASHBOARD'), findsNothing);
   });
 
   test('every TextTheme slot is defined by the product type', () {

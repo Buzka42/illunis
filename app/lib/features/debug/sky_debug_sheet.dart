@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/platform/host.dart';
 import '../../core/sky/celestial_math.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../shell/dream_shell.dart';
+import 'frame_budget.dart';
 
 /// Debug builds only: scrub the day, the year, the observer and the moon;
 /// switch vitals presets. Long-press the wordmark to open.
@@ -100,8 +103,67 @@ class _SkyDebugSheet extends ConsumerWidget {
                 ),
             ],
           ),
+          const SizedBox(height: 14),
+          _HostRow(
+            onPreview: () {
+              final nav = Navigator.of(context);
+              nav.pop();
+              nav.push(
+                PageRouteBuilder<void>(
+                  pageBuilder: (_, _, _) => const DreamShell(),
+                  transitionsBuilder: (_, a, _, child) =>
+                      FadeTransition(opacity: a, child: child),
+                  transitionDuration: const Duration(milliseconds: 280),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          _FrameLine(),
         ],
       ),
+    );
+  }
+}
+
+class _HostRow extends StatelessWidget {
+  const _HostRow({required this.onPreview});
+  final VoidCallback onPreview;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _TextButton(
+          label: 'PREVIEW NIGHTSTAND',
+          active: false,
+          onTap: onPreview,
+        ),
+        const Spacer(),
+        if (Host.isAndroid)
+          _TextButton(
+            label: 'SET SCREEN SAVER',
+            active: false,
+            onTap: () {
+              Host.openDreamSettings();
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _FrameLine extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final b = FrameBudget.instance;
+    if (b.n < 8) {
+      return Text('FRAME  —', style: Type.micro.copyWith(color: Inks.faint));
+    }
+    return Text(
+      'FRAME  R ${b.p50RasterMs.toStringAsFixed(1)}/${b.p95RasterMs.toStringAsFixed(1)}  '
+      'B ${b.p50BuildMs.toStringAsFixed(1)}/${b.p95BuildMs.toStringAsFixed(1)}  MS  N ${b.n}',
+      style: Type.micro.copyWith(color: Inks.faint),
     );
   }
 }
