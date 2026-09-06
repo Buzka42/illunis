@@ -54,6 +54,7 @@ class LiveMockSource implements SkyStateSource {
     return SkyState(
       timeOfDay: t,
       dayOfYear: dayOfYear,
+      epochDays: epochDaysForDate(now.year, now.month, now.day),
       latitudeDeg: latitudeDeg,
       moonPhase: moonPhaseFor(now.toUtc()),
       sleepScore: vitals.sleepScore,

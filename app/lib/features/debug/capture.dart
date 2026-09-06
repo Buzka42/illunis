@@ -16,6 +16,7 @@ const String kCaptureDir = String.fromEnvironment('ILLUNIS_CAPTURE');
 
 const List<double> kCaptureTimes = [
   0.02, // deep night
+  0.12, // small hours, planets up
   0.23, // astronomical → nautical dawn
   0.262, // just before sunrise
   0.30, // low sun
@@ -39,7 +40,8 @@ Future<void> runCaptureSequence(
   for (final preset in presets) {
     for (final t in kCaptureTimes) {
       overrides.set(SkyOverrides(timeOfDay: t, preset: preset));
-      await Future<void>.delayed(const Duration(milliseconds: 1800));
+      // Long enough for the camera's head-turn to settle on the new bearing.
+      await Future<void>.delayed(const Duration(milliseconds: 3600));
       final ro = boundary.currentContext?.findRenderObject();
       if (ro is! RenderRepaintBoundary) continue;
       final image = await ro.toImage(pixelRatio: 1.5);

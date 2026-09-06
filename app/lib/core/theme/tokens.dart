@@ -1,3 +1,5 @@
+export '../sky/sky_camera.dart' show kHorizonFraction;
+
 /// Spacing and geometry. There are almost no radii on purpose.
 class Space {
   const Space._();
@@ -7,5 +9,6 @@ class Space {
   static const double hairline = 1;
 }
 
-/// Where the horizon sits; the shell lays surfaces out around it.
-const double kHorizonFraction = 0.60;
+/// Ground-band layout under the horizon: the compass scale, then the
+/// timeline, then the surfaces.
+const double kCompassBandHeight = 22;

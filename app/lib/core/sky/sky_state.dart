@@ -16,6 +16,7 @@ class SkyState {
   const SkyState({
     required this.timeOfDay,
     required this.dayOfYear,
+    required this.epochDays,
     required this.latitudeDeg,
     required this.moonPhase,
     this.solarNoon = 0.5,
@@ -28,8 +29,12 @@ class SkyState {
   /// Fraction of the local civil day, `0` = midnight, `0.5` = noon.
   final double timeOfDay;
 
-  /// `1..366`. Drives solar declination and the sun's ecliptic longitude.
+  /// `1..366`, for the almanac line.
   final double dayOfYear;
+
+  /// Days since J2000.0 at this date's local midnight. Drives the Sun's
+  /// longitude and every planet. A number, not a `DateTime`, on purpose.
+  final double epochDays;
 
   /// Observer latitude, degrees, north positive.
   final double latitudeDeg;
@@ -64,6 +69,7 @@ class SkyState {
   SkyState copyWith({
     double? timeOfDay,
     double? dayOfYear,
+    double? epochDays,
     double? latitudeDeg,
     double? moonPhase,
     double? solarNoon,
@@ -72,9 +78,12 @@ class SkyState {
     Object? strain = _unset,
     Object? energyBalance = _unset,
   }) {
+    // Moving the day of year moves the epoch with it unless told otherwise.
+    final newDay = dayOfYear ?? this.dayOfYear;
     return SkyState(
       timeOfDay: timeOfDay ?? this.timeOfDay,
-      dayOfYear: dayOfYear ?? this.dayOfYear,
+      dayOfYear: newDay,
+      epochDays: epochDays ?? (this.epochDays + (newDay - this.dayOfYear)),
       latitudeDeg: latitudeDeg ?? this.latitudeDeg,
       moonPhase: moonPhase ?? this.moonPhase,
       solarNoon: solarNoon ?? this.solarNoon,
@@ -97,6 +106,7 @@ class SkyState {
     return SkyState(
       timeOfDay: _lerpWrapped(a.timeOfDay, b.timeOfDay, t),
       dayOfYear: lerpDouble(a.dayOfYear, b.dayOfYear, t)!,
+      epochDays: lerpDouble(a.epochDays, b.epochDays, t)!,
       latitudeDeg: lerpDouble(a.latitudeDeg, b.latitudeDeg, t)!,
       moonPhase: _lerpWrapped(a.moonPhase, b.moonPhase, t),
       solarNoon: lerpDouble(a.solarNoon, b.solarNoon, t)!,
@@ -125,6 +135,7 @@ class SkyState {
       other is SkyState &&
       other.timeOfDay == timeOfDay &&
       other.dayOfYear == dayOfYear &&
+      other.epochDays == epochDays &&
       other.latitudeDeg == latitudeDeg &&
       other.moonPhase == moonPhase &&
       other.solarNoon == solarNoon &&
@@ -137,6 +148,7 @@ class SkyState {
   int get hashCode => Object.hash(
     timeOfDay,
     dayOfYear,
+    epochDays,
     latitudeDeg,
     moonPhase,
     solarNoon,

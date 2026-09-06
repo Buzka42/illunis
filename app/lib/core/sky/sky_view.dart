@@ -34,6 +34,11 @@ class SkyView extends StatefulWidget {
   /// Reports the eased, resolved scene each frame for chrome that wants it.
   final ValueChanged<ResolvedScene>? onScene;
 
+  /// Device pixels the shader is allowed to shade per frame. A 1080×2400
+  /// phone lands at ~0.96×; anything smaller renders 1:1. The one number to
+  /// lower if a device cannot hold the frame.
+  static const double shadePixelBudget = 2.4e6;
+
   @override
   State<SkyView> createState() => _SkyViewState();
 }
@@ -107,6 +112,7 @@ class _SkyViewState extends State<SkyView>
     _display = SkyState(
       timeOfDay: clockPart.timeOfDay,
       dayOfYear: clockPart.dayOfYear,
+      epochDays: clockPart.epochDays,
       latitudeDeg: clockPart.latitudeDeg,
       moonPhase: clockPart.moonPhase,
       solarNoon: clockPart.solarNoon,
@@ -148,13 +154,13 @@ class _SkyViewState extends State<SkyView>
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final az = wrapAngle(_azimuth + _yaw);
-    // Shade roughly a megapixel; more buys nothing the eye can see.
     final px =
         mq.size.width *
         mq.size.height *
         mq.devicePixelRatio *
         mq.devicePixelRatio;
-    final scale = (math.sqrt(1.15e6 / math.max(px, 1))).clamp(0.45, 1.0);
+    final scale =
+        (math.sqrt(SkyView.shadePixelBudget / math.max(px, 1))).clamp(0.6, 1.0);
     return RepaintBoundary(
       child: CustomPaint(
         painter: SkyPainter(

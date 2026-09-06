@@ -42,7 +42,7 @@ class JournalPage extends StatelessWidget {
     final date =
         '${_days[now.weekday - 1]} ${now.day} ${_months[now.month - 1]}';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.margin, 18, Space.margin, 52),
+      padding: const EdgeInsets.fromLTRB(Space.margin, 6, Space.margin, 52),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

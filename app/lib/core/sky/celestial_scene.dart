@@ -32,7 +32,11 @@ class ResolvedScene {
     required this.exposure,
     required this.stillness,
     required this.trackAzimuthRad,
+    required this.planets,
   });
+
+  /// The five naked-eye planets, in [Planet] order.
+  final List<PlanetPosition> planets;
 
   final SkyState state;
 
@@ -130,25 +134,55 @@ class ResolvedScene {
   }
 }
 
+@immutable
+class PlanetPosition {
+  const PlanetPosition({
+    required this.planet,
+    required this.dir,
+    required this.magnitude,
+    required this.elongationRad,
+    required this.visibility,
+    required this.brightness,
+  });
+
+  final Planet planet;
+  final Vec3 dir;
+  final double magnitude;
+  final double elongationRad;
+
+  /// `0..1`: above the horizon and the sky dark enough to show it.
+  final double visibility;
+
+  /// `0..1` point intensity for the shader.
+  final double brightness;
+}
+
 class CelestialScene {
   const CelestialScene._();
 
   static ResolvedScene resolve(SkyState s) {
     final lat = s.latitudeDeg * degToRad;
-    final dec = solarDeclination(s.dayOfYear);
+    final epoch = s.epochDays + s.timeOfDay;
+    // The Sun from the same element set as the planets, so they agree.
+    final lambdaSun = sunEclipticLongitude(epoch);
+    final eqSun = equatorialFromEcliptic(lambdaSun);
+    final dec = eqSun.dec;
     final hSun = solarHourAngle(s.timeOfDay, s.solarNoon);
     final sunDir = horizontalDirection(dec, hSun, lat);
 
     // The moon sits on the ecliptic, `phase` of a turn ahead of the sun.
-    final lambdaSun = solarEclipticLongitude(s.dayOfYear);
     final lambdaMoon = lambdaSun + s.moonPhase * 2 * math.pi;
-    final eqSun = equatorialFromEcliptic(lambdaSun);
     final eqMoon = equatorialFromEcliptic(lambdaMoon);
     // Local sidereal time θ = H_sun + α_sun, and H_moon = θ − α_moon.
     final sidereal = wrapAngle(hSun + eqSun.ra);
     final moonOffset = eqSun.ra - eqMoon.ra;
     final moonDir = horizontalDirection(eqMoon.dec, hSun + moonOffset, lat);
     final illum = moonIlluminatedFraction(s.moonPhase);
+
+    final sunAltDeg = sunDir.altitude * radToDeg;
+    final planets = <PlanetPosition>[
+      for (final p in Planet.values) _planet(p, epoch, sidereal, lat, sunAltDeg),
+    ];
 
     final h0 = hourAngleAtAltitude(dec, lat, riseSetAltitudeRad);
     final sunrise = h0 == null ? null : _frac(s.solarNoon - h0 / (2 * math.pi));
@@ -199,6 +233,31 @@ class CelestialScene {
       exposure: exposure,
       stillness: stillness,
       trackAzimuthRad: track,
+      planets: planets,
+    );
+  }
+
+  static PlanetPosition _planet(
+      Planet p, double epoch, double sidereal, double lat, double sunAltDeg) {
+    final eq = planetEquatorial(p, epoch);
+    final dir = horizontalDirection(eq.dec, sidereal - eq.ra, lat);
+    final mag = planetMagnitude(p, eq.distanceAu);
+    // Bright planets show from civil twilight, faint ones from nautical;
+    // everything fades into the horizon's air.
+    final darkEnough = mag < -1.5
+        ? smoothstep(-2.0, -7.0, sunAltDeg)
+        : smoothstep(-6.0, -11.0, sunAltDeg);
+    final up = smoothstep(-0.5, 4.0, dir.altitude * radToDeg);
+    final visibility = darkEnough * up;
+    // Point brightness on a magnitude scale, Venus ≈ 1, +1 mag ≈ 0.12.
+    final brightness = math.pow(10, -0.4 * (mag + 4.2)).toDouble().clamp(0.0, 1.0);
+    return PlanetPosition(
+      planet: p,
+      dir: dir,
+      magnitude: mag,
+      elongationRad: eq.elongationRad,
+      visibility: visibility,
+      brightness: brightness,
     );
   }
 

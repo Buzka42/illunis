@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 
+import 'celestial_glyphs.dart';
 import 'celestial_math.dart';
 import 'celestial_scene.dart';
 import 'sky_camera.dart';
@@ -56,8 +57,8 @@ class SkyOverlayPainter extends CustomPainter {
         size,
         at: scene.moonDirectionAt,
         color: const Color(0xFFB9C6E0),
-        alphaAbove: 0.42,
-        alphaBelow: 0.14,
+        alphaAbove: 0.24,
+        alphaBelow: 0.09,
         hourLabels: false,
         shadow: shadow,
       );
@@ -67,10 +68,13 @@ class SkyOverlayPainter extends CustomPainter {
         size,
         at: scene.sunDirectionAt,
         color: _ink,
-        alphaAbove: 0.62,
-        alphaBelow: 0.12,
+        alphaAbove: 0.38,
+        alphaBelow: 0.09,
         hourLabels: true,
         shadow: shadow,
+        // No tick or hour under the sun's own ring and readout.
+        avoid: cam.project(scene.sunDir),
+        avoidRadius: SkyShader.sunAngularRadius * cam.focal * 2.6 + 40,
       );
     }
     _paintBody(
@@ -80,6 +84,7 @@ class SkyOverlayPainter extends CustomPainter {
       dir: scene.moonDir,
       ringRadius: SkyShader.moonAngularRadius * cam.focal * 1.45,
       label: 'MOON',
+      glyph: CelestialGlyph.moon,
       lines: [
         '${(scene.moonIllumination * 100).round().toString().padLeft(3)}%  ${scene.describeMoonPhase().toUpperCase()}',
         _altAz(scene.moonDir),
@@ -94,10 +99,12 @@ class SkyOverlayPainter extends CustomPainter {
       dir: scene.sunDir,
       ringRadius: SkyShader.sunAngularRadius * cam.focal * 2.6 + 10,
       label: 'SUN',
+      glyph: CelestialGlyph.sun,
       lines: [scene.describeTwilight().toUpperCase(), _altAz(scene.sunDir)],
       shadow: shadow,
       dim: 1.0,
     );
+    _paintPlanets(canvas, cam, size, shadow);
   }
 
   String _altAz(Vec3 d) {
@@ -115,11 +122,11 @@ class SkyOverlayPainter extends CustomPainter {
       Offset(0, y),
       Offset(size.width, y),
       Paint()
-        ..color = _light.withValues(alpha: 0.38)
+        ..color = _light.withValues(alpha: 0.26)
         ..strokeWidth = 1,
     );
     final tick = Paint()
-      ..color = _ink.withValues(alpha: 0.55)
+      ..color = _light.withValues(alpha: 0.32)
       ..strokeWidth = 1;
     for (var deg = 0; deg < 360; deg += 5) {
       final p = cam.project(directionFromAltAz(0, deg * degToRad));
@@ -141,10 +148,11 @@ class SkyOverlayPainter extends CustomPainter {
           label,
           Offset(p.dx, y + 10),
           size: 9,
-          alpha: deg % 90 == 0 ? 0.9 : 0.5,
+          alpha: deg % 90 == 0 ? 0.7 : 0.38,
           weight: deg % 90 == 0 ? 600 : 400,
           anchor: Alignment.topCenter,
           shadow: 0,
+          color: _light,
         );
       }
     }
@@ -152,8 +160,8 @@ class SkyOverlayPainter extends CustomPainter {
 
   void _paintAltitudeCircles(Canvas canvas, SkyCamera cam, Size size) {
     final paint = Paint()
-      ..color = _ink.withValues(alpha: 0.10)
-      ..strokeWidth = 0.75
+      ..color = _ink.withValues(alpha: 0.055)
+      ..strokeWidth = 0.5
       ..style = PaintingStyle.stroke;
     for (var alt = 15; alt <= 75; alt += 15) {
       final path = Path();
@@ -177,13 +185,14 @@ class SkyOverlayPainter extends CustomPainter {
       }
       canvas.drawPath(path, paint);
       final lp = cam.project(directionFromAltAz(alt * degToRad, azimuthRad));
-      if (lp != null && lp.dy > 8) {
+      // Not under the header's clock.
+      if (lp != null && lp.dy > 68) {
         _text(
           canvas,
           '$alt°',
           Offset(size.width - 12, lp.dy - 2),
           size: 8.5,
-          alpha: 0.30,
+          alpha: 0.22,
           anchor: Alignment.bottomRight,
           shadow: 0,
         );
@@ -203,6 +212,8 @@ class SkyOverlayPainter extends CustomPainter {
     required double alphaBelow,
     required bool hourLabels,
     required double shadow,
+    Offset? avoid,
+    double avoidRadius = 0,
   }) {
     const steps = 24 * 20; // three-minute samples
     final above = Path();
@@ -238,7 +249,7 @@ class SkyOverlayPainter extends CustomPainter {
       above,
       Paint()
         ..color = color.withValues(alpha: alphaAbove)
-        ..strokeWidth = 1
+        ..strokeWidth = 0.75
         ..style = PaintingStyle.stroke,
     );
     if (belowDots.isNotEmpty) {
@@ -247,7 +258,7 @@ class SkyOverlayPainter extends CustomPainter {
         belowDots,
         Paint()
           ..color = color.withValues(alpha: alphaBelow)
-          ..strokeWidth = 1.5
+          ..strokeWidth = 1.25
           ..strokeCap = StrokeCap.round,
       );
     }
@@ -255,7 +266,7 @@ class SkyOverlayPainter extends CustomPainter {
     // Hour ticks, perpendicular to the path; labels every third hour.
     final tickPaint = Paint()
       ..color = color.withValues(alpha: alphaAbove)
-      ..strokeWidth = 1;
+      ..strokeWidth = 0.75;
     for (var h = 0; h < 24; h++) {
       final t = h / 24;
       final d = at(t);
@@ -273,6 +284,7 @@ class SkyOverlayPainter extends CustomPainter {
               ..color = color.withValues(alpha: alphaBelow * 1.4)
               ..strokeWidth = 1)
           : tickPaint;
+      if (avoid != null && (p - avoid).distance < avoidRadius) continue;
       canvas.drawLine(p - n * len, p + n * len, paint);
       if (hourLabels && !below && h % 3 == 0) {
         _text(
@@ -280,7 +292,7 @@ class SkyOverlayPainter extends CustomPainter {
           h.toString().padLeft(2, '0'),
           p + n * 10,
           size: 8.5,
-          alpha: 0.6,
+          alpha: 0.45,
           anchor: n.dy < 0 ? Alignment.bottomCenter : Alignment.topCenter,
           shadow: shadow,
         );
@@ -297,6 +309,7 @@ class SkyOverlayPainter extends CustomPainter {
     required Vec3 dir,
     required double ringRadius,
     required String label,
+    required CelestialGlyph glyph,
     required List<String> lines,
     required double shadow,
     required double dim,
@@ -310,8 +323,8 @@ class SkyOverlayPainter extends CustomPainter {
     if (dir.y < 0) return;
 
     final ring = Paint()
-      ..color = _ink.withValues(alpha: 0.7 * dim)
-      ..strokeWidth = 1
+      ..color = _ink.withValues(alpha: 0.5 * dim)
+      ..strokeWidth = 0.75
       ..style = PaintingStyle.stroke;
     // A broken ring: four arcs, so it reads as an instrument, not a badge.
     const gap = 0.35;
@@ -344,12 +357,26 @@ class SkyOverlayPainter extends CustomPainter {
     final anchor = toRight ? Alignment.bottomLeft : Alignment.bottomRight;
     final anchorBelow = toRight ? Alignment.topLeft : Alignment.topRight;
     final base = end + Offset(dx * 6, 0);
+    // The glyph leads the label on the side away from the leader.
+    const glyphSize = 11.0;
+    final labelWidth = _measure(label, size: 9.5, weight: 600).width;
+    final glyphAt = toRight
+        ? base + const Offset(glyphSize / 2, -3 - glyphSize / 2 - 1)
+        : base + Offset(-labelWidth - 6 - glyphSize / 2, -3 - glyphSize / 2 - 1);
+    glyph.paint(
+      canvas,
+      glyphAt,
+      glyphSize,
+      Paint()
+        ..color = _ink.withValues(alpha: 0.85 * dim)
+        ..strokeWidth = 1,
+    );
     _text(
       canvas,
       label,
-      base + const Offset(0, -3),
+      base + Offset(toRight ? glyphSize + 6 : 0, -3),
       size: 9.5,
-      alpha: 0.95 * dim,
+      alpha: 0.85 * dim,
       weight: 600,
       anchor: anchor,
       shadow: shadow,
@@ -361,11 +388,97 @@ class SkyOverlayPainter extends CustomPainter {
         line,
         base + Offset(0, y),
         size: 8.5,
-        alpha: 0.72 * dim,
+        alpha: 0.6 * dim,
         anchor: anchorBelow,
         shadow: shadow,
       );
       y += 12 * textScale;
+    }
+  }
+
+  // --- planets -------------------------------------------------------------
+
+  void _paintPlanets(Canvas canvas, SkyCamera cam, Size size, double shadow) {
+    // Off-screen planets go on a rail at each edge, highest first, so they
+    // never land on the sun's or moon's edge readout.
+    final railLeft = <PlanetPosition>[], railRight = <PlanetPosition>[];
+    for (final pl in scene.planets) {
+      if (pl.visibility < 0.04) continue;
+      final p = cam.project(pl.dir);
+      final a = pl.visibility;
+      if (p == null || !cam.contains(p)) {
+        if (a < 0.3 || pl.dir.y <= 0) continue;
+        var rel = pl.dir.azimuth - azimuthRad;
+        while (rel > math.pi) {
+          rel -= 2 * math.pi;
+        }
+        while (rel < -math.pi) {
+          rel += 2 * math.pi;
+        }
+        (rel > 0 ? railRight : railLeft).add(pl);
+        continue;
+      }
+      final ink = Paint()
+        ..color = _ink.withValues(alpha: 0.7 * a)
+        ..strokeWidth = 0.75;
+      // A short leader from the point, glyph and name on the open side.
+      final toRight = p.dx < size.width * 0.5;
+      final dx = toRight ? 1.0 : -1.0;
+      final start = p + Offset(dx * 5, -5);
+      final end = start + Offset(dx * 9, -9);
+      canvas.drawLine(start, end, ink);
+      const glyphSize = 10.0;
+      final glyphAt = end + Offset(dx * (4 + glyphSize / 2), -1);
+      CelestialGlyph.forPlanet(pl.planet).paint(
+        canvas,
+        glyphAt,
+        glyphSize,
+        Paint()
+          ..color = _ink.withValues(alpha: 0.8 * a)
+          ..strokeWidth = 0.9,
+      );
+      final textAt = end + Offset(dx * (glyphSize + 9), 0);
+      _text(
+        canvas,
+        pl.planet.label,
+        textAt + const Offset(0, -1),
+        size: 8.5,
+        alpha: 0.7 * a,
+        weight: 600,
+        anchor: toRight ? Alignment.bottomLeft : Alignment.bottomRight,
+        shadow: shadow,
+      );
+      _text(
+        canvas,
+        'ALT +${(pl.dir.altitude * radToDeg).toStringAsFixed(1).padLeft(4)}°  M ${pl.magnitude.toStringAsFixed(1)}',
+        textAt + const Offset(0, 1),
+        size: 7.5,
+        alpha: 0.45 * a,
+        anchor: toRight ? Alignment.topLeft : Alignment.topRight,
+        shadow: shadow,
+      );
+    }
+
+    for (final (rail, right) in [(railLeft, false), (railRight, true)]) {
+      rail.sort((a, b) => b.dir.y.compareTo(a.dir.y));
+      final x = right ? size.width - 15.0 : 15.0;
+      for (var i = 0; i < rail.length; i++) {
+        final pl = rail[i];
+        final y = 96.0 + i * 18;
+        final paint = Paint()
+          ..color = _ink.withValues(alpha: 0.5 * pl.visibility)
+          ..strokeWidth = 0.8;
+        CelestialGlyph.forPlanet(pl.planet).paint(canvas, Offset(x, y), 9, paint);
+        final ax = x + (right ? 8.5 : -8.5);
+        final tip = x + (right ? 11 : -11);
+        canvas.drawPath(
+          Path()
+            ..moveTo(ax, y - 2.5)
+            ..lineTo(tip, y)
+            ..lineTo(ax, y + 2.5),
+          paint..style = PaintingStyle.stroke,
+        );
+      }
     }
   }
 
@@ -393,7 +506,7 @@ class SkyOverlayPainter extends CustomPainter {
     // horizon; below-horizon bodies sit in the ground band.
     // Always in the sky band: the ground belongs to the surfaces' figures.
     final yGuess = cam.principal.dy - altDeg * degToRad * cam.focal * 0.9;
-    final y = yGuess.clamp(56.0, cam.principal.dy - 18.0);
+    final y = yGuess.clamp(56.0, cam.principal.dy - 28.0);
     final paint = Paint()
       ..color = _ink.withValues(alpha: 0.6 * dim)
       ..strokeWidth = 1;
@@ -485,6 +598,27 @@ class SkyOverlayPainter extends CustomPainter {
       at.dy - (anchor.y + 1) / 2 * h,
     );
     tp.paint(canvas, origin);
+  }
+
+  Size _measure(String s, {required double size, int weight = 400}) {
+    final key = 'm|$s|$size|$weight|$textScale';
+    final tp = _textCache.putIfAbsent(
+      key,
+      () => TextPainter(
+        text: TextSpan(
+          text: s,
+          style: TextStyle(
+            fontFamily: _mono,
+            fontSize: size * textScale,
+            fontVariations: [ui.FontVariation('wght', weight.toDouble())],
+            letterSpacing: 0.4,
+            height: 1.0,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(),
+    );
+    return tp.size;
   }
 
   @override

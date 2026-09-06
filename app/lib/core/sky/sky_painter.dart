@@ -42,6 +42,15 @@ class SkyPainter extends CustomPainter {
       return;
     }
     final camera = SkyCamera(size: size, azimuthRad: azimuthRad);
+    if (scale >= 0.999) {
+      // Full resolution: shade straight into the layer. This also lets a
+      // capture at a higher pixel ratio render the sky at that ratio.
+      final fs = s.newShader();
+      SkyShader.write(fs, scene: scene, camera: camera, time: time,
+          pixelScale: devicePixelRatio);
+      canvas.drawRect(Offset.zero & size, Paint()..shader = fs);
+      return;
+    }
     final w = math.max(1, (size.width * devicePixelRatio * scale).round());
     final h = math.max(1, (size.height * devicePixelRatio * scale).round());
     final target = Size(w.toDouble(), h.toDouble());
@@ -77,7 +86,7 @@ class SkyPainter extends CustomPainter {
       image,
       Offset.zero & target,
       Offset.zero & size,
-      Paint()..filterQuality = FilterQuality.medium,
+      Paint()..filterQuality = FilterQuality.high,
     );
     _lastImage?.dispose();
     _lastImage = image;

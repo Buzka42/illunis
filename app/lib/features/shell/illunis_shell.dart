@@ -11,6 +11,7 @@ import '../dashboard/dashboard_page.dart';
 import '../debug/capture.dart';
 import '../debug/sky_debug_sheet.dart';
 import '../journal/journal_page.dart';
+import '../timeline/timeline_bar.dart';
 import 'shell_header.dart';
 
 /// One sky, two surfaces sliding over it.
@@ -84,9 +85,16 @@ class _IllunisShellState extends ConsumerState<IllunisShell> {
               yawOffsetRad: (_page - 0.5) * _yawPerPage,
               onScene: (s) => _scene.value = s,
             ),
+            // The day as a track, under the compass scale.
+            Positioned(
+              left: 0,
+              right: 0,
+              top: horizonY + kCompassBandHeight,
+              child: TimelineBar(scene: _scene),
+            ),
             // Surfaces live on the ground. The sky above stays legible.
             Positioned.fill(
-              top: horizonY,
+              top: horizonY + kCompassBandHeight + TimelineBar.height,
               child: PageView(
                 controller: _controller,
                 physics: const ClampingScrollPhysics(),

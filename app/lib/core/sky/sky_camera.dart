@@ -3,6 +3,10 @@ import 'dart:ui';
 
 import 'celestial_math.dart';
 
+/// Where the horizon sits, as a fraction of the view's height. The shell
+/// lays the ground band out from the same number (re-exported by tokens).
+const double kHorizonFraction = 0.56;
+
 /// A stereographic camera standing on the ground, looking at the horizon.
 ///
 /// Stereographic because it is conformal: the sun and moon stay round at
@@ -16,7 +20,7 @@ class SkyCamera {
   SkyCamera({
     required this.size,
     required this.azimuthRad,
-    this.horizonFraction = 0.60,
+    this.horizonFraction = kHorizonFraction,
     this.topAltitudeDeg = 76,
   }) : principal = Offset(size.width / 2, size.height * horizonFraction),
        focal =

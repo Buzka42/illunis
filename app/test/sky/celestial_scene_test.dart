@@ -12,9 +12,58 @@ SkyState _state({
   double day = 80,
   double lat = 0,
   double moon = 0.5,
-}) => SkyState(timeOfDay: t, dayOfYear: day, latitudeDeg: lat, moonPhase: moon);
+}) => SkyState(
+  timeOfDay: t,
+  dayOfYear: day,
+  // 2026 is not a leap year; day 80 is 21 March, the equinox.
+  epochDays: epochDaysForDate(2026, 1, 1) + (day - 1),
+  latitudeDeg: lat,
+  moonPhase: moon,
+);
 
 void main() {
+  group('ephemeris', () {
+    test('epoch days match J2000 and a known JD', () {
+      expect(epochDaysForDate(2000, 1, 1), closeTo(-0.5, 1e-9));
+      // 2026-09-06 00:00 UT is JD 2461289.5.
+      expect(epochDaysForDate(2026, 9, 6), closeTo(2461289.5 - 2451545.0, 1e-9));
+    });
+
+    test('the Sun crosses the equator at the March equinox', () {
+      final lon = sunEclipticLongitude(epochDaysForDate(2026, 3, 20) + 0.6);
+      expect(lon * radToDeg, anyOf(lessThan(1.0), greaterThan(359.0)));
+    });
+
+    test('inner planets keep to their maximum elongation', () {
+      for (var d = 0; d < 3000; d += 37) {
+        final e = epochDaysForDate(2020, 1, 1) + d;
+        final v = planetEquatorial(Planet.venus, e).elongationRad * radToDeg;
+        final m = planetEquatorial(Planet.mercury, e).elongationRad * radToDeg;
+        expect(v, lessThan(48.5), reason: 'venus day $d');
+        expect(m, lessThan(28.5), reason: 'mercury day $d');
+      }
+    });
+
+    test('planets resolve to unit directions and sensible magnitudes', () {
+      final s = CelestialScene.resolve(_state(t: 0.0, lat: 52, day: 249));
+      expect(s.planets.length, 5);
+      for (final p in s.planets) {
+        expect(p.dir.length, closeTo(1, 1e-9));
+        expect(p.magnitude, inInclusiveRange(-5, 3));
+        expect(p.visibility, inInclusiveRange(0, 1));
+      }
+      final venus = s.planets[Planet.venus.index];
+      expect(venus.brightness, greaterThan(s.planets[Planet.saturn.index].brightness));
+    });
+
+    test('a planet below the horizon or in daylight is not visible', () {
+      final noon = CelestialScene.resolve(_state(t: 0.5, lat: 52, day: 249));
+      for (final p in noon.planets) {
+        expect(p.visibility, lessThan(1e-6));
+      }
+    });
+  });
+
   group('sun', () {
     test('is at the zenith at noon on the equinox at the equator', () {
       final s = CelestialScene.resolve(_state());
@@ -77,7 +126,8 @@ void main() {
       final a = CelestialScene.resolve(_state(t: 0.5, lat: 52));
       final b = CelestialScene.resolve(_state(t: 0.6, lat: 52));
       final d = wrapAngle(b.siderealRad - a.siderealRad);
-      expect(d, closeTo(0.1 * 2 * math.pi, 1e-6));
+      // A sidereal day is shorter than a solar one by one part in 365.25.
+      expect(d, closeTo(0.1 * 2 * math.pi * 366.25 / 365.25, 5e-4));
     });
   });
 

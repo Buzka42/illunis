@@ -40,6 +40,7 @@ class SkyShader {
     required ResolvedScene scene,
     required SkyCamera camera,
     required double time,
+    double pixelScale = 1.0,
   }) {
     final s = scene;
     var i = 0;
@@ -67,5 +68,12 @@ class SkyShader {
     f(sunAngularRadius);
     f(s.moonIllumination);
     f(s.dayness);
+    for (final p in s.planets) {
+      f(p.dir.x);
+      f(p.dir.y);
+      f(p.dir.z);
+      f(p.brightness * p.visibility);
+    }
+    f(pixelScale);
   }
 }

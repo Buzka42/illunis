@@ -140,6 +140,155 @@ double moonPhaseFor(DateTime utc) {
   return cycles - cycles.floorToDouble();
 }
 
+// --- planets (Schlyter mean elements, epoch J2000; ~1° for ±50 y) --------
+
+/// Days since 1999-12-31 00:00 UT, the epoch of the element set below.
+double schlyterDay(double epochDaysJ2000) => epochDaysJ2000 + 1.5;
+
+/// Days since J2000.0 (2000-01-01 12:00 UT) for a civil date's midnight.
+double epochDaysForDate(int year, int month, int day) {
+  // Meeus' JD for a Gregorian date at 0h, minus J2000.0.
+  var y = year, m = month;
+  if (m <= 2) {
+    y -= 1;
+    m += 12;
+  }
+  final a = y ~/ 100;
+  final b = 2 - a + a ~/ 4;
+  final jd = (365.25 * (y + 4716)).floor() +
+      (30.6001 * (m + 1)).floor() +
+      day +
+      b -
+      1524.5;
+  return jd - 2451545.0;
+}
+
+enum Planet {
+  mercury('Mercury', 'MERCURY'),
+  venus('Venus', 'VENUS'),
+  mars('Mars', 'MARS'),
+  jupiter('Jupiter', 'JUPITER'),
+  saturn('Saturn', 'SATURN');
+
+  const Planet(this.name, this.label);
+  final String name;
+  final String label;
+}
+
+class _Elements {
+  const _Elements(this.n0, this.n1, this.i0, this.i1, this.w0, this.w1, this.a,
+      this.e0, this.e1, this.m0, this.m1);
+  final double n0, n1, i0, i1, w0, w1, a, e0, e1, m0, m1;
+}
+
+const _sunElements =
+    _Elements(0, 0, 0, 0, 282.9404, 4.70935e-5, 1.0, 0.016709, -1.151e-9, 356.0470, 0.9856002585);
+
+const _planetElements = <Planet, _Elements>{
+  Planet.mercury: _Elements(48.3313, 3.24587e-5, 7.0047, 5.00e-8, 29.1241, 1.01444e-5,
+      0.387098, 0.205635, 5.59e-10, 168.6562, 4.0923344368),
+  Planet.venus: _Elements(76.6799, 2.46590e-5, 3.3946, 2.75e-8, 54.8910, 1.38374e-5,
+      0.723330, 0.006773, -1.302e-9, 48.0052, 1.6021302244),
+  Planet.mars: _Elements(49.5574, 2.11081e-5, 1.8497, -1.78e-8, 286.5016, 2.92961e-5,
+      1.523688, 0.093405, 2.516e-9, 18.6021, 0.5240207766),
+  Planet.jupiter: _Elements(100.4542, 2.76854e-5, 1.3030, -1.557e-7, 273.8777, 1.64505e-5,
+      5.20256, 0.048498, 4.469e-9, 19.8950, 0.0830853001),
+  Planet.saturn: _Elements(113.6634, 2.38980e-5, 2.4886, -1.081e-7, 339.3939, 2.97661e-5,
+      9.55475, 0.055546, -9.499e-9, 316.9670, 0.0334442282),
+};
+
+/// Heliocentric ecliptic rectangular coordinates, AU.
+Vec3 _heliocentric(_Elements el, double d) {
+  final n = (el.n0 + el.n1 * d) * degToRad;
+  final i = (el.i0 + el.i1 * d) * degToRad;
+  final w = (el.w0 + el.w1 * d) * degToRad;
+  final e = el.e0 + el.e1 * d;
+  final m = wrapAngle((el.m0 + el.m1 * d) * degToRad);
+  var ecc = m + e * math.sin(m) * (1 + e * math.cos(m));
+  for (var k = 0; k < 6; k++) {
+    ecc = ecc - (ecc - e * math.sin(ecc) - m) / (1 - e * math.cos(ecc));
+  }
+  final xv = el.a * (math.cos(ecc) - e);
+  final yv = el.a * math.sqrt(1 - e * e) * math.sin(ecc);
+  final v = math.atan2(yv, xv);
+  final r = math.sqrt(xv * xv + yv * yv);
+  final vw = v + w;
+  return Vec3(
+    r * (math.cos(n) * math.cos(vw) - math.sin(n) * math.sin(vw) * math.cos(i)),
+    r * (math.sin(n) * math.cos(vw) + math.cos(n) * math.sin(vw) * math.cos(i)),
+    r * math.sin(vw) * math.sin(i),
+  );
+}
+
+/// Geocentric ecliptic position of the Sun, AU (x toward the equinox).
+Vec3 sunEcliptic(double epochDaysJ2000) {
+  final d = schlyterDay(epochDaysJ2000);
+  final el = _sunElements;
+  final w = (el.w0 + el.w1 * d) * degToRad;
+  final e = el.e0 + el.e1 * d;
+  final m = wrapAngle((el.m0 + el.m1 * d) * degToRad);
+  var ecc = m + e * math.sin(m) * (1 + e * math.cos(m));
+  for (var k = 0; k < 6; k++) {
+    ecc = ecc - (ecc - e * math.sin(ecc) - m) / (1 - e * math.cos(ecc));
+  }
+  final xv = math.cos(ecc) - e;
+  final yv = math.sqrt(1 - e * e) * math.sin(ecc);
+  final v = math.atan2(yv, xv);
+  final r = math.sqrt(xv * xv + yv * yv);
+  final lon = v + w;
+  return Vec3(r * math.cos(lon), r * math.sin(lon), 0);
+}
+
+/// Ecliptic longitude of the Sun, radians.
+double sunEclipticLongitude(double epochDaysJ2000) {
+  final s = sunEcliptic(epochDaysJ2000);
+  return wrapAngle(math.atan2(s.y, s.x));
+}
+
+/// Equatorial (RA, Dec) and distance (AU) of a planet as seen from Earth.
+({double ra, double dec, double distanceAu, double elongationRad}) planetEquatorial(
+    Planet p, double epochDaysJ2000) {
+  final d = schlyterDay(epochDaysJ2000);
+  final h = _heliocentric(_planetElements[p]!, d);
+  final s = sunEcliptic(epochDaysJ2000);
+  final g = h + s; // geocentric ecliptic
+  final xe = g.x;
+  final ye = g.y * math.cos(obliquityRad) - g.z * math.sin(obliquityRad);
+  final ze = g.y * math.sin(obliquityRad) + g.z * math.cos(obliquityRad);
+  final ra = math.atan2(ye, xe);
+  final dec = math.atan2(ze, math.sqrt(xe * xe + ye * ye));
+  final dist = g.length;
+  final elong = math.acos((g.dot(s) / (dist * s.length)).clamp(-1.0, 1.0));
+  return (ra: ra, dec: dec, distanceAu: dist, elongationRad: elong);
+}
+
+/// A rough visual magnitude, enough to decide how bright the point is.
+double planetMagnitude(Planet p, double distanceAu) {
+  final base = switch (p) {
+    Planet.mercury => 0.2,
+    Planet.venus => -4.2,
+    Planet.mars => -0.5,
+    Planet.jupiter => -2.4,
+    Planet.saturn => 0.6,
+  };
+  // Inverse-square about a typical distance, in magnitudes.
+  final typical = switch (p) {
+    Planet.mercury => 1.0,
+    Planet.venus => 1.0,
+    Planet.mars => 1.4,
+    Planet.jupiter => 5.5,
+    Planet.saturn => 10.0,
+  };
+  // Inner planets near us are thin crescents, so the inverse-square gain is
+  // mostly lost to phase; cap at their real brightest.
+  final floor = switch (p) {
+    Planet.mercury => -1.9,
+    Planet.venus => -4.6,
+    _ => -3.0,
+  };
+  return math.max(floor, base + 5 * math.log(distanceAu / typical) / math.ln10);
+}
+
 double smoothstep(double e0, double e1, double x) {
   final t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
   return t * t * (3 - 2 * t);

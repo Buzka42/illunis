@@ -1,25 +1,28 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/sky/celestial_math.dart';
 import '../../core/sky/celestial_scene.dart';
 import '../../core/sky/sky_state.dart';
+import '../../core/state/sleep_record.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 
 /// The output surface. Phase 1: the day's figures set as a table on the
 /// ground, straight from mock state and the resolved sky. No logic; the
 /// composition is what is being judged.
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key, required this.scene, required this.state});
 
   final ValueListenable<ResolvedScene?> scene;
   final SkyState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sleep = ref.watch(sleepRecordProvider);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.margin, 18, Space.margin, 52),
+      padding: const EdgeInsets.fromLTRB(Space.margin, 6, Space.margin, 52),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -31,7 +34,7 @@ class DashboardPage extends StatelessWidget {
             const SizedBox(height: 6),
             _Row(
               label: 'SLEEP',
-              value: _sleep(state.sleepScore),
+              value: sleep == null ? '—' : formatDuration(sleep.asleepHours / 24),
               unit: state.sleepScore == null
                   ? null
                   : 'SCORE ${(state.sleepScore! * 100).round()}',
@@ -98,13 +101,6 @@ class DashboardPage extends StatelessWidget {
 
   static String _pct(double? v) =>
       v == null ? '—' : (v * 100).round().toString();
-
-  static String _sleep(double? score) {
-    if (score == null) return '—';
-    // Mock: the score stands in for duration until a real source exists.
-    final minutes = (5.0 * 60 + score * 3.6 * 60).round();
-    return '${minutes ~/ 60}h ${(minutes % 60).toString().padLeft(2, '0')}m';
-  }
 
   static String _energy(double? e) {
     if (e == null) return '—';

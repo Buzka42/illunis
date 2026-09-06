@@ -29,6 +29,12 @@ uniform float uMoonRadius;  // 19   angular radius, rad
 uniform float uSunRadius;   // 20   angular radius, rad
 uniform float uMoonIllum;   // 21   0..1
 uniform float uDayness;     // 22   0 night .. 1 day (perceptual)
+uniform vec4  uPlanet0;     // 23-26 Mercury: dir.xyz, brightness (0 = hidden)
+uniform vec4  uPlanet1;     // 27-30 Venus
+uniform vec4  uPlanet2;     // 31-34 Mars
+uniform vec4  uPlanet3;     // 35-38 Jupiter
+uniform vec4  uPlanet4;     // 39-42 Saturn
+uniform float uPixelScale;  // 43   device pixels per uniform pixel (1 when pre-scaled)
 
 out vec4 fragColor;
 
@@ -191,6 +197,15 @@ vec3 stars(vec3 e, float pxAngle) {
   return acc;
 }
 
+// A planet is a steady point: no twinkle, its own tint, sized by brightness.
+vec3 planetPoint(vec3 d, vec4 p, vec3 tint, float pxAngle) {
+  if (p.w <= 0.0) return vec3(0.0);
+  float ang = length(cross(d, p.xyz));
+  float radius = pxAngle * (0.9 + 0.9 * p.w);
+  float core = exp(-(ang * ang) / (radius * radius * 0.5));
+  return tint * core * (0.35 + 2.2 * p.w);
+}
+
 const vec3 GALACTIC_POLE = vec3(-0.198, 0.456, -0.868);
 
 vec3 galaxy(vec3 e) {
@@ -241,7 +256,7 @@ void main() {
   // Solar disc, extinguished by the air in front of it.
   vec3 Fex = extinction(dSky, betaR, betaM);
   float cosSun = dot(dSky, uSunDir);
-  float disc = smoothstep(cos(uSunRadius), cos(max(uSunRadius - 1.4 / uFocal, 0.0)), cosSun);
+  float disc = smoothstep(cos(uSunRadius), cos(max(uSunRadius - 1.4 / (uFocal * uPixelScale), 0.0)), cosSun);
   sky += sunIntensity(dot(uSunDir, UP)) * 19000.0 * Fex * disc * step(0.0, uSunDir.y + 0.004);
 
   // Deep sky. Stars fade under twilight and behind the horizon's air.
@@ -249,10 +264,20 @@ void main() {
   vec3 deep = vec3(0.0);
   if (starVis > 0.002 && !ground) {
     vec3 e = toEquatorial(dSky);
-    float pxAngle = 1.15 / uFocal;
+    float pxAngle = 1.15 / (uFocal * uPixelScale);
     deep = (stars(e, pxAngle) * 0.9 + galaxy(e)) * starVis;
     // The moon's glare and its scattered light both hide stars near it.
     deep *= 1.0 - 0.75 * uMoonIllum * moonUp * pow(max(dot(dSky, uMoonDir), 0.0), 24.0);
+  }
+  // Planets carry their own visibility (in .w), so they show in twilight
+  // before any star does.
+  if (!ground) {
+    float pxAngle = 1.15 / (uFocal * uPixelScale);
+    deep += planetPoint(dSky, uPlanet0, vec3(0.90, 0.90, 0.88), pxAngle);
+    deep += planetPoint(dSky, uPlanet1, vec3(1.00, 0.98, 0.94), pxAngle);
+    deep += planetPoint(dSky, uPlanet2, vec3(1.00, 0.72, 0.52), pxAngle);
+    deep += planetPoint(dSky, uPlanet3, vec3(1.00, 0.95, 0.84), pxAngle);
+    deep += planetPoint(dSky, uPlanet4, vec3(0.98, 0.92, 0.72), pxAngle);
   }
 
   // Tone: three.js-style compression, then filmic with adapted exposure.
@@ -267,7 +292,7 @@ void main() {
   // Moon: a lit sphere with a Lommel–Seeliger surface, composited additively
   // so by day only the lit limb rises above the sky and the dark side vanishes.
   float cosMoon = dot(d, uMoonDir);
-  float moonMask = smoothstep(cos(uMoonRadius), cos(max(uMoonRadius - 1.4 / uFocal, 0.0)), cosMoon);
+  float moonMask = smoothstep(cos(uMoonRadius), cos(max(uMoonRadius - 1.4 / (uFocal * uPixelScale), 0.0)), cosMoon);
   if (moonMask > 0.0 && !ground) {
     vec3 o = d - uMoonDir * cosMoon;
     float sinAng = max(length(o), 1e-6);

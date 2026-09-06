@@ -9,6 +9,10 @@ Environment as found on 6 Sep 2026: Flutter 3.44.6 stable (Dart 3.x), Android
 SDK 36, one emulator (`Eter_API_36`), no physical Android device attached,
 Windows + Chrome available as desktop targets.
 
+Revisions after the first build are planned in their own files:
+`docs/VISUAL_PASS_2.md` (planets and their symbols, the day timeline with
+sleep, subtler instrument lines, full-resolution sky).
+
 ---
 
 ## 0. Decisions
