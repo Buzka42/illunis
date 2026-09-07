@@ -28,7 +28,7 @@ const kCanon = <Exercise>[
   Exercise(
     id: 'barbell-squat',
     name: 'Barbell squat',
-    aliases: ['squat', 'back squat', 'bb squat'],
+    aliases: ['squat', 'back squat', 'bb squat', 'przysiad', 'przysiady'],
     muscles: ['quads', 'glutes'],
     isCompound: true,
   ),
@@ -49,7 +49,13 @@ const kCanon = <Exercise>[
   Exercise(
     id: 'conventional-deadlift',
     name: 'Deadlift',
-    aliases: ['dl', 'deadlift', 'conventional deadlift'],
+    aliases: [
+      'dl',
+      'deadlift',
+      'conventional deadlift',
+      'martwy',
+      'martwy ciag',
+    ],
     muscles: ['posterior chain'],
     isCompound: true,
   ),
@@ -63,7 +69,13 @@ const kCanon = <Exercise>[
   Exercise(
     id: 'barbell-bench-press',
     name: 'Barbell bench press',
-    aliases: ['bench', 'bench press', 'bb bench'],
+    aliases: [
+      'bench',
+      'bench press',
+      'bb bench',
+      'wyciskanie',
+      'wyciskanie lezac',
+    ],
     muscles: ['chest', 'triceps'],
     isCompound: true,
   ),
@@ -84,7 +96,14 @@ const kCanon = <Exercise>[
   Exercise(
     id: 'overhead-press',
     name: 'Overhead press',
-    aliases: ['ohp', 'press', 'military press', 'shoulder press'],
+    aliases: [
+      'ohp',
+      'press',
+      'military press',
+      'shoulder press',
+      'wyciskanie zolnierskie',
+      'wyciskanie stojac',
+    ],
     muscles: ['shoulders', 'triceps'],
     isCompound: true,
   ),
@@ -98,7 +117,7 @@ const kCanon = <Exercise>[
   Exercise(
     id: 'barbell-row',
     name: 'Barbell row',
-    aliases: ['row', 'bent over row', 'bb row'],
+    aliases: ['row', 'bent over row', 'bb row', 'wioslowanie'],
     muscles: ['back'],
     isCompound: true,
   ),
@@ -112,7 +131,15 @@ const kCanon = <Exercise>[
   Exercise(
     id: 'pull-up',
     name: 'Pull-up',
-    aliases: ['pullup', 'pull ups', 'pull-ups', 'chin up', 'chin-up'],
+    aliases: [
+      'pullup',
+      'pull ups',
+      'pull-ups',
+      'chin up',
+      'chin-up',
+      'podciaganie',
+      'podciagania',
+    ],
     muscles: ['lats', 'biceps'],
     isCompound: true,
   ),
@@ -350,7 +377,14 @@ const kCanon = <Exercise>[
   Exercise(
     id: 'push-up',
     name: 'Push-up',
-    aliases: ['pushup', 'push ups', 'push-ups', 'press ups'],
+    aliases: [
+      'pushup',
+      'push ups',
+      'push-ups',
+      'press ups',
+      'pompki',
+      'pompka',
+    ],
     muscles: ['chest', 'triceps'],
     isCompound: true,
   ),

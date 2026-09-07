@@ -36,18 +36,29 @@ class JournalRepository {
     if (stamped.text.isEmpty) {
       throw ArgumentError('empty');
     }
-    final entry = JournalEntry(
+    var when = stamped.apply(at ?? DateTime.now());
+    var entry = JournalEntry(
       id: newId(),
-      at: stamped.apply(at ?? DateTime.now()),
+      at: when,
       text: stamped.text,
       excludedFromAi: excludedFromAi,
     );
-    await store.addJournal(entry);
-    final parsed = parseJournal(
+    var parsed = parseJournal(
       entry,
       bodyKg: _bodyKg,
       units: store.profile.units,
     );
+    final shifted = _nightBelongs(when, stamped, parsed);
+    if (shifted != when) {
+      entry = JournalEntry(
+        id: entry.id,
+        at: shifted,
+        text: entry.text,
+        excludedFromAi: excludedFromAi,
+      );
+      parsed = parseJournal(entry, bodyKg: _bodyKg, units: store.profile.units);
+    }
+    await store.addJournal(entry);
     await store.addDerived(
       newSets: parsed.sets,
       newNutrition: parsed.nutrition,
@@ -436,4 +447,32 @@ class JournalRepository {
       weights: weights,
     );
   }
+}
+
+/// An evening bedtime logged in the morning is last night, not tonight.
+DateTime _nightBelongs(
+  DateTime when,
+  StampedLine stamped,
+  ParsedJournal parsed,
+) {
+  if (stamped.daysBack != 0) return when;
+  if (when.hour >= 12) return when;
+  if (parsed.sleeps.length != 1) return when;
+  final night = parsed.sleeps.single;
+  if (night.isComplete) return when;
+  if (night.startHours < 18) return when;
+  final prev = DateTime(
+    when.year,
+    when.month,
+    when.day,
+  ).subtract(const Duration(days: 1));
+  final start = night.startHours;
+  var h = start.floor();
+  var min = ((start - h) * 60).round();
+  if (min == 60) {
+    h += 1;
+    min = 0;
+  }
+  if (h >= 24) h -= 24;
+  return DateTime(prev.year, prev.month, prev.day, h, min);
 }

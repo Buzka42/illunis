@@ -83,7 +83,8 @@ Production already overrides `skyStateSourceProvider` with
 
 JSON `AppStore`, not Drift. Capture, canon, 1RM, dashboard figures, export /
 import / delete, REVERT, CONFIRM / DROP, KEEP LOCAL, PREV/NEXT civil days,
-local digest, incomplete bedtime + morning wake. See `docs/DECISIONS.md`.
+local digest, incomplete bedtime + morning wake, Warsaw/Polish speech and
+European decimals. See `docs/DECISIONS.md` and `docs/HANDOFF.md`.
 
 Still deferred inside this phase: Drift migrations, a scored food database.
 
@@ -140,10 +141,12 @@ The night sky catalog pass is **not** this file. It lives in
 
 ## 4. What is left
 
-1. Drift when the JSON file becomes the bottleneck — same tables, same
+1. On-device Warsaw dictation pass on the Blade (`docs/HANDOFF.md`). Do not
+   invent duration for `went for a run` with no minutes or distance.
+2. Drift when the JSON file becomes the bottleneck — same tables, same
    `journalEntryId` revert rule.
-2. Wearables (`health` package) without breaking the Windows desktop build.
-3. Food DB spike against ~40 real meals; replace `foods.dart` only then.
-4. Stellarium/window check of the catalog; precession only if off > 0.5°.
-5. A real lunar theory (already deferred in `docs/VISUAL_PASS_2.md`).
-6. Do not seed 21 days of fake history so insights can speak.
+3. Wearables (`health` package) without breaking the Windows desktop build.
+4. Food DB spike against ~40 real meals; replace `foods.dart` only then.
+5. Stellarium/window check of the catalog; precession only if off > 0.5°.
+6. A real lunar theory (already deferred in `docs/VISUAL_PASS_2.md`).
+7. Do not seed 21 days of fake history so insights can speak.

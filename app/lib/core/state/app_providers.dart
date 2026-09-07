@@ -48,21 +48,35 @@ final journalDayProvider = NotifierProvider<JournalDayNotifier, DateTime>(
 );
 
 class JournalDayNotifier extends Notifier<DateTime> {
+  /// True only after PREV/NEXT. A stamp that reveals yesterday is not
+  /// catch-up — the next unstamped line still belongs to the clock day.
+  var catchUp = false;
+
   @override
   DateTime build() => dateOnly(DateTime.now());
 
-  void prev() => state = state.subtract(const Duration(days: 1));
+  void prev() {
+    catchUp = true;
+    state = state.subtract(const Duration(days: 1));
+  }
 
   void next() {
     final today = dateOnly(DateTime.now());
     final n = state.add(const Duration(days: 1));
-    if (!n.isAfter(today)) state = n;
+    if (n.isAfter(today)) return;
+    catchUp = !sameDay(n, today);
+    state = n;
   }
 
-  void go(DateTime d) {
+  void go(DateTime d, {bool? catchUp}) {
     final day = dateOnly(d);
     final today = dateOnly(DateTime.now());
     if (day.isAfter(today)) return;
+    if (sameDay(day, today)) {
+      this.catchUp = false;
+    } else if (catchUp != null) {
+      this.catchUp = catchUp;
+    }
     state = day;
   }
 }
@@ -105,6 +119,7 @@ class TodayFigures {
     required this.day,
     this.summary,
     this.sleep,
+    this.incompleteBed,
     this.unconfirmed = const [],
     this.unconfirmedActs = const [],
     this.findings = const [],
@@ -123,6 +138,7 @@ class TodayFigures {
   final String day;
   final DaySummary? summary;
   final SleepEntry? sleep;
+  final SleepEntry? incompleteBed;
   final List<NutritionEntry> unconfirmed;
   final List<ActivityEntry> unconfirmedActs;
   final List<PatternFinding> findings;
@@ -140,23 +156,37 @@ class TodayFigures {
 
 TodayFigures _figures(AppStore store, String day) {
   SleepEntry? sleep;
+  SleepEntry? incompleteBed;
   for (final s in store.sleeps) {
     if (s.day == day && s.isComplete) sleep = s;
+    if (!s.isComplete && s.day == day) incompleteBed = s;
   }
-  if (day == dayKey(DateTime.now())) sleep ??= store.lastSleep();
+  final today = day == dayKey(DateTime.now());
+  if (today) sleep ??= store.lastSleep();
+  final yesterday = dayKey(dayKeyDate(day).subtract(const Duration(days: 1)));
+  if (today && incompleteBed == null) {
+    for (var i = store.sleeps.length - 1; i >= 0; i--) {
+      if (!store.sleeps[i].isComplete && store.sleeps[i].day == yesterday) {
+        incompleteBed = store.sleeps[i];
+        break;
+      }
+    }
+  }
   final week = weekRollup(store, day);
   final board = insightBoard(store.summaries);
+  bool pendingDay(String d) => d == day || (today && d == yesterday);
   return TodayFigures(
     day: day,
     summary: store.summaryOn(day),
     sleep: sleep,
+    incompleteBed: incompleteBed,
     unconfirmed: [
       for (final e in store.nutrition)
-        if (!e.confirmed && e.day == day) e,
+        if (!e.confirmed && pendingDay(e.day)) e,
     ],
     unconfirmedActs: [
       for (final e in store.activities)
-        if (!e.confirmed && e.day == day) e,
+        if (!e.confirmed && pendingDay(e.day)) e,
     ],
     findings: board.findings,
     insightWait: board.closest,

@@ -53,7 +53,7 @@ const kDisciplines = <Discipline>[
   Discipline(
     id: 'walk',
     label: 'Walk',
-    aliases: ['walked', 'walk', 'walking', 'steps', 'spacer'],
+    aliases: ['walked', 'walk', 'walking', 'steps', 'spacer', 'spacer z psem'],
     kind: DisciplineKind.endurance,
     met: 3.5,
     cruiseKmPerHour: 5,
@@ -262,7 +262,7 @@ const kDisciplines = <Discipline>[
   Discipline(
     id: 'hiit',
     label: 'HIIT',
-    aliases: ['hiit', 'intervals', 'tabata', 'circuit'],
+    aliases: ['hiit', 'intervals', 'tabata', 'circuit', 'cardio'],
     kind: DisciplineKind.conditioning,
     met: 8.0,
   ),
@@ -277,6 +277,9 @@ const kDisciplines = <Discipline>[
       'weights',
       'strength',
       'silownia',
+      'silownie',
+      'silowni',
+      'silke',
     ],
     kind: DisciplineKind.conditioning,
     met: 6.0,

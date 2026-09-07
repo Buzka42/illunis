@@ -24,13 +24,14 @@ class JournalPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(journalEntriesProvider);
     final selected = ref.watch(journalDayProvider);
+    final figures = ref.watch(journalFiguresProvider);
     final today = sameDay(selected, DateTime.now());
     final date = formatLongDate(selected);
     final n = entries.length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.margin, 6, Space.margin, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: ListView(
+        padding: EdgeInsets.zero,
         children: [
           Row(
             children: [
@@ -64,23 +65,21 @@ class JournalPage extends ConsumerWidget {
               ),
             ],
           ),
+          if (figures.incompleteBed != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'BED  ${_EntryExtract.clock(figures.incompleteBed!.startHours)}',
+              style: Type.micro.copyWith(color: Inks.muted),
+            ),
+          ],
           const SizedBox(height: 8),
-          Expanded(
-            child: entries.isEmpty
-                ? Align(
-                    alignment: Alignment.topLeft,
-                    child: Text(
-                      today ? S.journalEmpty : S.journalEmptyDay,
-                      style: Type.caption,
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    children: [
-                      for (final e in entries.reversed) _EntryTile(entry: e),
-                    ],
-                  ),
-          ),
+          if (entries.isEmpty)
+            Text(
+              today ? S.journalEmpty : S.journalEmptyDay,
+              style: Type.caption,
+            )
+          else
+            for (final e in entries.reversed) _EntryTile(entry: e),
         ],
       ),
     );
@@ -116,8 +115,16 @@ class JournalPending extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () =>
-                  ref.read(journalRepositoryProvider).confirmAll(figures.day),
+              onTap: () async {
+                final days = <String>{
+                  for (final f in figures.unconfirmed) f.day,
+                  for (final a in figures.unconfirmedActs) a.day,
+                };
+                final repo = ref.read(journalRepositoryProvider);
+                for (final day in days) {
+                  await repo.confirmAll(day);
+                }
+              },
               child: Text(
                 S.confirmAll,
                 style: Type.label.copyWith(color: Inks.strong),
@@ -180,6 +187,14 @@ class _EntryTile extends ConsumerWidget {
     final m = entry.at.minute.toString().padLeft(2, '0');
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onTap: () => ref
+          .read(journalDraftProvider.notifier)
+          .offer(
+            JournalDraft(
+              draftFromStamp(at: entry.at, text: entry.text),
+              keepLocal: entry.excludedFromAi,
+            ),
+          ),
       onLongPress: () => ref.read(journalRepositoryProvider).revert(entry.id),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
@@ -265,7 +280,7 @@ class _EntryExtract extends ConsumerWidget {
     for (final s in store.sleeps) {
       if (s.journalEntryId != id) continue;
       if (!s.isComplete) {
-        lines.add('Bed  ${_clock(s.startHours)}');
+        lines.add('Bed  ${clock(s.startHours)}');
         continue;
       }
       final felt = s.quality == null
@@ -300,7 +315,7 @@ class _EntryExtract extends ConsumerWidget {
     return '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
   }
 
-  static String _clock(double hours) {
+  static String clock(double hours) {
     var h = hours;
     while (h < 0) {
       h += 24;
@@ -316,13 +331,14 @@ class _UnconfirmedFood extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(journalFiguresProvider).day;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              '${food.label}  ·  ${food.kcal.round()} kcal (${S.est.toLowerCase()})',
+              '${_pendingDay(food.day, selected)}${food.label}  ·  ${food.kcal.round()} kcal (${S.est.toLowerCase()})',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Type.caption,
@@ -350,13 +366,14 @@ class _UnconfirmedAct extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(journalFiguresProvider).day;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              '${act.label}  ·  ${act.kcal.round()} kcal (${S.est.toLowerCase()})',
+              '${_pendingDay(act.day, selected)}${act.label}  ·  ${act.kcal.round()} kcal (${S.est.toLowerCase()})',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Type.caption,
@@ -377,6 +394,13 @@ class _UnconfirmedAct extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _pendingDay(String day, String selected) {
+  if (day == selected) return '';
+  final yesterday = dayKey(DateTime.now().subtract(const Duration(days: 1)));
+  if (day == yesterday) return 'YESTERDAY  ·  ';
+  return '${day.substring(5)}  ·  ';
 }
 
 class JournalWritingLine extends ConsumerStatefulWidget {
@@ -410,8 +434,9 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
     if (text.isEmpty) return;
     final now = DateTime.now();
     final selected = ref.read(journalDayProvider);
+    final dayCtl = ref.read(journalDayProvider.notifier);
     final stamped = stampJournalLine(text);
-    final at = stamped.daysBack != 0
+    final at = (stamped.daysBack != 0 || !dayCtl.catchUp)
         ? now
         : DateTime(
             selected.year,

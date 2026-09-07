@@ -28,6 +28,18 @@ void main() {
     expect(stampJournalLine('ran 5k in 24:30').hour, isNull);
     expect(stampJournalLine('slept 23:10-6:45').hour, isNull);
     expect(stampJournalLine('bench 80x5x3').text, 'bench 80x5x3');
+    expect(stampJournalLine('went to bed at 23:10').hour, isNull);
+    expect(
+      stampJournalLine('went to bed at 23:10').text,
+      'went to bed at 23:10',
+    );
+    expect(stampJournalLine('woke at 6:45').hour, isNull);
+    expect(stampJournalLine('woke at 6:45').text, 'woke at 6:45');
+    expect(
+      stampJournalLine('fell asleep at 23:10').text,
+      'fell asleep at 23:10',
+    );
+    expect(stampJournalLine('up at 6:45').text, 'up at 6:45');
   });
 
   test('noon and midnight stamp the page', () {
@@ -98,5 +110,66 @@ void main() {
       now: DateTime(2026, 9, 7, 8, 0),
     );
     expect(draft, 'yesterday 7:30 ran 5k');
+  });
+
+  test('a trailing time of day stamps the same as a leading one', () {
+    final morning = stampJournalLine('ran 5k this morning');
+    expect(morning.text, 'ran 5k');
+    expect(morning.hour, 8);
+
+    final eve = stampJournalLine('gym 45 in the evening');
+    expect(eve.text, 'gym 45');
+    expect(eve.hour, 19);
+
+    final at = stampJournalLine('ate oatmeal at 8am');
+    expect(at.text, 'ate oatmeal');
+    expect(at.hour, 8);
+
+    final meal = stampJournalLine('ate oatmeal for breakfast');
+    expect(meal.text, 'ate oatmeal');
+    expect(meal.hour, 8);
+
+    final around = stampJournalLine('around 7:30 ran 5k');
+    expect(around.text, 'ran 5k');
+    expect(around.hour, 7);
+    expect(around.minute, 30);
+
+    final commaClock = stampJournalLine('7,30 ran 5k');
+    expect(commaClock.text, 'ran 5k');
+    expect(commaClock.hour, 7);
+    expect(commaClock.minute, 30);
+
+    final y = stampJournalLine('ran 5k yesterday');
+    expect(y.text, 'ran 5k');
+    expect(y.daysBack, 1);
+
+    final both = stampJournalLine('7:30 ran 5k yesterday');
+    expect(both.text, 'ran 5k');
+    expect(both.hour, 7);
+    expect(both.daysBack, 1);
+
+    expect(stampJournalLine('ran 5k in 24:30').hour, isNull);
+    expect(stampJournalLine('ate lunch').hour, isNull);
+
+    final na = stampJournalLine('na śniadanie owsianka');
+    expect(na.text, 'owsianka');
+    expect(na.hour, 8);
+
+    final trailNa = stampJournalLine('owsianka na śniadanie');
+    expect(trailNa.text, 'owsianka');
+    expect(trailNa.hour, 8);
+
+    final last = stampJournalLine('last night ate pizza');
+    expect(last.text, 'ate pizza');
+    expect(last.daysBack, 1);
+
+    final trailNight = stampJournalLine('ran 5k last night');
+    expect(trailNight.text, 'ran 5k');
+    expect(trailNight.daysBack, 1);
+
+    final nightSleep = stampJournalLine('last night slept 7h');
+    expect(nightSleep.text, 'slept 7h');
+    expect(nightSleep.daysBack, 0);
+    expect(nightSleep.hour, isNull);
   });
 }

@@ -45,6 +45,14 @@ double? kmFromUnit(double n, String unit) {
     if (n < 50) return null;
     return n / 1000.0;
   }
-  if (u == 'k' || u == 'km') return n;
+  if (u == 'k' ||
+      u == 'km' ||
+      u == 'kilometr' ||
+      u == 'kilometry' ||
+      u == 'kilometrow' ||
+      u == 'kilometre' ||
+      u == 'kilometres') {
+    return n;
+  }
   return null;
 }

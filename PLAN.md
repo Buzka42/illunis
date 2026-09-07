@@ -6,8 +6,9 @@ five-day Cursor window and is planned in detail. Later phases are sketched only
 far enough that Phase 1 does not box them out.
 
 Environment as found on 6 Sep 2026: Flutter 3.44.6 stable (Dart 3.x), Android
-SDK 36, one emulator (`Eter_API_36`), no physical Android device attached,
-Windows + Chrome available as desktop targets.
+SDK 36, one emulator (`Eter_API_36`), Windows + Chrome as desktop targets.
+As of 7 Sep 2026 the physical target is a ZTE Blade V 5G (`20240920122`,
+Android 14, 1080×2412, Warsaw 52.23°N). See `docs/HANDOFF.md`.
 
 Revisions after the first build are planned in their own files:
 `docs/VISUAL_PASS_2.md` (planets and their symbols, the day timeline with
@@ -439,7 +440,9 @@ record; optional AI through `server/worker.js` (eter2 transport shape)
 under consent + age gate + per-entry KEEP LOCAL. Estimates land
 `confirmed: false` until CONFIRM. Exercise canon and Epley/Brzycki 1RM
 on device. Food table is household generics; OpenFoodFacts vs USDA waits
-on ~40 real dictated meals (`docs/DECISIONS.md`).
+on ~40 real dictated meals (`docs/DECISIONS.md`). The parser folds Polish
+speech and European decimals; the Blade is the capture target, not the
+emulator.
 
 **Phase 3 — Wearables.** Health Connect / HealthKit through the `health`
 package, background sync, per-type permissions as the only gate. Known

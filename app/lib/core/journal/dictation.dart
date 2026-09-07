@@ -9,6 +9,7 @@ class JournalDictation {
 
   final SpeechToText _speech;
   var _ready = false;
+  String? _localeId;
 
   bool get isListening => _speech.isListening;
 
@@ -35,6 +36,7 @@ class JournalDictation {
           onError: (_) => onDone(),
           options: options,
         );
+        if (_ready) _localeId = await _pickLocale();
       }
       if (!_ready) return false;
       await _speech.listen(
@@ -44,8 +46,9 @@ class JournalDictation {
           listenMode: ListenMode.dictation,
           cancelOnError: true,
           partialResults: true,
-          listenFor: const Duration(seconds: 28),
-          pauseFor: const Duration(seconds: 3),
+          listenFor: const Duration(seconds: 60),
+          pauseFor: const Duration(seconds: 4),
+          localeId: _localeId,
         ),
       );
       return true;
@@ -53,6 +56,29 @@ class JournalDictation {
       _ready = false;
       return false;
     }
+  }
+
+  Future<String?> _pickLocale() async {
+    try {
+      final sys = PlatformDispatcher.instance.locale;
+      final locales = await _speech.locales();
+      if (locales.isEmpty) return null;
+      final want = '${sys.languageCode}_${sys.countryCode ?? ''}'.toLowerCase();
+      for (final l in locales) {
+        final id = l.localeId.replaceAll('-', '_').toLowerCase();
+        if (id == want || id.startsWith('${sys.languageCode}_'.toLowerCase())) {
+          if (id == want) return l.localeId;
+        }
+      }
+      for (final l in locales) {
+        final id = l.localeId.replaceAll('-', '_').toLowerCase();
+        if (id.startsWith('${sys.languageCode}_'.toLowerCase()) ||
+            id == sys.languageCode.toLowerCase()) {
+          return l.localeId;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<void> stop() async {

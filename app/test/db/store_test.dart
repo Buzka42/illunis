@@ -181,6 +181,16 @@ void main() {
     expect(store.nutrition.single.label, 'Oatmeal');
   });
 
+  test('a trailing morning still stamps eight', () async {
+    final store = AppStore.memory();
+    final repo = JournalRepository(store);
+    await repo.log('ran 5k this morning', at: DateTime(2026, 9, 7, 22, 10));
+    expect(store.journal.single.text, 'ran 5k');
+    expect(store.journal.single.at, DateTime(2026, 9, 7, 8, 0));
+    await repo.log('ran 5k yesterday', at: DateTime(2026, 9, 7, 22, 10));
+    expect(store.journal.first.day, '2026-09-06');
+  });
+
   test('yesterday lands on the previous civil day', () async {
     final store = AppStore.memory();
     final repo = JournalRepository(store);
@@ -219,6 +229,31 @@ void main() {
     );
     expect(store.summaryOn('2026-09-06')?.sleepHours, isNull);
   });
+
+  test(
+    'a morning bedtime is last night, last night food is yesterday',
+    () async {
+      final store = AppStore.memory();
+      final repo = JournalRepository(store);
+      await repo.log('went to bed at 23:10', at: DateTime(2026, 9, 7, 8, 5));
+      expect(store.journal.single.day, '2026-09-06');
+      expect(store.journal.single.at, DateTime(2026, 9, 6, 23, 10));
+      expect(store.sleeps.single.isComplete, isFalse);
+      await repo.log('up at 7', at: DateTime(2026, 9, 7, 8, 6));
+      expect(store.sleeps, hasLength(1));
+      expect(store.sleeps.single.isComplete, isTrue);
+      expect(store.sleeps.single.day, '2026-09-07');
+      expect(store.sleeps.single.durationHours, closeTo(7 + 50 / 60, 1e-6));
+
+      await repo.log('last night ate pizza', at: DateTime(2026, 9, 7, 8, 10));
+      expect(store.nutrition.single.day, '2026-09-06');
+      expect(store.nutrition.single.label, 'Pizza (2 slices)');
+
+      await repo.log('last night slept 7h', at: DateTime(2026, 9, 8, 8, 0));
+      expect(store.sleeps.last.day, '2026-09-08');
+      expect(store.sleeps.last.durationHours, closeTo(7, 1e-9));
+    },
+  );
 
   test('timeline marks sit at the log time on that civil day', () async {
     final store = AppStore.memory();

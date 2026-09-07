@@ -32,19 +32,19 @@ class ParsedJournal {
 }
 
 final _setX = RegExp(
-  r'([A-Za-z][A-Za-z0-9 +\-]*?)\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds|#)?\s*[x×]\s*(\d+)(?:\s*[x×]\s*(\d+))?(?:\s*(?:@|rpe)\s*(\d+(?:\.\d+)?))?',
+  r'([A-Za-z][A-Za-z0-9 +\-]*?)\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds|#)?\s*(?:[x×]|times)\s*(\d+)(?:\s*(?:[x×]|times)\s*(\d+))?(?:\s*(?:@|rpe)\s*(\d+(?:\.\d+)?))?',
   caseSensitive: false,
 );
 final _setKgReps = RegExp(
-  r'([A-Za-z][A-Za-z0-9 +\-]*?)\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds)\s+(\d+)\s*reps?(?:\s*[x×]\s*(\d+))?(?:\s*(?:@|rpe)\s*(\d+(?:\.\d+)?))?',
+  r'([A-Za-z][A-Za-z0-9 +\-]*?)\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds)\s+(\d+)\s*reps?(?:\s*(?:[x×]|times)\s*(\d+))?(?:\s*(?:@|rpe)\s*(\d+(?:\.\d+)?))?',
   caseSensitive: false,
 );
 final _proseSet = RegExp(
-  r'([A-Za-z][A-Za-z0-9 +\-]*?)\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds)\s+(?:for\s+)?(\d+)\s*reps?(?:\s*[x×]\s*(\d+))?',
+  r'([A-Za-z][A-Za-z0-9 +\-]*?)\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds)?\s+(?:for\s+)?(\d+)(?:\s*reps?)?(?:\s*(?:[x×]|times)\s*(\d+))?',
   caseSensitive: false,
 );
 final _setNxN = RegExp(
-  r'^(\d+)\s*[x×]\s*(\d+)\s+([A-Za-z][A-Za-z0-9 +\-]*?)(?:\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds|#)?)?(?:\s*(?:@|rpe)\s*(\d+(?:\.\d+)?))?$',
+  r'^(\d+)\s*(?:[x×]|times)\s*(\d+)\s+([A-Za-z][A-Za-z0-9 +\-]*?)(?:\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds|#)?)?(?:\s*(?:@|rpe)\s*(\d+(?:\.\d+)?))?$',
   caseSensitive: false,
 );
 final _setsOf = RegExp(
@@ -69,19 +69,19 @@ final _sleepFrom = RegExp(
   caseSensitive: false,
 );
 final _sleepHm = RegExp(
-  '$_sleepVerb\\s+(?:for\\s+)?(\\d+)\\s*h(?:ours?)?\\s*(?:and\\s*)?(\\d+)\\s*m(?:in(?:utes?)?)?',
+  '$_sleepVerb\\s+(?:for\\s+)?(\\d+)\\s*(?:h(?:ours?)?|godzin(?:y|e)?)\\s*(?:and\\s*)?(\\d+)\\s*(?:m(?:in(?:utes?)?)?|minut(?:y|e)?)',
   caseSensitive: false,
 );
 final _sleepH = RegExp(
-  '$_sleepVerb\\s+(?:for\\s+)?(\\d+(?:\\.\\d+)?)\\s*h(?:ours?)?\\b',
+  '$_sleepVerb\\s+(?:for\\s+)?(\\d+(?:\\.\\d+)?)\\s*(?:h(?:ours?)?|godzin(?:y|e)?)\\b',
   caseSensitive: false,
 );
 final _sleepMin = RegExp(
-  '$_sleepVerb\\s+(?:for\\s+)?(\\d+)\\s*(?:min|mins|minutes)\\b',
+  '$_sleepVerb\\s+(?:for\\s+)?(\\d+)\\s*(?:min|mins|minutes|minut(?:y|e)?)\\b',
   caseSensitive: false,
 );
 final _weight = RegExp(
-  r'\b(?:weigh(?:ed(?:\s+in)?(?:\s+at)?)?|weight|waze)\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds)?',
+  r"\b(?:weigh(?:ed(?:\s+in)?(?:\s+at)?)?|weight|waze|i(?:['’]m|\s+am))\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds)?",
   caseSensitive: false,
 );
 final _bareMass = RegExp(
@@ -94,11 +94,15 @@ final _protein = RegExp(
   caseSensitive: false,
 );
 final _ate = RegExp(
-  r'\b(?:ate|had|eaten|eating|drank|drink|drunk|zjadlem|zjadlam|jadlem|jadlam|wypilem|wypilam)\s+(.+)',
+  r'\b(?:ate|had|eaten|eating|drank|drink|drunk|grabbed|ordered|snacked(?:\s+on)?|zjadlem|zjadlam|jadlem|jadlam|wypilem|wypilam)\s+(.+)',
+  caseSensitive: false,
+);
+final _foodSplit = RegExp(
+  r'\s+and\s+|,\s+|\s+with\s+|\s+z\s+|\s+i\s+',
   caseSensitive: false,
 );
 final _sleepQualityBad = RegExp(
-  r'\b(slept?\s+(?:\S+\s+){0,4}(poorly|badly|terrible|awful|rough)|poor\s+sleep|bad\s+sleep|restless(?:ly)?|insomnia|woke\s+(a\s+lot|often)|broken\s+sleep|tossed)\b',
+  r"\b(slept?\s+(?:\S+\s+){0,4}(poorly|badly|terrible|awful|rough)|poor\s+sleep|bad\s+sleep|restless(?:ly)?|insomnia|woke\s+(a\s+lot|often)|broken\s+sleep|tossed|could(?:n['’]?t|\s+not)\s+sleep)\b",
   caseSensitive: false,
 );
 final _sleepQualityGood = RegExp(
@@ -107,11 +111,15 @@ final _sleepQualityGood = RegExp(
 );
 
 final _bed = RegExp(
-  r'(?:went to (?:bed|sleep)|bedtime|lights out)\s+(?:at\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
+  r'(?:went to (?:bed|sleep)|fell asleep|headed to bed|in bed|bedtime|lights out|poszedl[ae]m spac|poszlam spac)\s+(?:(?:at|around|about|o)\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
   caseSensitive: false,
 );
 final _woke = RegExp(
-  r'(?:woke(?:\s+up)?|got up)\s+(?:at\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
+  r'(?:woke(?:\s+up)?|got up|(?:was\s+)?\bup\b|wstal[ae]m|obudzil[ae]m(?:\s+sie)?)\s+(?:(?:at|around|about|o)\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
+  caseSensitive: false,
+);
+final _sleptUntil = RegExp(
+  r'\b(?:slept?|spalem|spalam)\s+(?:until|till)\s+(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
   caseSensitive: false,
 );
 
@@ -136,7 +144,7 @@ ParsedJournal parseJournal(
   final sleeps = <SleepEntry>[];
   final weights = <WeightEntry>[];
 
-  final chunks = entry.text
+  final chunks = foldDecimal(entry.text)
       .split(RegExp(r'[\n;,]+|\bthen\b', caseSensitive: false))
       .map((s) => s.trim())
       .where((s) => s.isNotEmpty);
@@ -144,7 +152,7 @@ ParsedJournal parseJournal(
   final quality = sleepQualityOf(entry.text);
 
   for (final raw in chunks) {
-    final chunk = _stripLeadIn(foldLatin(raw));
+    final chunk = _stripLeadIn(foldSpoken(raw));
     if (chunk.isEmpty) continue;
     final w = _weight.firstMatch(chunk) ?? _bareMass.firstMatch(chunk);
     if (w != null) {
@@ -179,10 +187,13 @@ ParsedJournal parseJournal(
       } else {
         final shm = _sleepHm.firstMatch(chunk);
         final sh = shm ?? _sleepH.firstMatch(chunk);
-        if (sh != null) {
+        final wordH = sh == null ? _sleepWordHours(chunk) : null;
+        if (sh != null || wordH != null) {
           final hours = shm != null
               ? int.parse(shm.group(1)!) + int.parse(shm.group(2)!) / 60.0
-              : double.parse(sh.group(1)!);
+              : sh != null
+              ? double.parse(sh.group(1)!)
+              : wordH!;
           _addSleep(sleeps, entry, 7.0 - hours, 7.0, quality);
         } else {
           final smin = _sleepMin.firstMatch(chunk);
@@ -254,21 +265,19 @@ ParsedJournal parseJournal(
     } else if (!hadAct && !setHit) {
       final ate = _ate.firstMatch(chunk);
       final rawFoods = ate?.group(1) ?? chunk;
-      final hasSplit = RegExp(
-        r'\s+and\s+|,\s+|\s+with\s+',
-        caseSensitive: false,
-      ).hasMatch(rawFoods);
+      final foldedFood = foldLatin(rawFoods);
       final namedCompound = kFoods.any(
-        (f) => f.aliases.any(
-          (a) =>
-              (a.contains(' and ') || a.contains(' with ')) &&
-              rawFoods.toLowerCase().contains(a),
-        ),
+        (f) => f.aliases.any((a) {
+          final al = foldLatin(a);
+          final glue =
+              al.contains(' and ') ||
+              al.contains(' with ') ||
+              al.contains(' z ');
+          return glue && foldedFood.contains(al);
+        }),
       );
-      final parts = (hasSplit && !namedCompound)
-          ? rawFoods.split(
-              RegExp(r'\s+and\s+|,\s*|\s+with\s+', caseSensitive: false),
-            )
+      final parts = (_foodSplit.hasMatch(rawFoods) && !namedCompound)
+          ? rawFoods.split(_foodSplit)
           : [rawFoods];
       for (final part in parts) {
         final q = _foodQty(_foodTail(part));
@@ -313,8 +322,9 @@ ParsedJournal parseJournal(
   }
 
   if (sleeps.isEmpty) {
-    final bed = _bed.firstMatch(entry.text);
-    final woke = _woke.firstMatch(entry.text);
+    final folded = foldSpoken(entry.text);
+    final bed = _bed.firstMatch(folded);
+    final woke = _woke.firstMatch(folded);
     if (bed != null && woke != null) {
       var start = _clockHours(bed.group(1)!, bed.group(2), bed.group(3));
       final end = _clockHours(woke.group(1)!, woke.group(2), woke.group(3));
@@ -347,8 +357,9 @@ ParsedJournal parseJournal(
 /// Wake clock on a page that did not also name bedtime. Empty means the
 /// morning did not finish last night — we do not invent a start.
 double? sleepWakeHoursOf(String text) {
-  if (_bed.firstMatch(text) != null) return null;
-  final woke = _woke.firstMatch(text);
+  final folded = foldSpoken(text);
+  if (_bed.firstMatch(folded) != null) return null;
+  final woke = _woke.firstMatch(folded) ?? _sleptUntil.firstMatch(folded);
   if (woke == null) return null;
   return _clockHours(woke.group(1)!, woke.group(2), woke.group(3));
 }
@@ -361,13 +372,17 @@ double? sleepQualityOf(String text) {
       RegExp(r'\b(spalem|spalam|slept?|sleep)\b').hasMatch(t)) {
     return 0.32;
   }
+  if (RegExp(r'\bnie mog[el][ae]m\b').hasMatch(t) &&
+      RegExp(r'\b(spac|slept?|sleep)\b').hasMatch(t)) {
+    return 0.32;
+  }
   return null;
 }
 
 String _stripLeadIn(String chunk) {
   var s = chunk.trim();
   final lead = RegExp(
-    r"^(?:i(?:['’]ve| have)?|we|just|went\s+(?:for|on)\s+a|(?:did|finished|completed)(?:\s+a)?|last\s+night|(?:this\s+)?(?:morning|afternoon|evening)|tonight|today|yesterday|for\s+(?:breakfast|lunch|dinner|supper|brunch))\s+",
+    r"^(?:i(?:['’]ve| have)?|we|just|went\s+(?:for|on)\s+a|(?:did|finished|completed)(?:\s+a)?|last\s+night|(?:this\s+)?(?:morning|afternoon|evening)|tonight|today|yesterday|(?:bylem|bylam)\s+na|na\s+(?:sniadanie|obiad|kolacje)|for\s+(?:breakfast|lunch|dinner|supper|brunch)|(?:breakfast|lunch|dinner|supper|brunch)\s+was)\s+",
     caseSensitive: false,
   );
   while (true) {
@@ -381,7 +396,7 @@ String _measureOf(String rest) {
   return rest
       .replaceFirst(
         RegExp(
-          r'^(?:bowls?|slices?|cups?|pieces?|servings?|plates?)\s+of\s+',
+          r'^(?:bowls?|slices?|cups?|pieces?|servings?|plates?|misk[aei]|kromk[aei]|szklank[aei])\s+(?:of\s+)?',
           caseSensitive: false,
         ),
         '',
@@ -390,15 +405,38 @@ String _measureOf(String rest) {
 }
 
 String _foodTail(String part) {
-  return part
-      .replaceFirst(
-        RegExp(
-          r'\s+for\s+(?:breakfast|lunch|dinner|supper|brunch)\b.*$',
-          caseSensitive: false,
-        ),
-        '',
-      )
-      .trim();
+  var s = part.trim();
+  s = s.replaceFirst(
+    RegExp(r'^(?:leftover|left[- ]over|yesterdays?)\s+', caseSensitive: false),
+    '',
+  );
+  s = s.replaceFirst(
+    RegExp(r'^(?:some|a bit of|a little)\s+', caseSensitive: false),
+    '',
+  );
+  s = s.replaceFirst(
+    RegExp(r'^(?:leftover|left[- ]over|yesterdays?)\s+', caseSensitive: false),
+    '',
+  );
+  s = s.replaceFirst(
+    RegExp(
+      r'^(?:breakfast|lunch|dinner|supper|brunch)\s+was\s+',
+      caseSensitive: false,
+    ),
+    '',
+  );
+  s = s.replaceFirst(
+    RegExp(
+      r'\s+for\s+(?:breakfast|lunch|dinner|supper|brunch)\b.*$',
+      caseSensitive: false,
+    ),
+    '',
+  );
+  s = s.replaceFirst(
+    RegExp(r'\s+na\s+(?:sniadanie|obiad|kolacje)\b.*$', caseSensitive: false),
+    '',
+  );
+  return s.trim();
 }
 
 double _overnightStart(double start, double end, {required bool hadAmpm}) {
@@ -432,7 +470,30 @@ const _wordQty = <String, int>{
   'eight': 8,
   'nine': 9,
   'ten': 10,
+  'jeden': 1,
+  'jedno': 1,
+  'jedna': 1,
+  'dwa': 2,
+  'dwie': 2,
+  'trzy': 3,
+  'cztery': 4,
+  'piec': 5,
+  'szesc': 6,
+  'siedem': 7,
+  'osiem': 8,
+  'dziewiec': 9,
+  'dziesiec': 10,
 };
+
+double? _sleepWordHours(String chunk) {
+  final keys = _wordQty.keys.where((k) => k.length > 1).join('|');
+  final m = RegExp(
+    '$_sleepVerb\\s+(?:for\\s+)?($keys)\\s+(?:hours?|godzin(?:y|e)?)\\b',
+    caseSensitive: false,
+  ).firstMatch(chunk);
+  if (m == null) return null;
+  return _wordQty[m.group(1)!.toLowerCase()]?.toDouble();
+}
 
 ({int? qty, String rest}) _foodQty(String part) {
   final t = part.trim();
@@ -534,6 +595,9 @@ bool _addSet(
   final rpeGroup = m.groupCount >= 6 ? m.group(6) : null;
   final hasUnit = unit != null && unit.isNotEmpty;
   final bodyweight = !hasUnit && _bodyweightIds.contains(resolved.exercise?.id);
+  if (kind == _SetKind.kgReps && !hasUnit && resolved.exercise == null) {
+    return false;
+  }
 
   late final double weight;
   late final int reps;

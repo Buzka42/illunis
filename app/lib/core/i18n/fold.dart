@@ -8,6 +8,15 @@ String foldLatin(String raw) {
   return b.toString();
 }
 
+/// Polish keyboards write 82,4. A comma between digits is a decimal point.
+/// Lists stay lists: `eggs, bread` is untouched.
+String foldDecimal(String raw) {
+  return raw.replaceAllMapped(RegExp(r'(\d),(\d)'), (m) => '${m[1]}.${m[2]}');
+}
+
+/// What the journal parser sees: folded letters, European decimals.
+String foldSpoken(String raw) => foldDecimal(foldLatin(raw));
+
 int _fold(int r) {
   switch (r) {
     case 0x00E0: // à

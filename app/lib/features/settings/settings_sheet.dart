@@ -58,111 +58,130 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
   Widget build(BuildContext context) {
     ref.watch(storeRevisionProvider);
     final profile = _store.profile;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        Space.margin,
-        18,
-        Space.margin,
-        MediaQuery.paddingOf(context).bottom + 18,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Text(S.settings, style: Type.label),
-              const Spacer(),
-              Text(S.version, style: Type.micro.copyWith(color: Inks.faint)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Container(height: 1, color: Inks.hairline),
-          const SizedBox(height: 14),
-          _Line(
-            label: S.exportJson,
-            onTap: () => _copy(S.exportJson, _store.exportJson()),
-          ),
-          _Line(
-            label: S.exportCsv,
-            onTap: () => _copy(S.exportCsv, _store.exportCsv()),
-          ),
-          _Line(
-            label: S.importJson,
-            onTap: () async {
-              final data = await Clipboard.getData(Clipboard.kTextPlain);
-              final text = data?.text;
-              if (text == null || text.trim().isEmpty) {
-                setState(() => _note = S.importFailed);
-                return;
-              }
-              try {
-                await _store.importJson(text);
-                await recomputeSummaries(_store);
-                setState(() => _note = S.imported);
-              } catch (_) {
-                setState(() => _note = S.importFailed);
-              }
-            },
-          ),
-          _Line(
-            label: isImperial(profile.units) ? S.unitsLb : S.unitsKg,
-            onTap: () async {
-              await _store.putProfile(
-                profile.copyWith(
-                  units: isImperial(profile.units) ? 'metric' : 'imperial',
+    final maxH = MediaQuery.sizeOf(context).height * 0.72;
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxH),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Space.margin,
+              18,
+              Space.margin,
+              18,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Text(S.settings, style: Type.label),
+                    const Spacer(),
+                    Text(
+                      S.version,
+                      style: Type.micro.copyWith(color: Inks.faint),
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
-          _Line(
-            label: S.home(matchingHome(profile).label),
-            onTap: () async {
-              final next = nextHome(profile);
-              await _store.putProfile(
-                profile.copyWith(
-                  homePlace: next.id,
-                  latitudeDeg: next.latitudeDeg,
-                  longitudeDeg: next.longitudeDeg,
+                const SizedBox(height: 6),
+                Container(height: 1, color: Inks.hairline),
+                const SizedBox(height: 14),
+                _Line(
+                  label: S.exportJson,
+                  onTap: () => _copy(S.exportJson, _store.exportJson()),
                 ),
-              );
-            },
-          ),
-          _Line(
-            label: profile.hasAiConsent ? '${S.aiConsent} · ON' : S.aiConsent,
-            onTap: () async {
-              await _store.putProfile(
-                profile.copyWith(
-                  aiConsentAt: profile.hasAiConsent ? null : DateTime.now(),
+                _Line(
+                  label: S.exportCsv,
+                  onTap: () => _copy(S.exportCsv, _store.exportCsv()),
                 ),
-              );
-            },
+                _Line(
+                  label: S.importJson,
+                  onTap: () async {
+                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    final text = data?.text;
+                    if (text == null || text.trim().isEmpty) {
+                      setState(() => _note = S.importFailed);
+                      return;
+                    }
+                    try {
+                      await _store.importJson(text);
+                      await recomputeSummaries(_store);
+                      setState(() => _note = S.imported);
+                    } catch (_) {
+                      setState(() => _note = S.importFailed);
+                    }
+                  },
+                ),
+                _Line(
+                  label: isImperial(profile.units) ? S.unitsLb : S.unitsKg,
+                  onTap: () async {
+                    await _store.putProfile(
+                      profile.copyWith(
+                        units: isImperial(profile.units)
+                            ? 'metric'
+                            : 'imperial',
+                      ),
+                    );
+                  },
+                ),
+                _Line(
+                  label: S.home(matchingHome(profile).label),
+                  onTap: () async {
+                    final next = nextHome(profile);
+                    await _store.putProfile(
+                      profile.copyWith(
+                        homePlace: next.id,
+                        latitudeDeg: next.latitudeDeg,
+                        longitudeDeg: next.longitudeDeg,
+                      ),
+                    );
+                  },
+                ),
+                _Line(
+                  label: profile.hasAiConsent
+                      ? '${S.aiConsent} · ON'
+                      : S.aiConsent,
+                  onTap: () async {
+                    await _store.putProfile(
+                      profile.copyWith(
+                        aiConsentAt: profile.hasAiConsent
+                            ? null
+                            : DateTime.now(),
+                      ),
+                    );
+                  },
+                ),
+                _Line(
+                  label: profile.ageAtLeast16
+                      ? '${S.ageGate} · YES'
+                      : S.ageGate,
+                  onTap: () async {
+                    await _store.putProfile(
+                      profile.copyWith(ageAtLeast16: !profile.ageAtLeast16),
+                    );
+                  },
+                ),
+                _Line(
+                  label: _confirmDelete ? S.confirmDelete : S.deleteAll,
+                  onTap: () async {
+                    if (!_confirmDelete) {
+                      setState(() => _confirmDelete = true);
+                      return;
+                    }
+                    final nav = Navigator.of(context);
+                    await _store.deleteAll();
+                    nav.pop();
+                  },
+                ),
+                if (_note != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_note!, style: Type.caption),
+                ],
+              ],
+            ),
           ),
-          _Line(
-            label: profile.ageAtLeast16 ? '${S.ageGate} · YES' : S.ageGate,
-            onTap: () async {
-              await _store.putProfile(
-                profile.copyWith(ageAtLeast16: !profile.ageAtLeast16),
-              );
-            },
-          ),
-          _Line(
-            label: _confirmDelete ? S.confirmDelete : S.deleteAll,
-            onTap: () async {
-              if (!_confirmDelete) {
-                setState(() => _confirmDelete = true);
-                return;
-              }
-              final nav = Navigator.of(context);
-              await _store.deleteAll();
-              nav.pop();
-            },
-          ),
-          if (_note != null) ...[
-            const SizedBox(height: 12),
-            Text(_note!, style: Type.caption),
-          ],
-        ],
+        ),
       ),
     );
   }

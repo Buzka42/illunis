@@ -12,9 +12,10 @@ and strength training — then surfaces data-driven trends and advice.
 Status: **1.0** in `app/`. Journal logs on-device (offline parser; optional
 AI through `server/worker.js`). Unconfirmed food and sessions stay out of
 totals until CONFIRM. Dashboard and sky read daily rollups. Patterns stay
-silent until 21 paired days. Long-press the surface switch for settings
-(units, home, export, import, consent, delete). See `PLAN.md`,
-`docs/DESIGN.md`, `docs/HANDOFF.md`, `docs/PERF.md`, `docs/VISUAL_PASS_2.md`,
+silent until 21 paired days. Long-press JOURNAL / DASHBOARD for settings
+(units, home, export, import, consent, delete). The parser folds Polish
+and comma decimals (`82,4 kg`). See `PLAN.md`, `docs/DESIGN.md`,
+`docs/HANDOFF.md`, `docs/PERF.md`, `docs/VISUAL_PASS_2.md`,
 `docs/BACKEND_PLAN.md`, `docs/DECISIONS.md`.
 
 ## Run

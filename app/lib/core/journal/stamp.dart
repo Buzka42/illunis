@@ -1,12 +1,11 @@
 import '../i18n/fold.dart';
 
-/// A leading clock on a journal line is the time of the page, not prose.
-///
-/// `7:30 ran 5k` and `at 8am ate oatmeal` stamp the entry; the prefix is
-/// stripped so the list does not show the hour twice. Bare `7h` and a
-/// duration like `in 24:30` are left alone. A leading `yesterday` moves
-/// the page back one civil day. `this morning` / `for lunch` without a
-/// clock sit at a civil hour so the list is not all "logged at 22:00".
+/// A clock or a time of day on a journal line is the time of the page, not
+/// prose. Leading (`7:30 ran 5k`, `this morning ran 5k`) and trailing
+/// (`ran 5k this morning`, `ate oatmeal at 8am`, `ran 5k yesterday`) both
+/// stamp; the marker is stripped so the list does not show the hour twice.
+/// `last night` is yesterday unless the rest is a sleep duration or quality.
+/// Bare `7h` and a duration like `in 24:30` are left alone.
 class StampedLine {
   const StampedLine({
     required this.text,
@@ -47,19 +46,41 @@ final _leadYesterday = RegExp(
   caseSensitive: false,
 );
 
+final _leadLastNight = RegExp(
+  r'^(?:last\s+night|last\s+evening|wczoraj\s+wieczorem)\s+',
+  caseSensitive: false,
+);
+
 final _leadClock = RegExp(
-  r'^(?:(?:this\s+)?(?:morning|afternoon|evening|tonight)\s+)?(?:at\s+)?(\d{1,2})[:.](\d{2})(?:\s*(am|pm))?\s+',
+  r'^(?:(?:this\s+)?(?:morning|afternoon|evening|tonight)\s+)?(?:(?:around|about|at|o)\s+)*(\d{1,2})[:.](\d{2})(?:\s*(am|pm))?\s+',
   caseSensitive: false,
 );
 
 final _leadAmpm = RegExp(
-  r'^(?:(?:this\s+)?(?:morning|afternoon|evening|tonight)\s+)?(?:at\s+)?(\d{1,2})\s*(am|pm)\b\s+',
+  r'^(?:(?:this\s+)?(?:morning|afternoon|evening|tonight)\s+)?(?:(?:around|about|at|o)\s+)*(\d{1,2})\s*(am|pm)\b\s+',
+  caseSensitive: false,
+);
+
+final _trailYesterday = RegExp(
+  r'\s+(?:yesterday|wczoraj)\s*$',
+  caseSensitive: false,
+);
+
+final _trailLastNight = RegExp(
+  r'\s+(?:last\s+night|last\s+evening|wczoraj\s+wieczorem)\s*$',
+  caseSensitive: false,
+);
+
+final _sleepStaysOnLogDay = RegExp(
+  r'\b(slept?|spalem|spalam|sleep)\b',
   caseSensitive: false,
 );
 
 StampedLine stampJournalLine(String raw) {
-  var t = raw.trim();
+  var t = foldDecimal(raw.trim());
   var daysBack = 0;
+  int? hour;
+  int? minute;
   final y = _leadYesterday.firstMatch(t);
   if (y != null) {
     final rest = t.substring(y.end).trim();
@@ -68,30 +89,73 @@ StampedLine stampJournalLine(String raw) {
       daysBack = 1;
     }
   }
+  if (daysBack == 0) {
+    final ln = _leadLastNight.firstMatch(t);
+    if (ln != null) {
+      final rest = t.substring(ln.end).trim();
+      if (rest.isNotEmpty) {
+        t = rest;
+        if (!_sleepStaysOnLogDay.hasMatch(rest)) daysBack = 1;
+      }
+    }
+  }
+  final lead = _consumeLead(t);
+  if (lead != null) {
+    t = lead.text;
+    hour = lead.hour;
+    minute = lead.minute;
+  }
+  final trailY = _trailYesterday.firstMatch(t);
+  if (trailY != null && daysBack == 0) {
+    final rest = t.substring(0, trailY.start).trim();
+    if (rest.isNotEmpty) {
+      t = rest;
+      daysBack = 1;
+    }
+  }
+  final trailNight = _trailLastNight.firstMatch(t);
+  if (trailNight != null) {
+    final rest = t.substring(0, trailNight.start).trim();
+    if (rest.isNotEmpty) {
+      t = rest;
+      if (daysBack == 0 && !_sleepStaysOnLogDay.hasMatch(rest)) daysBack = 1;
+    }
+  }
+  if (hour == null) {
+    final trail = _consumeTrail(t);
+    if (trail != null) {
+      t = trail.text;
+      hour = trail.hour;
+      minute = trail.minute;
+    }
+  }
+  return StampedLine(text: t, hour: hour, minute: minute, daysBack: daysBack);
+}
+
+StampedLine? _consumeLead(String t) {
   final clock = _leadClock.firstMatch(t);
   if (clock != null) {
     var h = int.parse(clock.group(1)!);
     final min = int.parse(clock.group(2)!);
     final rest = t.substring(clock.end).trim();
-    if (rest.isEmpty || h > 23 || min > 59) {
-      return StampedLine(text: t, daysBack: daysBack);
-    }
+    if (rest.isEmpty || h > 23 || min > 59) return null;
     final ap = clock.group(3)?.toLowerCase();
     if (ap != null) {
-      if (h > 12 || h == 0) return StampedLine(text: t, daysBack: daysBack);
+      if (h > 12 || h == 0) return null;
       h = _to24(h, ap);
     }
-    return StampedLine(text: rest, hour: h, minute: min, daysBack: daysBack);
+    return StampedLine(text: rest, hour: h, minute: min);
   }
   final ampm = _leadAmpm.firstMatch(t);
   if (ampm != null) {
     var h = int.parse(ampm.group(1)!);
     final rest = t.substring(ampm.end).trim();
-    if (rest.isEmpty || h < 1 || h > 12) {
-      return StampedLine(text: t, daysBack: daysBack);
-    }
-    h = _to24(h, ampm.group(2)!.toLowerCase());
-    return StampedLine(text: rest, hour: h, minute: 0, daysBack: daysBack);
+    if (rest.isEmpty || h < 1 || h > 12) return null;
+    return StampedLine(
+      text: rest,
+      hour: _to24(h, ampm.group(2)!.toLowerCase()),
+      minute: 0,
+    );
   }
   final noon = RegExp(
     r'^(?:at\s+)?noon\s+',
@@ -100,7 +164,7 @@ StampedLine stampJournalLine(String raw) {
   if (noon != null) {
     final rest = t.substring(noon.end).trim();
     if (rest.isNotEmpty) {
-      return StampedLine(text: rest, hour: 12, minute: 0, daysBack: daysBack);
+      return StampedLine(text: rest, hour: 12, minute: 0);
     }
   }
   final midnight = RegExp(
@@ -110,10 +174,10 @@ StampedLine stampJournalLine(String raw) {
   if (midnight != null) {
     final rest = t.substring(midnight.end).trim();
     if (rest.isNotEmpty) {
-      return StampedLine(text: rest, hour: 0, minute: 0, daysBack: daysBack);
+      return StampedLine(text: rest, hour: 0, minute: 0);
     }
   }
-  return _leadPeriod(t, daysBack) ?? StampedLine(text: t, daysBack: daysBack);
+  return _leadPeriod(t, 0);
 }
 
 const _periodHour = <String, int>{
@@ -154,7 +218,7 @@ StampedLine? _leadPeriod(String t, int daysBack) {
     }
   }
   final meal = RegExp(
-    r'^(?:for\s+)?(breakfast|lunch|dinner|supper|brunch|sniadanie|obiad|kolacja)\s+',
+    r'^(?:(?:for|na)\s+)?(breakfast|lunch|dinner|supper|brunch|sniadanie|obiad|kolacja)\s+',
   ).firstMatch(f);
   if (meal != null) {
     final rest = t.substring(meal.end).trim();
@@ -164,6 +228,93 @@ StampedLine? _leadPeriod(String t, int daysBack) {
     }
   }
   return null;
+}
+
+StampedLine? _consumeTrail(String t) {
+  final f = foldLatin(t);
+  if (f.length != t.length) return null;
+  StampedLine? cut(RegExpMatch m, int hour, [int minute = 0]) {
+    final rest = t.substring(0, m.start).trim();
+    if (rest.isEmpty) return null;
+    return StampedLine(text: rest, hour: hour, minute: minute);
+  }
+
+  final clock = RegExp(
+    r'\s+(?:(?:around|about|at|o)\s+)+(\d{1,2})[:.](\d{2})(?:\s*(am|pm))?\s*$',
+    caseSensitive: false,
+  ).firstMatch(t);
+  if (clock != null) {
+    var h = int.parse(clock.group(1)!);
+    final min = int.parse(clock.group(2)!);
+    if (h <= 23 && min <= 59) {
+      final ap = clock.group(3)?.toLowerCase();
+      if (ap != null) {
+        if (h >= 1 && h <= 12) h = _to24(h, ap);
+      }
+      final hit = cut(clock, h, min);
+      if (hit != null && !_sleepKeepsClock(hit.text)) return hit;
+    }
+  }
+  final ampm = RegExp(
+    r'\s+(?:(?:around|about|at|o)\s+)+(\d{1,2})\s*(am|pm)\s*$',
+    caseSensitive: false,
+  ).firstMatch(t);
+  if (ampm != null) {
+    var h = int.parse(ampm.group(1)!);
+    if (h >= 1 && h <= 12) {
+      final hit = cut(ampm, _to24(h, ampm.group(2)!.toLowerCase()));
+      if (hit != null && !_sleepKeepsClock(hit.text)) return hit;
+    }
+  }
+  final noon = RegExp(
+    r'\s+(?:at\s+)?noon\s*$',
+    caseSensitive: false,
+  ).firstMatch(t);
+  if (noon != null) {
+    final hit = cut(noon, 12);
+    if (hit != null) return hit;
+  }
+  final midnight = RegExp(
+    r'\s+(?:at\s+)?midnight\s*$',
+    caseSensitive: false,
+  ).firstMatch(t);
+  if (midnight != null) {
+    final hit = cut(midnight, 0);
+    if (hit != null) return hit;
+  }
+  final po = RegExp(r'\s+po\s+poludniu\s*$').firstMatch(f);
+  if (po != null) {
+    final hit = cut(po, 15);
+    if (hit != null) return hit;
+  }
+  final period = RegExp(
+    r'\s+(?:(?:this|in\s+the)\s+)?(morning|afternoon|evening|tonight|rano|wieczorem)\s*$',
+  ).firstMatch(f);
+  if (period != null) {
+    final hour = _periodHour[period.group(1)!];
+    if (hour != null) {
+      final hit = cut(period, hour);
+      if (hit != null) return hit;
+    }
+  }
+  final meal = RegExp(
+    r'\s+(?:for|na)\s+(breakfast|lunch|dinner|supper|brunch|sniadanie|obiad|kolacja)\s*$',
+  ).firstMatch(f);
+  if (meal != null) {
+    final hour = _periodHour[meal.group(1)!];
+    if (hour != null) {
+      final hit = cut(meal, hour);
+      if (hit != null) return hit;
+    }
+  }
+  return null;
+}
+
+bool _sleepKeepsClock(String rest) {
+  return RegExp(
+    r'(?:went to (?:bed|sleep)|fell asleep|headed to bed|in bed|bedtime|lights out|woke(?:\s+up)?|got up|(?:was\s+)?up|poszedlem spac|poszlam spac|wstalem|wstalam|obudzilem|obudzilam)\s*$',
+    caseSensitive: false,
+  ).hasMatch(rest.trim());
 }
 
 int _to24(int hour, String ampm) {

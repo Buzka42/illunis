@@ -17,11 +17,15 @@ they are not submitted until the person hits done. If the recognizer is
 missing, denied, or this platform cannot listen, the tap focuses the
 field the way it used to.
 
-Android: `RECORD_AUDIO` only (no Bluetooth). iOS: microphone + speech
-usage strings. Windows may listen when the OS recognizer is present.
+Android: `RECORD_AUDIO` only (no Bluetooth, `androidNoBluetooth`). iOS:
+microphone + speech usage strings. Windows may listen when the OS
+recognizer is present.
 
 Latin-fold (`app/lib/core/i18n/fold.dart`) so dictated Polish hits the
-same food and lift aliases.
+same food and lift aliases. `foldSpoken` also turns a comma between
+digits into a decimal (`82,4 kg`, `5,2 km`) *before* the page is split
+on `,`, so lists (`eggs, bread`) still split and mass does not become
+`4 kg`. Listen uses the device locale, 60 s, pause 4 s.
 
 ## Estimates
 
@@ -29,14 +33,23 @@ Food and activity guesses land `confirmed: false` and stay out of totals
 and strain. CONFIRM / DROP sit on the writing-line dock, not in the page
 column. Trivial drinks (≤ 10 kcal) and explicit `kcal` in the line are
 already logged. KEEP LOCAL is per page and is cleared after a successful
-log so it does not stick onto the next one.
+log so it does not stick onto the next one. PREV/NEXT is catch-up: an
+unstamped line lands on that day. A `yesterday` / `last night` stamp
+reveals that day but does not turn catch-up on, so the next unstamped
+line stays on the clock day. Unconfirmed estimates from yesterday still
+sit on today's writing-line dock. Number words (one–ten / jeden–dziesiec)
+scale food and sleep hours. Meals split on `and` / `,` / `with` / ` z ` /
+` i ` unless the phrase is a named compound (`chicken with rice`,
+`ryz z kurczakiem`). `zapiekanka` is not a `z` split.
 
 ## Sleep
 
 A quality-only line (`slept poorly`) does not invent hours; it marks last
 night. `went to bed at 23:10` is a bedtime, not a night, until `woke at
 6:45` finishes it. The hours belong to the morning they woke. A wake with
-no bedtime does not invent a start.
+no bedtime does not invent a start. An evening bedtime logged before
+noon is last night. `last night` on food or movement is yesterday; on
+`slept 7h` it stays the morning they said it.
 
 ## Food calories (v1)
 
@@ -79,3 +92,9 @@ Locked with that pass:
   azimuth is not a night heading.
 
 Spec: `docs/SKY_CATALOG.md`.
+
+## Settings
+
+Long-press JOURNAL / DASHBOARD. The sheet scrolls, capped at 72% of
+height, so the Blade's system nav does not clip DELETE. Import is **JSON
+from the clipboard**; CSV is export-only.

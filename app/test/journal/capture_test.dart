@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:illunis/core/db/records.dart';
 import 'package:illunis/core/db/store.dart';
 import 'package:illunis/core/i18n/dates.dart';
 import 'package:illunis/core/i18n/strings.dart';
@@ -162,6 +163,38 @@ void main() {
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller!.text,
       contains('ran 5k'),
+    );
+  });
+
+  testWidgets('tap a page puts it back on the line without deleting it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2412);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final store = AppStore.memory();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: illunisOverrides(store),
+        child: const IllunisApp(),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.text(S.journal).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.enterText(find.byType(TextField), 'bench 80x5x3');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(store.journal, hasLength(1));
+    await tester.tap(find.text('bench 80x5x3'));
+    await tester.pump();
+    expect(store.journal, hasLength(1));
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      contains('bench 80x5x3'),
     );
   });
 
@@ -380,6 +413,15 @@ void main() {
     expect(store.journal.single.at.day, day.day);
     expect(find.text(formatLongDate(day)), findsOneWidget);
     expect(find.text('ran 5k'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'ate oatmeal');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(store.journal, hasLength(2));
+    expect(store.nutrition.single.day, dayKey(DateTime.now()));
+    expect(store.activities.single.day, dayKey(day));
+    expect(find.text(S.confirmAll), findsOneWidget);
   });
 
   testWidgets('yesterday is the calendar day even from a catch-up page', (
@@ -410,5 +452,32 @@ void main() {
     expect(store.journal.single.at.year, yesterday.year);
     expect(store.journal.single.at.month, yesterday.month);
     expect(store.journal.single.at.day, yesterday.day);
+  });
+
+  testWidgets('settings on a 1080×2412 phone does not overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2412);
+    tester.view.devicePixelRatio = 3;
+    tester.view.padding = const FakeViewPadding(bottom: 48);
+    tester.view.viewPadding = const FakeViewPadding(bottom: 48);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+    final store = AppStore.memory();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: illunisOverrides(store),
+        child: const IllunisApp(),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.longPress(find.text(S.journal).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text(S.settings), findsOneWidget);
+    expect(find.text(S.deleteAll), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

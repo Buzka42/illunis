@@ -113,6 +113,26 @@ void main() {
     expect(setsOf.sets.single.reps, 10);
     expect(setsOf.sets.single.sets, 3);
 
+    final loaded = parseJournal(entry('3 sets of 5 bench 80'));
+    expect(loaded.sets.single.exerciseName, 'Barbell bench press');
+    expect(loaded.sets.single.weightKg, 80);
+    expect(loaded.sets.single.reps, 5);
+    expect(loaded.sets.single.sets, 3);
+
+    final spoken = parseJournal(entry('bench 80 for 5'));
+    expect(spoken.sets.single.exerciseName, 'Barbell bench press');
+    expect(spoken.sets.single.weightKg, 80);
+    expect(spoken.sets.single.reps, 5);
+
+    final times = parseJournal(entry('bench 80 times 5'));
+    expect(times.sets.single.reps, 5);
+    expect(times.sets.single.weightKg, 80);
+
+    final nxnTimes = parseJournal(entry('3 times 5 bench 80'));
+    expect(nxnTimes.sets.single.sets, 3);
+    expect(nxnTimes.sets.single.reps, 5);
+    expect(nxnTimes.sets.single.weightKg, 80);
+
     final prose = parseJournal(entry('squat 100 kg for 5 reps'));
     expect(prose.sets, hasLength(1));
     expect(prose.sets.first.weightKg, 100);
@@ -446,6 +466,10 @@ void main() {
       parseJournal(entry('ate chicken with rice')).nutrition.single.label,
       'Chicken and rice',
     );
+    expect(
+      parseJournal(entry('ate leftover pizza')).nutrition.single.label,
+      'Pizza (2 slices)',
+    );
     final kg = parseJournal(entry('3x5 bench 80kg'));
     expect(kg.sets.single.weightKg, 80);
     expect(kg.sets.single.sets, 3);
@@ -453,5 +477,118 @@ void main() {
     final nap = parseJournal(entry('napped 20 min'));
     expect(nap.sleeps.single.durationHours, closeTo(20 / 60, 1e-9));
     expect(nap.sleeps.single.endHours, closeTo(18 + 20 / 60, 1e-9));
+  });
+
+  test('spoken week lines parse as one day of life', () {
+    final bed = parseJournal(entry('fell asleep around 11'));
+    expect(bed.sleeps.single.isComplete, isFalse);
+    expect(bed.sleeps.single.startHours, 23);
+
+    expect(parseJournal(entry('up at 6:45')).sleeps, isEmpty);
+    expect(sleepWakeHoursOf('up at 6:45'), closeTo(6 + 45 / 60, 1e-9));
+    expect(sleepWakeHoursOf('slept until 8'), 8);
+
+    final plBed = parseJournal(entry('poszedłem spać o 23:10'));
+    expect(plBed.sleeps.single.startHours, closeTo(23 + 10 / 60, 1e-9));
+    expect(sleepWakeHoursOf('wstałem o 7'), 7);
+
+    expect(parseJournal(entry("couldn't sleep")).sleeps, isEmpty);
+    expect(sleepQualityOf("couldn't sleep"), closeTo(0.32, 1e-9));
+    expect(sleepQualityOf('nie mogłem spać'), closeTo(0.32, 1e-9));
+
+    expect(
+      parseJournal(entry('grabbed a coffee')).nutrition.single.label,
+      'Coffee',
+    );
+    expect(
+      parseJournal(entry('ate some oatmeal')).nutrition.single.label,
+      'Oatmeal',
+    );
+    expect(
+      parseJournal(entry('dinner was pizza')).nutrition.single.label,
+      'Pizza (2 slices)',
+    );
+    expect(
+      parseJournal(entry('snacked on almonds')).nutrition.single.label,
+      'Almonds',
+    );
+    expect(parseJournal(entry("I'm 82.4 kg")).weights.single.kg, 82.4);
+
+    expect(
+      parseJournal(entry('silownia 45')).activities.single.disciplineId,
+      'gym',
+    );
+    expect(
+      parseJournal(entry('cardio 30')).activities.single.disciplineId,
+      'hiit',
+    );
+    expect(parseJournal(entry('stretching 15')).activities.single.minutes, 15);
+    expect(
+      parseJournal(entry('biegłem 5 kilometrów')).activities.single.distanceKm,
+      5,
+    );
+    expect(
+      parseJournal(entry('spacer 30 minut')).activities.single.minutes,
+      30,
+    );
+
+    final squat = parseJournal(entry('3x5 przysiad 100'));
+    expect(squat.sets.single.exerciseId, 'barbell-squat');
+    expect(squat.sets.single.weightKg, 100);
+    expect(
+      parseJournal(entry('pompki 20x3')).sets.single.exerciseId,
+      'push-up',
+    );
+    expect(parseJournal(entry('ate twaróg')).nutrition.single.label, 'Twaróg');
+  });
+
+  test('Warsaw dictation splits, counts, and stamps in Polish', () {
+    expect(
+      parseJournal(entry('slept seven hours')).sleeps.single.durationHours,
+      closeTo(7, 1e-9),
+    );
+    expect(
+      parseJournal(entry('spałem siedem godzin')).sleeps.single.durationHours,
+      closeTo(7, 1e-9),
+    );
+    expect(
+      parseJournal(entry('spałem 7 godzin')).sleeps.single.durationHours,
+      closeTo(7, 1e-9),
+    );
+
+    final eggs = parseJournal(entry('zjadłem dwa jajka i chleb'));
+    expect(eggs.nutrition.map((e) => e.label), ['Eggs', 'Bread (2 slices)']);
+
+    expect(
+      parseJournal(entry('ryż z kurczakiem')).nutrition.single.label,
+      'Chicken and rice',
+    );
+    expect(
+      parseJournal(entry('owsianka na śniadanie')).nutrition.single.label,
+      'Oatmeal',
+    );
+    expect(
+      parseJournal(entry('miska owsianki')).nutrition.single.label,
+      'Oatmeal',
+    );
+
+    expect(
+      parseJournal(entry('byłem na siłowni 45')).activities.single.disciplineId,
+      'gym',
+    );
+    expect(parseJournal(entry('siłowni 45')).activities.single.minutes, 45);
+    expect(
+      parseJournal(entry('siłownia 1 godzinę')).activities.single.minutes,
+      60,
+    );
+    expect(parseJournal(entry('82,4 kg')).weights.single.kg, 82.4);
+    expect(
+      parseJournal(entry('biegłem 5,2 km')).activities.single.distanceKm,
+      5.2,
+    );
+    expect(
+      parseJournal(entry('spałem 7,5h')).sleeps.single.durationHours,
+      closeTo(7.5, 1e-9),
+    );
   });
 }
