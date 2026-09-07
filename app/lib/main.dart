@@ -3,25 +3,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/db/store.dart';
+import 'core/health/rollups.dart';
+import 'core/state/app_providers.dart';
 import 'core/theme/typography.dart';
 import 'features/debug/frame_budget.dart';
 import 'features/shell/dream_shell.dart';
 import 'features/shell/illunis_shell.dart';
 
-void main() {
-  _boot(const IllunisShell());
+Future<void> main() async {
+  final store = await _openStore();
+  _boot(const IllunisShell(), store: store);
 }
 
 /// Screensaver entrypoint. Bound by `IllunisDreamService`; also reachable
 /// with `--dart-define=ILLUNIS_DREAM=true` for desktop review.
 @pragma('vm:entry-point')
-void dreamMain() {
-  _boot(const DreamShell());
+Future<void> dreamMain() async {
+  final store = await _openStore();
+  _boot(const DreamShell(), store: store);
 }
 
-void _boot(Widget home) {
+Future<AppStore> _openStore() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kDebugMode) FrameBudget.instance.start();
+  final store = AppStore.memory();
+  await store.load();
+  await recomputeSummaries(store);
+  return store;
+}
+
+void _boot(Widget home, {AppStore? store}) {
+  if (!kReleaseMode) FrameBudget.instance.start();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -34,7 +46,12 @@ void _boot(Widget home) {
   final root = const bool.fromEnvironment('ILLUNIS_DREAM')
       ? const DreamShell()
       : home;
-  runApp(ProviderScope(child: IllunisApp(home: root)));
+  runApp(
+    ProviderScope(
+      overrides: [if (store != null) ...illunisOverrides(store)],
+      child: IllunisApp(home: root),
+    ),
+  );
 }
 
 class IllunisApp extends StatelessWidget {

@@ -2,6 +2,10 @@
 
 The 3D layer is finished and dumb. You plug data in. You do not restyle it.
 
+Production already does: `LocalSkyStateSource` reads `DaySummary` rollups
+and the civil clock, wired in `main.dart` through `illunisOverrides`. Debug
+presets still overlay through `skyOverridesProvider`.
+
 Read `CURSOR_MANDATE.md` for the product, `PLAN.md` for architecture,
 `docs/BACKEND_PLAN.md` for the backend phases, `docs/DESIGN.md` for the visual
 contract. This file is only the seam.
@@ -64,6 +68,8 @@ runApp(ProviderScope(
 4. Convert timezone, longitude and the equation of time into `solarNoon`.
    The sky derives sunrise/sunset from that plus latitude; the dashboard
    figures come from the same `ResolvedScene`, so get it right once.
+   Catalog stars (`docs/SKY_CATALOG.md`) use that same sidereal angle.
+   Do not add a second clock.
 5. `moonPhase` from your ephemeris, or `moonPhaseFor(utc)` in
    `celestial_math.dart` (~1%).
 6. `epochDays` from `epochDaysForDate(year, month, day)` at local midnight.

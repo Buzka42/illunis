@@ -74,7 +74,8 @@ class ResolvedScene {
   /// `0..1` — `1` is a perfectly still night (no grain breath, slow twinkle).
   final double stillness;
 
-  /// Where the camera looks by default: the brightest thing worth looking at.
+  /// Where the camera looks by default: the sun by day; a risen, lit moon
+  /// at night; otherwise south, so the catalog sky is in the window.
   final double trackAzimuthRad;
 
   double get sunAltitudeRad => sunDir.altitude;
@@ -181,7 +182,8 @@ class CelestialScene {
 
     final sunAltDeg = sunDir.altitude * radToDeg;
     final planets = <PlanetPosition>[
-      for (final p in Planet.values) _planet(p, epoch, sidereal, lat, sunAltDeg),
+      for (final p in Planet.values)
+        _planet(p, epoch, sidereal, lat, sunAltDeg),
     ];
 
     final h0 = hourAngleAtAltitude(dec, lat, riseSetAltitudeRad);
@@ -206,13 +208,21 @@ class CelestialScene {
     // noon sits at 0.5 (the classic Preetham/ACES pairing), night opens up.
     final exposure = _lerp(1.25, 0.26, _smoothstep(-14, 6, altDeg));
 
-    // Track the sun while it matters; hand over to a risen, lit moon at night.
-    final wSun = 0.06 + _smoothstep(-14, -2, altDeg);
+    // Day follows the sun. Night follows a risen, lit moon; otherwise
+    // south — not the azimuth of a sun that has already set, which would
+    // put Orion and the rest of the catalog off the screen.
+    final night = _smoothstep(-6, -14, altDeg);
+    final wSun = (0.06 + _smoothstep(-14, -2, altDeg)) * (1 - night);
     final wMoon =
         _smoothstep(0, 12, moonDir.altitude * radToDeg) *
         (0.15 + 0.85 * illum) *
-        (1 - _smoothstep(-14, -2, altDeg));
-    final track = _circularMean(sunDir.azimuth, wSun, moonDir.azimuth, wMoon);
+        night;
+    final moonShare = wMoon / (wMoon + 0.35);
+    final wSouth = night * (1 - moonShare);
+    final track = _weightedAzimuth(
+      [sunDir.azimuth, moonDir.azimuth, math.pi],
+      [wSun, wMoon, wSouth],
+    );
 
     return ResolvedScene(
       state: s,
@@ -238,7 +248,12 @@ class CelestialScene {
   }
 
   static PlanetPosition _planet(
-      Planet p, double epoch, double sidereal, double lat, double sunAltDeg) {
+    Planet p,
+    double epoch,
+    double sidereal,
+    double lat,
+    double sunAltDeg,
+  ) {
     final eq = planetEquatorial(p, epoch);
     final dir = horizontalDirection(eq.dec, sidereal - eq.ra, lat);
     final mag = planetMagnitude(p, eq.distanceAu);
@@ -250,7 +265,10 @@ class CelestialScene {
     final up = smoothstep(-0.5, 4.0, dir.altitude * radToDeg);
     final visibility = darkEnough * up;
     // Point brightness on a magnitude scale, Venus ≈ 1, +1 mag ≈ 0.12.
-    final brightness = math.pow(10, -0.4 * (mag + 4.2)).toDouble().clamp(0.0, 1.0);
+    final brightness = math
+        .pow(10, -0.4 * (mag + 4.2))
+        .toDouble()
+        .clamp(0.0, 1.0);
     return PlanetPosition(
       planet: p,
       dir: dir,
@@ -267,10 +285,13 @@ class CelestialScene {
   static double _smoothstep(double e0, double e1, double x) =>
       smoothstep(e0, e1, x);
 
-  static double _circularMean(double a, double wa, double b, double wb) {
-    final x = math.cos(a) * wa + math.cos(b) * wb;
-    final y = math.sin(a) * wa + math.sin(b) * wb;
-    if (x == 0 && y == 0) return a;
+  static double _weightedAzimuth(List<double> az, List<double> w) {
+    var x = 0.0, y = 0.0;
+    for (var i = 0; i < az.length; i++) {
+      x += math.cos(az[i]) * w[i];
+      y += math.sin(az[i]) * w[i];
+    }
+    if (x == 0 && y == 0) return az.first;
     return wrapAngle(math.atan2(y, x));
   }
 }

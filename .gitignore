@@ -8,6 +8,9 @@ build/
 .pub/
 *.g.dart
 *.freezed.dart
+tool/stars/*.bin
+tool/stars/*.csv
+tool/stars/*.gz
 android/.gradle/
 android/local.properties
 ios/Pods/
@@ -17,3 +20,4 @@ ios/.symlinks/
 .vscode/
 .DS_Store
 captures/
+graphify-out/

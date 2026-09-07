@@ -4,10 +4,11 @@
 precision highp float;
 
 // ---------------------------------------------------------------------------
-// Illunis sky. One pass: atmosphere, sun, twilight, moonlit night, stars,
-// the galactic band, a shaded moon, the ground, grain. Geometry is a
-// stereographic camera standing on the ground looking at the horizon — the
-// inverse of core/sky/sky_camera.dart, which must stay in step with this.
+// Illunis sky. One pass: atmosphere, sun, twilight, moonlit night,
+// the galactic band, a shaded moon, the ground, grain. Catalog stars are
+// Canvas points, not this shader. Geometry is a stereographic camera
+// standing on the ground looking at the horizon — the inverse of
+// core/sky/sky_camera.dart, which must stay in step with this.
 //
 // Uniform order matters: core/sky/sky_shader.dart writes them by index.
 // ---------------------------------------------------------------------------
@@ -47,12 +48,6 @@ float hash21(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
-}
-
-vec3 hash23(vec2 p) {
-  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
-  p3 += dot(p3, p3.yxz + 33.33);
-  return fract((p3.xxy + p3.yzz) * p3.zyx);
 }
 
 float hash31(vec3 p) {
@@ -142,7 +137,7 @@ vec3 extinction(vec3 dir, vec3 betaR, vec3 betaM) {
   return exp(-(betaR * RAYLEIGH_ZENITH * inv + betaM * MIE_ZENITH * inv));
 }
 
-// --- stars -----------------------------------------------------------------
+// --- galactic band ---------------------------------------------------------
 
 vec3 rotateAxis(vec3 v, vec3 axis, float a) {
   float c = cos(a), s = sin(a);
@@ -156,45 +151,6 @@ vec3 toEquatorial(vec3 d) {
   float a = PI * 0.5 - uLatitude;
   float c = cos(a), s = sin(a);
   return vec3(e.x, e.y * c - e.z * s, e.y * s + e.z * c);
-}
-
-vec2 octaEncode(vec3 n) {
-  n /= (abs(n.x) + abs(n.y) + abs(n.z));
-  vec2 uv = n.y >= 0.0 ? n.xz : (1.0 - abs(n.zx)) * sign(n.xz);
-  return uv * 0.5 + 0.5;
-}
-
-vec3 octaDecode(vec2 uv) {
-  uv = uv * 2.0 - 1.0;
-  vec3 n = vec3(uv.x, 1.0 - abs(uv.x) - abs(uv.y), uv.y);
-  float t = clamp(-n.y, 0.0, 1.0);
-  n.x += n.x >= 0.0 ? -t : t;
-  n.z += n.z >= 0.0 ? -t : t;
-  return normalize(n);
-}
-
-const float STAR_CELLS = 150.0;
-
-vec3 stars(vec3 e, float pxAngle) {
-  vec2 uv = octaEncode(e) * STAR_CELLS;
-  vec2 cell = floor(uv);
-  vec3 acc = vec3(0.0);
-  for (int j = -1; j <= 1; j++) {
-    for (int i = -1; i <= 1; i++) {
-      vec2 c = cell + vec2(float(i), float(j));
-      vec3 h = hash23(c);
-      if (h.z > 0.30) continue;                       // density
-      vec3 sd = octaDecode((c + h.xy) / STAR_CELLS);
-      float ang = length(cross(e, sd));               // ≈ angular distance
-      float mag = pow(h.z / 0.30, 10.0);              // very few bright, most faint
-      float radius = pxAngle * (0.75 + 1.1 * mag);
-      float core = exp(-(ang * ang) / (radius * radius * 0.5));
-      float twk = 0.84 + 0.16 * sin(uTime * (2.0 + 6.0 * h.x) * (1.2 - uStillness) + h.y * 60.0);
-      vec3 tint = mix(vec3(0.80, 0.88, 1.0), vec3(1.0, 0.90, 0.78), h.x);
-      acc += tint * core * (0.035 + 1.3 * mag) * twk;
-    }
-  }
-  return acc;
 }
 
 // A planet is a steady point: no twinkle, its own tint, sized by brightness.
@@ -264,8 +220,7 @@ void main() {
   vec3 deep = vec3(0.0);
   if (starVis > 0.002 && !ground) {
     vec3 e = toEquatorial(dSky);
-    float pxAngle = 1.15 / (uFocal * uPixelScale);
-    deep = (stars(e, pxAngle) * 0.9 + galaxy(e)) * starVis;
+    deep = galaxy(e) * starVis;
     // The moon's glare and its scattered light both hide stars near it.
     deep *= 1.0 - 0.75 * uMoonIllum * moonUp * pow(max(dot(dSky, uMoonDir), 0.0), 24.0);
   }

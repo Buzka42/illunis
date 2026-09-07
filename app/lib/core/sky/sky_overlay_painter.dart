@@ -42,6 +42,7 @@ class SkyOverlayPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.shortestSide < 8) return;
     final cam = SkyCamera(size: size, azimuthRad: azimuthRad);
     final day = scene.dayness;
     // Type over a bright sky needs a shadow; over night, none.
@@ -362,7 +363,8 @@ class SkyOverlayPainter extends CustomPainter {
     final labelWidth = _measure(label, size: 9.5, weight: 600).width;
     final glyphAt = toRight
         ? base + const Offset(glyphSize / 2, -3 - glyphSize / 2 - 1)
-        : base + Offset(-labelWidth - 6 - glyphSize / 2, -3 - glyphSize / 2 - 1);
+        : base +
+              Offset(-labelWidth - 6 - glyphSize / 2, -3 - glyphSize / 2 - 1);
     glyph.paint(
       canvas,
       glyphAt,
@@ -468,7 +470,9 @@ class SkyOverlayPainter extends CustomPainter {
         final paint = Paint()
           ..color = _ink.withValues(alpha: 0.5 * pl.visibility)
           ..strokeWidth = 0.8;
-        CelestialGlyph.forPlanet(pl.planet).paint(canvas, Offset(x, y), 9, paint);
+        CelestialGlyph.forPlanet(
+          pl.planet,
+        ).paint(canvas, Offset(x, y), 9, paint);
         final ax = x + (right ? 8.5 : -8.5);
         final tip = x + (right ? 11 : -11);
         canvas.drawPath(
@@ -506,7 +510,9 @@ class SkyOverlayPainter extends CustomPainter {
     // horizon; below-horizon bodies sit in the ground band.
     // Always in the sky band: the ground belongs to the surfaces' figures.
     final yGuess = cam.principal.dy - altDeg * degToRad * cam.focal * 0.9;
-    final y = yGuess.clamp(56.0, cam.principal.dy - 28.0);
+    final yLo = math.min(56.0, cam.principal.dy - 4.0);
+    final yHi = math.max(yLo, cam.principal.dy - 28.0);
+    final y = yGuess.clamp(yLo, yHi);
     final paint = Paint()
       ..color = _ink.withValues(alpha: 0.6 * dim)
       ..strokeWidth = 1;

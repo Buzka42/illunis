@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/i18n/strings.dart';
 import '../../core/platform/host.dart';
 import '../../core/sky/celestial_math.dart';
 import '../../core/sky/celestial_scene.dart';
@@ -213,7 +214,7 @@ class _DreamFooter extends StatelessWidget {
           const SizedBox(width: 26),
           Text('NIGHTSTAND', style: Type.label.copyWith(color: Inks.faint)),
           const Spacer(),
-          Text('ILLUNIS 0.1', style: Type.micro.copyWith(color: Inks.faint)),
+          Text(S.version, style: Type.micro.copyWith(color: Inks.faint)),
         ],
       ),
     );

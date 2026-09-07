@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'celestial_scene.dart';
 import 'sky_camera.dart';
 import 'sky_shader.dart';
+import 'star_field.dart';
 
 /// Paints the shader sky, rendered at a reduced resolution and upscaled.
 ///
@@ -36,9 +37,16 @@ class SkyPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.shortestSide < 8) return;
     final s = shader;
     if (s == null) {
       _paintFallback(canvas, size);
+      paintCatalogStars(
+        canvas,
+        scene: scene,
+        camera: SkyCamera(size: size, azimuthRad: azimuthRad),
+        time: time,
+      );
       return;
     }
     final camera = SkyCamera(size: size, azimuthRad: azimuthRad);
@@ -46,9 +54,15 @@ class SkyPainter extends CustomPainter {
       // Full resolution: shade straight into the layer. This also lets a
       // capture at a higher pixel ratio render the sky at that ratio.
       final fs = s.newShader();
-      SkyShader.write(fs, scene: scene, camera: camera, time: time,
-          pixelScale: devicePixelRatio);
+      SkyShader.write(
+        fs,
+        scene: scene,
+        camera: camera,
+        time: time,
+        pixelScale: devicePixelRatio,
+      );
       canvas.drawRect(Offset.zero & size, Paint()..shader = fs);
+      paintCatalogStars(canvas, scene: scene, camera: camera, time: time);
       return;
     }
     final w = math.max(1, (size.width * devicePixelRatio * scale).round());
@@ -80,6 +94,7 @@ class SkyPainter extends CustomPainter {
 
     if (image == null) {
       canvas.drawRect(Offset.zero & size, paint);
+      paintCatalogStars(canvas, scene: scene, camera: camera, time: time);
       return;
     }
     canvas.drawImageRect(
@@ -90,6 +105,7 @@ class SkyPainter extends CustomPainter {
     );
     _lastImage?.dispose();
     _lastImage = image;
+    paintCatalogStars(canvas, scene: scene, camera: camera, time: time);
   }
 
   /// Before the program is compiled, or on a GPU that refuses it: the same

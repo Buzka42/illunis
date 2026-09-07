@@ -1,7 +1,7 @@
 name: illunis
 description: "Illunis — lifestyle pattern detection under a real sky."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.12.2
@@ -9,8 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # State. The sky reads one immutable SkyState; providers own who writes it.
   flutter_riverpod: ^3.4.3
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  http: ^1.5.0
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:

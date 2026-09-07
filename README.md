@@ -9,10 +9,13 @@ and strength training — then surfaces data-driven trends and advice.
   moon, the five naked-eye planets under their astronomical symbols, and a
   24-hour timeline that scrubs the day and shows last night's sleep
 
-Status: Phase 1 (UI shell) built in `app/` on mock data, visual pass 2 done.
-The Android nightstand is a `DreamService` (screensaver). See `PLAN.md`,
+Status: **1.0** in `app/`. Journal logs on-device (offline parser; optional
+AI through `server/worker.js`). Unconfirmed food and sessions stay out of
+totals until CONFIRM. Dashboard and sky read daily rollups. Patterns stay
+silent until 21 paired days. Long-press the surface switch for settings
+(units, home, export, import, consent, delete). See `PLAN.md`,
 `docs/DESIGN.md`, `docs/HANDOFF.md`, `docs/PERF.md`, `docs/VISUAL_PASS_2.md`,
-`docs/BACKEND_PLAN.md`.
+`docs/BACKEND_PLAN.md`, `docs/DECISIONS.md`.
 
 ## Run
 

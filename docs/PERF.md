@@ -8,15 +8,17 @@ device pixels of shader work per frame).
 
 | Layer | What | Bound |
 |---|---|---|
-| Atmosphere, sun, moon, stars, planets, grain | one fragment program, `shaders/sky.frag` | shade budget above |
+| Atmosphere, sun, moon, grain, galactic band | one fragment program, `shaders/sky.frag` | shade budget above |
+| Catalog stars (`V ≤ 6.0`, ~5,070) | Canvas points after the shader blit, native resolution | ≤ 1 ms; drop cutoff 6.0 → 5.5 before shrinking cores |
 | Instrument (horizon, paths, glyphs, readouts) | `SkyOverlayPainter` in the same `CustomPaint`, full resolution | cheap; cached `TextPainter`s |
 | Chrome (header, surfaces, timeline) | widgets; timeline is its own painter | repaints on scrub / 1 Hz clock |
 
 Resolution: if the view × DPR is under the budget, the shader writes
 straight into the layer at 1:1. Above it, the picture is recorded at
-`scale ∈ [0.6, 1]` and upscaled with `FilterQuality.high`. Star and planet
+`scale ∈ [0.6, 1]` and upscaled with `FilterQuality.high`. Shader planet
 cores are sized in *target* pixels (`uPixelScale`) so they stay points
-after the upscale.
+after the upscale. Catalog stars are painted after the blit, so they stay
+sharp at native resolution.
 
 The ticker lives in `SkyView`. It stops in `paused` / `hidden`; it keeps
 going in `inactive` (unfocused desktop window) and while a DreamService
@@ -40,13 +42,14 @@ Taken:
 |---|---|---|---|---|
 | Windows desktop, 430×932 window | debug | not logged | not logged | Capture sequences (10 frames across a day) completed without dropped-shader fallback; the window is vsynced. Debug is not the budget. |
 | `Eter_API_36` emulator | — | — | — | Not attached during this window. |
-| Physical mid-range Android | — | — | — | None attached. First task after the window. |
+| ZTE Blade V 5G (`20240920122`), 1080×2412, Impeller Vulkan | debug | ~3.6 ms idle; ~14.7 ms on first frames | ~3.9 ms idle; ~15.4 ms on first frames / pager | Mid-range Android, home city 52.23°N. Idle raster is under 16.6 ms. Debug build/p95 spikes are JIT, not the 60 fps budget. Catalog cutoff stays 6.0 until a **profile** run is over ~10 ms raster p95. |
 
-The gap to the mandate's "60 fps on mid-range Android" is that it has not
-been measured on that class of hardware. Conservative choices already in
+The gap to the mandate's "60 fps on mid-range Android" is a **profile**
+measurement, not the debug numbers above. Conservative choices already in
 the code: shade budget, scale floor 0.6, ticker paused off-screen, one
-shader pass. If p95 raster exceeds ~10 ms on a phone, lower
-`SkyView.shadePixelBudget` before changing anything else.
+shader pass. Catalog stars are Canvas after that pass. If p95 raster exceeds ~10 ms on a phone, lower
+`SkyView.shadePixelBudget` before changing anything else; if the catalog
+is the miss, drop the faint cutoff from 6.0 to 5.5 before shrinking cores.
 
 Nightstand (`DreamService`) is a second Flutter engine. Expect similar
 raster cost plus ~40–80 MB RAM. It only runs while the screensaver is

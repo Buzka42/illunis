@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../sky/celestial_math.dart';
 import '../sky/sky_state.dart';
 
-/// Whoever produces the sky's input implements this. Phase 1 has mocks;
-/// Phase 3 has rollups from a wearable. The sky cannot tell the difference,
-/// which is the point.
+/// Whoever produces the sky's input implements this. Production uses
+/// `LocalSkyStateSource` (clock + rollups). Debug presets still overlay.
 abstract class SkyStateSource {
   Stream<SkyState> get states;
+  SkyState peek();
   Future<void> dispose();
 }
 
@@ -18,7 +18,7 @@ abstract class SkyStateSource {
 class LiveMockSource implements SkyStateSource {
   LiveMockSource({
     this.latitudeDeg = 52.23,
-    this.vitals = const MockVitals.typical(),
+    this.vitals = const MockVitals.none(),
     Duration period = const Duration(seconds: 1),
   }) {
     _controller = StreamController<SkyState>.broadcast(
@@ -46,6 +46,9 @@ class LiveMockSource implements SkyStateSource {
   }
 
   SkyState stateFor(DateTime now) => stateAt(now, latitudeDeg, vitals);
+
+  @override
+  SkyState peek() => stateFor(DateTime.now());
 
   static SkyState stateAt(DateTime now, double latitudeDeg, MockVitals vitals) {
     final midnight = DateTime(now.year, now.month, now.day);
@@ -218,8 +221,7 @@ final _rawSkyStateProvider = StreamProvider<SkyState>((ref) {
 /// What the sky renders. Source, then overrides, then out. Before the first
 /// emission it is the source's idea of "now", so the sky never waits.
 final skyStateProvider = Provider<SkyState>((ref) {
-  final raw =
-      ref.watch(_rawSkyStateProvider).value ??
-      LiveMockSource.stateAt(DateTime.now(), 52.23, const MockVitals.typical());
+  final source = ref.watch(skyStateSourceProvider);
+  final raw = ref.watch(_rawSkyStateProvider).value ?? source.peek();
   return ref.watch(skyOverridesProvider).apply(raw);
 });

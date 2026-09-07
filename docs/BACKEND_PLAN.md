@@ -27,10 +27,10 @@ abstract class SkyStateSource {
 and four nullable vitals in `0..1` (`sleepScore`, `recovery`, `strain`) and
 `-1..1` (`energyBalance`). Null means unknown and renders as a plain sky.
 
-Replace `LiveMockSource` by overriding `skyStateSourceProvider` in
-`ProviderScope(overrides: [...])`. Do not touch `core/sky/`; a test
-(`test/sky/architecture_test.dart`) fails the build if that directory learns
-about Riverpod, the clock, a database or a kilocalorie.
+Production already uses `LocalSkyStateSource` via `illunisOverrides` in
+`main.dart`. Wearable sources override the same provider. Do not touch
+`core/sky/`; a test (`test/sky/architecture_test.dart`) fails the build if
+that directory learns about Riverpod, the clock, a database or a kilocalorie.
 
 Rules for the values you emit:
 
@@ -53,84 +53,56 @@ Rules for the values you emit:
 
 ```
 app/lib/core/
-  db/            Drift schema, AppDatabase, migrations, retention
-  journal/       capture → interpretation contracts → derived records
-  nutrition/     food entries, macro math, database adapter
-  strength/      workouts, sets, exercise canon, 1RM
-  health/        Health Connect / HealthKit adapters, rollups
-  patterns/      statistics, sweep, candidates
+  db/            JSON AppStore for now (Drift deferred)
+  journal/       stamp → local parser → repository → derived records
+  nutrition/     household food table, macro math
+  strength/      sets, exercise canon, 1RM
+  fitness/       disciplines, sessions, progress figures
+  health/        rollups, local digest, LocalSkyStateSource
+  patterns/      statistics, sweep
   ai/            prompts.dart, transport.dart — the only socket in the app
   i18n/          strings.dart — no ARB; the analyzer is the completeness check
-  state/         providers; the SkyStateSource implementation lives here
+  state/         providers; production source is LocalSkyStateSource
 server/
   worker.js      owner-controlled endpoint (Cloudflare Worker), holds the key
 ```
 
-Riverpod for state, Drift for the store, `flutter_lints` + the three extra
-rules in `analysis_options.yaml`. Strings in Dart. Fonts are bundled; never
-add `google_fonts`.
+Riverpod for state. JSON file store, not Drift. `flutter_lints` + the three
+extra rules in `analysis_options.yaml`. Strings in Dart. Fonts are bundled;
+never add `google_fonts`. The `health` package stays out so Windows desktop
+keeps building.
 
 ---
 
 ## 2. Phases
 
-### Phase 2 — Journal that logs (device-only, no AI yet)
+Production already overrides `skyStateSourceProvider` with
+`LocalSkyStateSource` (clock + rollups). Debug presets still overlay.
 
-1. **Schema (Drift).** `Profiles` (single row: units, home place/lat/lon,
-   `language`, consent timestamps — all nullable), `JournalEntries` (text,
-   `status`, `excludedFromAi`, `extractionJson`, `appliedAt`),
-   `ActivityEntries`, `NutritionEntries` (`confirmed`, `source`,
-   `journalEntryId`, `metadataJson`), `StrengthWorkouts` → `StrengthSets`
-   (exercise id, weight, reps, rpe?), `DaySummaries`, `WeightEntries`.
-   Every derived row carries `journalEntryId` so `revertJournalEntryRows(id)`
-   can delete everything one page produced.
-2. **Capture.** Text field + `speech_to_text` dictation on the Journal
-   page's writing line (`features/journal/journal_page.dart` already has the
-   line and the mic mark; wire it, do not redraw it). Entries save locally,
-   instantly, offline. Logging is never gated by consent, network or account.
-3. **Exercise canon.** Import from Hyper Planner `plans/INDEX.md` into
-   `core/strength/canon.dart`: id, display name, aliases, primary muscles,
-   `isCompound`. Normalisation is alias → id with a fuzzy fallback (Jaro–
-   Winkler ≥ 0.88) and an explicit "unknown exercise, keep as typed" path.
-4. **1RM.** Epley `w(1 + r/30)` and Brzycki `w · 36/(37 − r)`; store both,
-   display Epley, and only for `reps ≤ 10`. Per-exercise progress = best
-   estimated 1RM per day.
-5. **Dashboard rows.** Replace the mock figures in
-   `features/dashboard/dashboard_page.dart` with real ones through providers.
-   Keep the row component; add rows for `TRAINING` (sets · volume) and
-   `INTAKE` (kcal · P/C/F). Absent = `—`, never `0`.
-6. **Retention and controls.** `deleteAllLocalData()`, `exportLocalData()`
-   (JSON + CSV, no network), per-entry delete with revert.
+### Phase 2 — Journal that logs — shipped
 
-### Phase 2b — AI journal parser
+JSON `AppStore`, not Drift. Capture, canon, 1RM, dashboard figures, export /
+import / delete, REVERT, CONFIRM / DROP, KEEP LOCAL, PREV/NEXT civil days,
+local digest, incomplete bedtime + morning wake. See `docs/DECISIONS.md`.
 
-Copy eter2's transport shape exactly, not its code:
+Still deferred inside this phase: Drift migrations, a scored food database.
 
-- The app builds `system` + `user` + `responseSchema`; posts to the owner's
-  endpoint with `x-illunis-install` (16 random bytes, header only, never in
-  the body) for metering. **No model key ships in the app.**
-- The endpoint (`server/worker.js`) authenticates, checks `call ∈ {…}`,
-  meters per install then globally, forwards the triple **unchanged**, returns
-  `{"raw": text}`, never repairs JSON, never logs the payload.
-- Each contract owns its parser and rejects out-of-range values; estimates
-  land as `confirmed: false`, `source: 'ai-estimate'`, excluded from totals
-  until the person confirms. Calls: `journalInterpretation` (one entry →
-  activities / foods / workouts with confidence + assumptions), `dayDigest`
-  (bounded per-day summary for later pattern context).
-- Consent: `aiConsentAt` nullable timestamp on the profile, re-read on every
-  call. Age gate ≥ 16. Per-entry `KEEP LOCAL`.
-- Food calorie database: spike both OpenFoodFacts (offline dump, larger,
-  messier) and USDA FoodData Central (cleaner, US-centric, API) against 40
-  real dictated meals; pick by hit-rate on generic foods. Decision recorded
-  in `docs/DECISIONS.md`.
+### Phase 2b — AI journal parser — wired, optional
 
-### Phase 3 — Wearables and the real SkyStateSource
+Transport + `server/worker.js` + settings consent + age gate + KEEP LOCAL.
+The local parser is canonical. The worker runs only when
+`ILLUNIS_AI_ENDPOINT` is set and both gates are on. Food DB spike still waits
+on ~40 real dictated meals.
+
+### Phase 3 — Wearables and richer vitals — not started
 
 - `health` package: Health Connect (Android) / HealthKit (iOS). Read: steps,
   active energy, sleep sessions + stages, HR, resting HR, HRV, workouts.
   Per-type permission is the only gate. Write back: weights and **confirmed**
   meals only, filtered by origin so the hub's own data never round-trips.
-- Rollups into `DaySummaries` / `DailyVitals`. Then the source:
+- Keep the package skipped until this phase so Windows desktop stays
+  buildable.
+- Rollups already exist from the journal. Wearables fill unknown vitals:
   - `sleepScore` = duration vs personal 30-day median (60%) + efficiency
     (25%) + timing regularity (15%), clamped `0..1`.
   - `recovery` = HRV z-score vs 30-day baseline (blended with RHR inverse),
@@ -141,16 +113,14 @@ Copy eter2's transport shape exactly, not its code:
 - Background sync on resume and on leaving; debounced; never on cold start.
 - Play Store health-data declarations drafted **when this phase starts**.
 
-### Phase 4 — Patterns
+### Phase 4 — Patterns — engine shipped, silent
 
-- Daily/weekly rollups feed a correlation sweep across every measured pair.
-  Reuse the *statistics* from eter2 `core/patterns/statistics.dart`:
-  `minimumPairs = 21`, an effect-size floor, Benjamini–Hochberg across the
-  whole sweep. Nothing is shown before it can honestly be said; the
-  onboarding says so.
-- Patterns store structured evidence and are worded at display time, in the
-  same instrument voice (`TYPE.label` eyebrow + one sentence). No chat.
-- Optional AI summarisation of *patterns* (never raw logs) under consent.
+Sweep is in (`minimumPairs = 21`, effect-size floor, Benjamini–Hochberg).
+The dashboard shows the wait, not a story. Optional AI summarisation of
+*patterns* (never raw logs) under consent. Do not seed fake history.
+
+The night sky catalog pass is **not** this file. It lives in
+`docs/SKY_CATALOG.md` and `PLAN.md` §8. Do not restyle `core/sky/` here.
 
 ---
 
@@ -168,16 +138,12 @@ Copy eter2's transport shape exactly, not its code:
 
 ---
 
-## 4. First week, concretely
+## 4. What is left
 
-1. Drift schema + `AppDatabase` + migration test. Profiles, journal, strength,
-   nutrition, day summaries.
-2. `LocalSkyStateSource` reading `DaySummaries`/`DailyVitals` (all null at
-   first) and the real clock/location → override `skyStateSourceProvider`.
-   Ship this early: it proves the seam.
-3. Writing line → text capture → `JournalEntries`; entry list on the Journal
-   page under the date, in the existing type.
-4. Strength parsing from plain text (`"bench 80x5x3"`, `"squat 100 kg 5 reps"`)
-   with the canon; 1RM; `TRAINING` row on the dashboard.
-5. Export + delete-all in a plain settings sheet (long-press the surface
-   switch, mirror of the debug sheet's style).
+1. Drift when the JSON file becomes the bottleneck — same tables, same
+   `journalEntryId` revert rule.
+2. Wearables (`health` package) without breaking the Windows desktop build.
+3. Food DB spike against ~40 real meals; replace `foods.dart` only then.
+4. Stellarium/window check of the catalog; precession only if off > 0.5°.
+5. A real lunar theory (already deferred in `docs/VISUAL_PASS_2.md`).
+6. Do not seed 21 days of fake history so insights can speak.

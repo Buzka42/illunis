@@ -6,12 +6,15 @@ import 'package:illunis/core/sky/celestial_math.dart';
 import 'package:illunis/core/sky/celestial_scene.dart';
 import 'package:illunis/core/sky/sky_camera.dart';
 import 'package:illunis/core/sky/sky_state.dart';
+import 'package:illunis/core/sky/star_catalog.dart';
+import 'package:illunis/core/sky/star_field.dart';
 
 SkyState _state({
   double t = 0.5,
   double day = 80,
   double lat = 0,
   double moon = 0.5,
+  double solarNoon = 0.5,
 }) => SkyState(
   timeOfDay: t,
   dayOfYear: day,
@@ -19,14 +22,23 @@ SkyState _state({
   epochDays: epochDaysForDate(2026, 1, 1) + (day - 1),
   latitudeDeg: lat,
   moonPhase: moon,
+  solarNoon: solarNoon,
 );
+
+double _bearingDelta(double a, double b) {
+  final d = wrapAngle(a - b);
+  return d > math.pi ? 2 * math.pi - d : d;
+}
 
 void main() {
   group('ephemeris', () {
     test('epoch days match J2000 and a known JD', () {
       expect(epochDaysForDate(2000, 1, 1), closeTo(-0.5, 1e-9));
       // 2026-09-06 00:00 UT is JD 2461289.5.
-      expect(epochDaysForDate(2026, 9, 6), closeTo(2461289.5 - 2451545.0, 1e-9));
+      expect(
+        epochDaysForDate(2026, 9, 6),
+        closeTo(2461289.5 - 2451545.0, 1e-9),
+      );
     });
 
     test('the Sun crosses the equator at the March equinox', () {
@@ -53,7 +65,10 @@ void main() {
         expect(p.visibility, inInclusiveRange(0, 1));
       }
       final venus = s.planets[Planet.venus.index];
-      expect(venus.brightness, greaterThan(s.planets[Planet.saturn.index].brightness));
+      expect(
+        venus.brightness,
+        greaterThan(s.planets[Planet.saturn.index].brightness),
+      );
     });
 
     test('a planet below the horizon or in daylight is not visible', () {
@@ -129,6 +144,77 @@ void main() {
       // A sidereal day is shorter than a solar one by one part in 365.25.
       expect(d, closeTo(0.1 * 2 * math.pi * 366.25 / 365.25, 5e-4));
     });
+
+    test('Sirius is the brightest catalog star', () {
+      expect(kStarCount, greaterThan(4000));
+      expect(kStarNameIndex['Sirius'], 0);
+      expect(catalogStarAt(0).vMag, closeTo(-1.44, 0.05));
+      expect(catalogStarAt(0).vMag, lessThan(catalogStarAt(1).vMag));
+    });
+
+    test('Polaris sits on the north celestial pole', () {
+      final polaris = catalogStarByName('Polaris')!;
+      expect(polaris.decRad * radToDeg, closeTo(89.26, 1.0));
+      final scene = CelestialScene.resolve(_state(t: 0.5, day: 6, lat: 52.23));
+      final dir = catalogStarDirection(
+        polaris,
+        scene.siderealRad,
+        scene.latitudeRad,
+      );
+      expect(dir.altitude * radToDeg, closeTo(52.23, 1.5));
+      final az = dir.azimuth * radToDeg;
+      expect(az < 20 || az > 340, isTrue, reason: 'az $az');
+    });
+
+    test('Orion\'s belt is up on a January evening at 52°N, not in June', () {
+      const belt = ['Alnitak', 'Alnilam', 'Mintaka'];
+      final winter = CelestialScene.resolve(
+        _state(t: 21 / 24, day: 6, lat: 52.23, solarNoon: 0.48),
+      );
+      for (final name in belt) {
+        final star = catalogStarByName(name)!;
+        final dir = catalogStarDirection(
+          star,
+          winter.siderealRad,
+          winter.latitudeRad,
+        );
+        expect(dir.altitude, greaterThan(0.05), reason: '$name winter');
+      }
+      final summer = CelestialScene.resolve(
+        _state(t: 23 / 24, day: 172, lat: 52.23, solarNoon: 0.48),
+      );
+      for (final name in belt) {
+        final star = catalogStarByName(name)!;
+        final dir = catalogStarDirection(
+          star,
+          summer.siderealRad,
+          summer.latitudeRad,
+        );
+        expect(dir.altitude, lessThan(0), reason: '$name summer');
+      }
+    });
+
+    test('catalog stars above the horizon project into the sky half', () {
+      final scene = CelestialScene.resolve(
+        _state(t: 21 / 24, day: 6, lat: 52.23, solarNoon: 0.48),
+      );
+      final cam = SkyCamera(size: const Size(390, 844), azimuthRad: math.pi);
+      var seen = 0;
+      for (var i = 0; i < kStarCount; i++) {
+        final star = catalogStarAt(i);
+        final dir = catalogStarDirection(
+          star,
+          scene.siderealRad,
+          scene.latitudeRad,
+        );
+        if (dir.y < 0) continue;
+        final p = cam.project(dir);
+        if (p == null || !cam.contains(p)) continue;
+        expect(p.dy, lessThanOrEqualTo(cam.principal.dy + 1.0));
+        seen++;
+      }
+      expect(seen, greaterThan(50));
+    });
   });
 
   group('camera', () {
@@ -150,6 +236,53 @@ void main() {
         final p = cam.project(directionFromAltAz(0, 1.0 + dAz * degToRad))!;
         expect(p.dy, closeTo(cam.principal.dy, 1e-9));
       }
+    });
+
+    test('noon at 52°N still faces the sun', () {
+      final scene = CelestialScene.resolve(_state(t: 0.5, lat: 52, day: 80));
+      expect(
+        _bearingDelta(scene.trackAzimuthRad, scene.sunDir.azimuth),
+        lessThan(0.2),
+      );
+    });
+
+    test('a new-moon night looks south so Orion is in the window', () {
+      final scene = CelestialScene.resolve(
+        _state(t: 21 / 24, day: 6, lat: 52.23, solarNoon: 0.48, moon: 0),
+      );
+      expect(scene.sunDir.altitude, lessThan(0));
+      expect(
+        _bearingDelta(scene.trackAzimuthRad, math.pi),
+        lessThan(25 * degToRad),
+      );
+      final cam = SkyCamera(
+        size: const Size(390, 844),
+        azimuthRad: scene.trackAzimuthRad,
+      );
+      final mintaka = catalogStarByName('Mintaka')!;
+      final dir = catalogStarDirection(
+        mintaka,
+        scene.siderealRad,
+        scene.latitudeRad,
+      );
+      expect(dir.altitude, greaterThan(0.05));
+      final p = cam.project(dir);
+      expect(p, isNotNull);
+      expect(cam.contains(p!), isTrue);
+    });
+
+    test('a risen full moon takes the night camera', () {
+      final scene = CelestialScene.resolve(
+        _state(t: 21 / 24, day: 6, lat: 52.23, solarNoon: 0.48, moon: 0.5),
+      );
+      expect(scene.moonDir.altitude, greaterThan(0.05));
+      final toMoon = _bearingDelta(
+        scene.trackAzimuthRad,
+        scene.moonDir.azimuth,
+      );
+      final toSouth = _bearingDelta(scene.trackAzimuthRad, math.pi);
+      expect(toMoon, lessThan(toSouth));
+      expect(toMoon, lessThan(0.6));
     });
   });
 

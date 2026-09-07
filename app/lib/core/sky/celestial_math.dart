@@ -155,7 +155,8 @@ double epochDaysForDate(int year, int month, int day) {
   }
   final a = y ~/ 100;
   final b = 2 - a + a ~/ 4;
-  final jd = (365.25 * (y + 4716)).floor() +
+  final jd =
+      (365.25 * (y + 4716)).floor() +
       (30.6001 * (m + 1)).floor() +
       day +
       b -
@@ -176,25 +177,102 @@ enum Planet {
 }
 
 class _Elements {
-  const _Elements(this.n0, this.n1, this.i0, this.i1, this.w0, this.w1, this.a,
-      this.e0, this.e1, this.m0, this.m1);
+  const _Elements(
+    this.n0,
+    this.n1,
+    this.i0,
+    this.i1,
+    this.w0,
+    this.w1,
+    this.a,
+    this.e0,
+    this.e1,
+    this.m0,
+    this.m1,
+  );
   final double n0, n1, i0, i1, w0, w1, a, e0, e1, m0, m1;
 }
 
-const _sunElements =
-    _Elements(0, 0, 0, 0, 282.9404, 4.70935e-5, 1.0, 0.016709, -1.151e-9, 356.0470, 0.9856002585);
+const _sunElements = _Elements(
+  0,
+  0,
+  0,
+  0,
+  282.9404,
+  4.70935e-5,
+  1.0,
+  0.016709,
+  -1.151e-9,
+  356.0470,
+  0.9856002585,
+);
 
 const _planetElements = <Planet, _Elements>{
-  Planet.mercury: _Elements(48.3313, 3.24587e-5, 7.0047, 5.00e-8, 29.1241, 1.01444e-5,
-      0.387098, 0.205635, 5.59e-10, 168.6562, 4.0923344368),
-  Planet.venus: _Elements(76.6799, 2.46590e-5, 3.3946, 2.75e-8, 54.8910, 1.38374e-5,
-      0.723330, 0.006773, -1.302e-9, 48.0052, 1.6021302244),
-  Planet.mars: _Elements(49.5574, 2.11081e-5, 1.8497, -1.78e-8, 286.5016, 2.92961e-5,
-      1.523688, 0.093405, 2.516e-9, 18.6021, 0.5240207766),
-  Planet.jupiter: _Elements(100.4542, 2.76854e-5, 1.3030, -1.557e-7, 273.8777, 1.64505e-5,
-      5.20256, 0.048498, 4.469e-9, 19.8950, 0.0830853001),
-  Planet.saturn: _Elements(113.6634, 2.38980e-5, 2.4886, -1.081e-7, 339.3939, 2.97661e-5,
-      9.55475, 0.055546, -9.499e-9, 316.9670, 0.0334442282),
+  Planet.mercury: _Elements(
+    48.3313,
+    3.24587e-5,
+    7.0047,
+    5.00e-8,
+    29.1241,
+    1.01444e-5,
+    0.387098,
+    0.205635,
+    5.59e-10,
+    168.6562,
+    4.0923344368,
+  ),
+  Planet.venus: _Elements(
+    76.6799,
+    2.46590e-5,
+    3.3946,
+    2.75e-8,
+    54.8910,
+    1.38374e-5,
+    0.723330,
+    0.006773,
+    -1.302e-9,
+    48.0052,
+    1.6021302244,
+  ),
+  Planet.mars: _Elements(
+    49.5574,
+    2.11081e-5,
+    1.8497,
+    -1.78e-8,
+    286.5016,
+    2.92961e-5,
+    1.523688,
+    0.093405,
+    2.516e-9,
+    18.6021,
+    0.5240207766,
+  ),
+  Planet.jupiter: _Elements(
+    100.4542,
+    2.76854e-5,
+    1.3030,
+    -1.557e-7,
+    273.8777,
+    1.64505e-5,
+    5.20256,
+    0.048498,
+    4.469e-9,
+    19.8950,
+    0.0830853001,
+  ),
+  Planet.saturn: _Elements(
+    113.6634,
+    2.38980e-5,
+    2.4886,
+    -1.081e-7,
+    339.3939,
+    2.97661e-5,
+    9.55475,
+    0.055546,
+    -9.499e-9,
+    316.9670,
+    0.0334442282,
+  ),
 };
 
 /// Heliocentric ecliptic rectangular coordinates, AU.
@@ -246,8 +324,8 @@ double sunEclipticLongitude(double epochDaysJ2000) {
 }
 
 /// Equatorial (RA, Dec) and distance (AU) of a planet as seen from Earth.
-({double ra, double dec, double distanceAu, double elongationRad}) planetEquatorial(
-    Planet p, double epochDaysJ2000) {
+({double ra, double dec, double distanceAu, double elongationRad})
+planetEquatorial(Planet p, double epochDaysJ2000) {
   final d = schlyterDay(epochDaysJ2000);
   final h = _heliocentric(_planetElements[p]!, d);
   final s = sunEcliptic(epochDaysJ2000);

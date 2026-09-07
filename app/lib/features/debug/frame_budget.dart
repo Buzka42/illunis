@@ -1,8 +1,8 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/foundation.dart';
 
-/// Rolling frame timings for the debug sheet. Debug builds only; production
-/// pays nothing because [start] is never called.
+/// Rolling frame timings. Debug and profile; release pays nothing because
+/// [start] is never called.
 class FrameBudget {
   FrameBudget._();
   static final FrameBudget instance = FrameBudget._();
@@ -11,7 +11,7 @@ class FrameBudget {
   var _listening = false;
 
   void start() {
-    if (_listening || !kDebugMode) return;
+    if (_listening || kReleaseMode) return;
     _listening = true;
     SchedulerBinding.instance.addTimingsCallback(_on);
   }
@@ -20,6 +20,15 @@ class FrameBudget {
     _samples.addAll(timings);
     final overflow = _samples.length - 180;
     if (overflow > 0) _samples.removeRange(0, overflow);
+    if (!kReleaseMode &&
+        _samples.length >= 60 &&
+        _samples.length % 60 < timings.length) {
+      debugPrint(
+        'ILLUNIS_FRAME R ${p50RasterMs.toStringAsFixed(1)}/${p95RasterMs.toStringAsFixed(1)} '
+        'B ${p50BuildMs.toStringAsFixed(1)}/${p95BuildMs.toStringAsFixed(1)} '
+        'N $n',
+      );
+    }
   }
 
   int get n => _samples.length;

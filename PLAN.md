@@ -122,6 +122,7 @@ illunis/
     HANDOFF.md                    how to feed the sky real data
     PERF.md                       frame budget and the hardware gap
     VISUAL_PASS_2.md              planets, timeline, resolution
+    SKY_CATALOG.md                1:1 night sky: real stars at catalog V
     BACKEND_PLAN.md               brief for the next model
   app/
     shaders/sky.frag              atmosphere, sun, moon, stars, planets
@@ -427,33 +428,36 @@ mid-range Android measurement (no device attached; see risks).
 
 ## 8. Later phases — orientation only
 
-Listed so Phase 1 leaves the right seams. None of this is built now.
+Listed so Phase 1 leaves the right seams. Phase 2 logging, the local
+parser, rollups, and the pattern sweep are in the tree; Drift, wearables
+and a scored food database are not.
 
-**Phase 2 — Journal that logs.** Text/dictation capture (`speech_to_text` is
-proven in eter2). Local store: Drift/SQLite, device canonical, no account
-required to log. Structured extraction via an owner-controlled endpoint —
-copy eter2's transport shape exactly: the app builds prompt + schema, the
-endpoint holds the key, forwards unchanged, never repairs JSON, never logs
-the payload; each contract owns its parser; estimates land `confirmed:
-false` and are excluded from totals until reviewed. Exercise canon from
-Hyper Planner `plans/INDEX.md`; 1RM by Epley/Brzycki on device. Food
-database decision (OpenFoodFacts vs USDA) made with a spike, not a meeting.
+**Phase 2 — Journal that logs.** Shipped on a JSON file store
+(`AppStore`); Drift remains deferred. Text + `speech_to_text` on the
+existing mic mark. Device canonical, no account. Local parser is the
+record; optional AI through `server/worker.js` (eter2 transport shape)
+under consent + age gate + per-entry KEEP LOCAL. Estimates land
+`confirmed: false` until CONFIRM. Exercise canon and Epley/Brzycki 1RM
+on device. Food table is household generics; OpenFoodFacts vs USDA waits
+on ~40 real dictated meals (`docs/DECISIONS.md`).
 
 **Phase 3 — Wearables.** Health Connect / HealthKit through the `health`
 package, background sync, per-type permissions as the only gate. Known
 native-bridge pain; scheduled for opencode after the Cursor window, as the
 mandate says. The `SkyStateSource` for real data is written here:
 `sleepScore`, `recovery`, `strain` from daily rollups, never from raw
-minutes.
+minutes. The journal already feeds `LocalSkyStateSource` from rollups;
+this phase replaces unknown vitals with wearable ones.
 
-**Phase 4 — Patterns.** Daily/weekly rollups into a pattern engine. Copy the
-*statistics*, not the astrology, from eter2 `core/patterns/statistics.dart`:
-minimum paired days (`minimumPairs = 21`), an effect-size floor, and
-Benjamini–Hochberg across the whole sweep. Onboarding tells the truth that
-the first pattern cannot exist before roughly day 21 — and the sky's
-`noData` register is what that honesty looks like. Gate intelligence, never
-the record: logging stays free and offline; AI features sit behind consent
-timestamps re-read on every call.
+**Phase 4 — Patterns.** Sweep is in (`minimumPairs = 21`, effect-size
+floor, Benjamini–Hochberg). The dashboard tells the truth that nothing
+can be said before roughly day 21. Gate intelligence, never the record.
+
+**True night sky (parallel, `core/sky`).** Landed as HYG v3 catalog points
+(`V ≤ 6.0`) on the existing sidereal angle; the shader hash is gone. At
+night the camera faces south, or a risen lit moon, so the catalog is in
+the window. Manual Stellarium/window check and optional precession remain.
+Spec: `docs/SKY_CATALOG.md`.
 
 **Throughout.** Health data is sensitive: on-device is canonical, cloud is an
 optional mirror under separate consent, model output is never mirrored, and

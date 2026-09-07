@@ -17,12 +17,12 @@ enum CelestialGlyph {
   saturn;
 
   static CelestialGlyph forPlanet(Planet p) => switch (p) {
-        Planet.mercury => mercury,
-        Planet.venus => venus,
-        Planet.mars => mars,
-        Planet.jupiter => jupiter,
-        Planet.saturn => saturn,
-      };
+    Planet.mercury => mercury,
+    Planet.venus => venus,
+    Planet.mars => mars,
+    Planet.jupiter => jupiter,
+    Planet.saturn => saturn,
+  };
 
   void paint(Canvas canvas, Offset center, double size, Paint stroke) {
     canvas.save();
@@ -39,18 +39,25 @@ enum CelestialGlyph {
       case sun:
         canvas.drawCircle(const Offset(0.5, 0.5), 0.36, p);
         canvas.drawCircle(
-            const Offset(0.5, 0.5),
-            0.075,
-            Paint()
-              ..color = stroke.color
-              ..style = PaintingStyle.fill);
+          const Offset(0.5, 0.5),
+          0.075,
+          Paint()
+            ..color = stroke.color
+            ..style = PaintingStyle.fill,
+        );
       case moon:
         final path = Path()
           ..moveTo(0.56, 0.12)
-          ..arcToPoint(const Offset(0.56, 0.88),
-              radius: const Radius.circular(0.39), clockwise: false)
-          ..arcToPoint(const Offset(0.56, 0.12),
-              radius: const Radius.circular(0.50), clockwise: true);
+          ..arcToPoint(
+            const Offset(0.56, 0.88),
+            radius: const Radius.circular(0.39),
+            clockwise: false,
+          )
+          ..arcToPoint(
+            const Offset(0.56, 0.12),
+            radius: const Radius.circular(0.50),
+            clockwise: true,
+          );
         canvas.drawPath(path, p);
       case mercury:
         canvas.drawCircle(const Offset(0.5, 0.47), 0.20, p);
@@ -58,8 +65,11 @@ enum CelestialGlyph {
         canvas.drawLine(const Offset(0.36, 0.82), const Offset(0.64, 0.82), p);
         final horns = Path()
           ..moveTo(0.31, 0.08)
-          ..arcToPoint(const Offset(0.69, 0.08),
-              radius: const Radius.circular(0.20), clockwise: false);
+          ..arcToPoint(
+            const Offset(0.69, 0.08),
+            radius: const Radius.circular(0.20),
+            clockwise: false,
+          );
         canvas.drawPath(horns, p);
       case venus:
         canvas.drawCircle(const Offset(0.5, 0.36), 0.23, p);

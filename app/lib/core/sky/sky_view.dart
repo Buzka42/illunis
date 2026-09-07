@@ -159,8 +159,9 @@ class _SkyViewState extends State<SkyView>
         mq.size.height *
         mq.devicePixelRatio *
         mq.devicePixelRatio;
-    final scale =
-        (math.sqrt(SkyView.shadePixelBudget / math.max(px, 1))).clamp(0.6, 1.0);
+    final scale = (math.sqrt(
+      SkyView.shadePixelBudget / math.max(px, 1),
+    )).clamp(0.6, 1.0);
     return RepaintBoundary(
       child: CustomPaint(
         painter: SkyPainter(

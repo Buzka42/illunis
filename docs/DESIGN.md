@@ -7,8 +7,8 @@ code and this file disagree, the code is right and this file is updated.
 
 Raw data over a realistic sky. The sky is a physically-based render
 (Preetham-family Rayleigh/Mie scattering, true solar geometry, a
-Lommel–Seeliger moon, sidereal stars, a galactic band, five naked-eye
-planets). Stylised only in exposure adaptation and a ~3× moon. Over it sits
+Lommel–Seeliger moon, catalog stars at visual magnitude, a galactic band, five
+naked-eye planets). Stylised only in exposure adaptation and a ~3× moon. Over it sits
 an instrument layer: hairlines, a compass scale, altitude circles, the day's
 sun and moon paths, astronomical glyphs, ALT/AZ. The ground is a dark matte
 field where the surfaces set figures in monospace.

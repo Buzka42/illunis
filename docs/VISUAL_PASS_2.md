@@ -85,8 +85,9 @@ present on both surfaces.
 - [x] **Layout.** Horizon moves from 0.60 to 0.56 of the height to make room;
       surfaces lose most of their top padding because the timeline now
       separates them from the sky.
-- [ ] Later: a second row of markers for logged events (workouts, meals)
-      once the journal writes them — same vocabulary, one tick per entry.
+- [x] A second row of markers for logged events (workouts, meals, pages)
+      once the journal writes them — same vocabulary, one tick per entry
+      on the civil day the bar represents.
 
 ## 5. Verification
 
@@ -101,3 +102,22 @@ present on both surfaces.
       Full sky, timeline, large clock; no pager. OLED drift ±3 px / 180 s.
       Debug sheet: PREVIEW NIGHTSTAND (all platforms) and SET SCREEN SAVER
       (Android).
+
+## 7. True night sky (next visual pass)
+
+The atmosphere, sun, planets and sidereal *rotation* are real enough. The
+**stars are not**: `stars()` in `sky.frag` is a hash. The next visual pass
+replaces that field with a bundled catalog so the night sky is 1:1 with the
+actual sky at the current time, from the home city, at catalog magnitude.
+
+- [x] Bundle Yale BSC / Hipparcos (J2000, `V ≤ 6.0`), generated, not typed.
+      HYG v3, 5,070 stars, `tool/stars/generate.py`.
+- [x] Project with the existing camera and sidereal angle; draw as points.
+- [x] Kill or demote the shader hash so Sirius is not drawn twice.
+- [x] Tests: Sirius brightest, Polaris on the pole, Orion in season at 52°N.
+- [x] Night camera faces south (or a risen moon) so the catalog is in frame.
+- [ ] Manual: Stellarium or the window at the home city, same time, south.
+
+Full spec: `docs/SKY_CATALOG.md`. Moon theory stays the separate later item
+in §3. No GPS, no star names, no constellation stick-figures in this pass.
+Precession only if the window check is off by more than half a degree.

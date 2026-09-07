@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/sky/celestial_math.dart';
 import '../../core/sky/celestial_scene.dart';
+import '../../core/state/app_providers.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/state/sleep_record.dart';
 import '../../core/theme/tokens.dart';
@@ -29,7 +30,9 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
   static const _pad = Space.margin;
 
   void _scrubTo(double localX, double width) {
-    final t = ((localX - _pad) / (width - 2 * _pad)).clamp(0.0, 1.0);
+    final span = width - 2 * _pad;
+    if (span <= 0) return;
+    final t = ((localX - _pad) / span).clamp(0.0, 1.0);
     final n = ref.read(skyOverridesProvider.notifier);
     n.set(ref.read(skyOverridesProvider).copyWith(timeOfDay: t));
   }
@@ -43,6 +46,7 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
   Widget build(BuildContext context) {
     final scrub = ref.watch(skyOverridesProvider.select((o) => o.timeOfDay));
     final sleep = ref.watch(sleepRecordProvider);
+    final marks = ref.watch(timelineMarksProvider);
     final textScale = MediaQuery.textScalerOf(context).scale(10) / 10;
     return SizedBox(
       height: TimelineBar.height,
@@ -63,6 +67,7 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
                   painter: _TimelinePainter(
                     scene: scene,
                     sleep: sleep,
+                    marks: marks,
                     scrub: scrub,
                     textScale: textScale,
                   ),
@@ -112,12 +117,14 @@ class _TimelinePainter extends CustomPainter {
   _TimelinePainter({
     required this.scene,
     required this.sleep,
+    required this.marks,
     required this.scrub,
     required this.textScale,
   });
 
   final ResolvedScene? scene;
   final SleepRecord? sleep;
+  final List<double> marks;
   final double? scrub;
   final double textScale;
 
@@ -132,6 +139,9 @@ class _TimelinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final s = scene;
     if (s == null) return;
+    // First layout can be width 0; Dart clamp throws if the floor is above
+    // the ceiling, which is what x0+14 / x1-14 becomes on a thin bar.
+    if (size.width < 2 * _pad + 32) return;
     final x0 = _x(0, size), x1 = _x(1, size);
 
     // Track.
@@ -143,6 +153,7 @@ class _TimelinePainter extends CustomPainter {
         ..strokeWidth = 1,
     );
     _paintDaylight(canvas, size, s);
+    _paintMarks(canvas, size);
 
     // Hour scale below the track.
     final tick = Paint()
@@ -174,7 +185,9 @@ class _TimelinePainter extends CustomPainter {
     final live = s.state.timeOfDay;
     final liveT = scrub == null ? live : null;
     final headT = liveT ?? scrub!;
-    final headX = _x(headT, size).clamp(x0 + 14, x1 - 14);
+    final lo = x0 + 14;
+    final hi = x1 - 14;
+    final headX = lo <= hi ? _x(headT, size).clamp(lo, hi) : (x0 + x1) * 0.5;
 
     if (sleep != null) _paintSleep(canvas, size, sleep!, headX);
 
@@ -195,7 +208,11 @@ class _TimelinePainter extends CustomPainter {
       ..color = (scrub != null ? Inks.warm : _ink).withValues(alpha: 0.85)
       ..strokeWidth = 1;
     canvas.drawLine(Offset(x, _trackY - 15), Offset(x, _trackY + 6), head);
-    canvas.drawCircle(Offset(x, _trackY), 1.8, head..style = PaintingStyle.fill);
+    canvas.drawCircle(
+      Offset(x, _trackY),
+      1.8,
+      head..style = PaintingStyle.fill,
+    );
     _text(
       canvas,
       formatHours(t),
@@ -206,6 +223,17 @@ class _TimelinePainter extends CustomPainter {
       color: scrub != null ? Inks.warm : _ink,
       anchor: Alignment.bottomCenter,
     );
+  }
+
+  void _paintMarks(Canvas canvas, Size size) {
+    if (marks.isEmpty) return;
+    final tick = Paint()
+      ..color = _ink.withValues(alpha: 0.7)
+      ..strokeWidth = 1;
+    for (final t in marks) {
+      final x = _x(t.clamp(0.0, 1.0), size);
+      canvas.drawLine(Offset(x, _trackY - 10), Offset(x, _trackY - 1), tick);
+    }
   }
 
   /// The source's time, not the eased display time, so the reference mark
@@ -223,8 +251,11 @@ class _TimelinePainter extends CustomPainter {
     if (rise == null || set == null) {
       // Polar: either all day or none.
       if (s.sunDir.y > 0) {
-        canvas.drawLine(Offset(x0, _trackY), Offset(x1, _trackY),
-            paint..color = _ink.withValues(alpha: 0.5));
+        canvas.drawLine(
+          Offset(x0, _trackY),
+          Offset(x1, _trackY),
+          paint..color = _ink.withValues(alpha: 0.5),
+        );
       }
       return;
     }
@@ -237,17 +268,12 @@ class _TimelinePainter extends CustomPainter {
       (set + tw).clamp(0.0, 1.0),
     ];
     if (rise < set) {
-      paint.shader = ui.Gradient.linear(
-        Offset(x0, 0),
-        Offset(x1, 0),
-        [
-          _ink.withValues(alpha: 0),
-          _ink.withValues(alpha: 0.55),
-          _ink.withValues(alpha: 0.55),
-          _ink.withValues(alpha: 0),
-        ],
-        stops,
-      );
+      paint.shader = ui.Gradient.linear(Offset(x0, 0), Offset(x1, 0), [
+        _ink.withValues(alpha: 0),
+        _ink.withValues(alpha: 0.55),
+        _ink.withValues(alpha: 0.55),
+        _ink.withValues(alpha: 0),
+      ], stops);
       canvas.drawLine(
         Offset(_x(stops[0], size), _trackY),
         Offset(_x(stops[3], size), _trackY),
@@ -256,8 +282,16 @@ class _TimelinePainter extends CustomPainter {
     } else {
       // Sun up across midnight: two spans.
       paint.color = _ink.withValues(alpha: 0.55);
-      canvas.drawLine(Offset(x0, _trackY), Offset(_x(set, size), _trackY), paint);
-      canvas.drawLine(Offset(_x(rise, size), _trackY), Offset(x1, _trackY), paint);
+      canvas.drawLine(
+        Offset(x0, _trackY),
+        Offset(_x(set, size), _trackY),
+        paint,
+      );
+      canvas.drawLine(
+        Offset(_x(rise, size), _trackY),
+        Offset(x1, _trackY),
+        paint,
+      );
     }
   }
 
@@ -351,7 +385,8 @@ class _TimelinePainter extends CustomPainter {
     int weight = 400,
     Color color = _ink,
   }) {
-    final key = '$s|$size|$weight|${(alpha * 100).round()}|$textScale|${color.toARGB32()}';
+    final key =
+        '$s|$size|$weight|${(alpha * 100).round()}|$textScale|${color.toARGB32()}';
     final tp = _cache.putIfAbsent(
       key,
       () => TextPainter(
@@ -381,5 +416,6 @@ class _TimelinePainter extends CustomPainter {
       old.scene != scene ||
       old.sleep != sleep ||
       old.scrub != scrub ||
-      old.textScale != textScale;
+      old.textScale != textScale ||
+      !listEquals(old.marks, marks);
 }

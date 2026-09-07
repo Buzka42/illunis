@@ -1,9 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/i18n/strings.dart';
 import '../../core/sky/celestial_scene.dart';
 import '../../core/sky/sky_view.dart';
+import '../../core/state/app_providers.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -11,6 +15,7 @@ import '../dashboard/dashboard_page.dart';
 import '../debug/capture.dart';
 import '../debug/sky_debug_sheet.dart';
 import '../journal/journal_page.dart';
+import '../settings/settings_sheet.dart';
 import '../timeline/timeline_bar.dart';
 import 'shell_header.dart';
 
@@ -73,8 +78,18 @@ class _IllunisShellState extends ConsumerState<IllunisShell> {
     final mq = MediaQuery.of(context);
     final horizonY = mq.size.height * kHorizonFraction;
 
+    final ime = mq.viewInsets.bottom;
+    final onJournal = (1 - _page).clamp(0.0, 1.0);
+    final captureBottom = math.max(mq.padding.bottom + 52, ime);
+    final figures = ref.watch(journalFiguresProvider);
+    final pending = figures.unconfirmed.length + figures.unconfirmedActs.length;
+    final journalDock =
+        JournalWritingLine.band +
+        (ime > 8 ? 0.0 : JournalPending.heightFor(pending));
+
     return Scaffold(
       backgroundColor: const Color(0xFF07090D),
+      resizeToAvoidBottomInset: false,
       body: RepaintBoundary(
         key: _boundary,
         child: Stack(
@@ -93,8 +108,14 @@ class _IllunisShellState extends ConsumerState<IllunisShell> {
               child: TimelineBar(scene: _scene),
             ),
             // Surfaces live on the ground. The sky above stays legible.
-            Positioned.fill(
+            Positioned(
+              left: 0,
+              right: 0,
               top: horizonY + kCompassBandHeight + TimelineBar.height,
+              bottom:
+                  mq.padding.bottom +
+                  52 +
+                  (ime > 8 ? 0 : journalDock * onJournal),
               child: PageView(
                 controller: _controller,
                 physics: const ClampingScrollPhysics(),
@@ -118,8 +139,45 @@ class _IllunisShellState extends ConsumerState<IllunisShell> {
             Positioned(
               left: 0,
               right: 0,
+              bottom: captureBottom,
+              child: IgnorePointer(
+                ignoring: onJournal < 0.5 && ime < 8,
+                child: Opacity(
+                  opacity: ime > 8 ? 1 : onJournal,
+                  child: ColoredBox(
+                    color: const Color(
+                      0xFF07090D,
+                    ).withValues(alpha: ime > 8 ? 0.92 : 0),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        Space.margin,
+                        ime > 8 ? 10 : 0,
+                        Space.margin,
+                        ime > 8 ? 8 : 0,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (ime < 8) const JournalPending(),
+                          const JournalWritingLine(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
               bottom: mq.padding.bottom + 10,
-              child: _SurfaceSwitch(page: _page, onSelect: _go),
+              child: IgnorePointer(
+                ignoring: ime > 8,
+                child: Opacity(
+                  opacity: ime > 8 ? 0 : 1,
+                  child: _SurfaceSwitch(page: _page, onSelect: _go),
+                ),
+              ),
             ),
           ],
         ),
@@ -139,14 +197,18 @@ class _SurfaceSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Space.margin),
-      child: Row(
-        children: [
-          _word('JOURNAL', 0),
-          const SizedBox(width: 26),
-          _word('DASHBOARD', 1),
-          const Spacer(),
-          Text('ILLUNIS 0.1', style: Type.micro.copyWith(color: Inks.faint)),
-        ],
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onLongPress: () => showSettingsSheet(context),
+        child: Row(
+          children: [
+            _word('JOURNAL', 0),
+            const SizedBox(width: 26),
+            _word('DASHBOARD', 1),
+            const Spacer(),
+            Text(S.version, style: Type.micro.copyWith(color: Inks.faint)),
+          ],
+        ),
       ),
     );
   }
