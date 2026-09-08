@@ -171,5 +171,34 @@ void main() {
     expect(nightSleep.text, 'slept 7h');
     expect(nightSleep.daysBack, 0);
     expect(nightSleep.hour, isNull);
+
+    final wNocyPizza = stampJournalLine('w nocy zjadłem pizzę');
+    expect(wNocyPizza.text, 'zjadłem pizzę');
+    expect(wNocyPizza.daysBack, 1);
+
+    final wNocySen = stampJournalLine('w nocy spałem 7h');
+    expect(wNocySen.text, 'spałem 7h');
+    expect(wNocySen.daysBack, 0);
+
+    final dzisiajRano = stampJournalLine('dzisiaj rano ran 5k');
+    expect(dzisiajRano.text, 'ran 5k');
+    expect(dzisiajRano.hour, 8);
+
+    final wPoludnie = stampJournalLine('w południe obiad');
+    expect(wPoludnie.text, 'obiad');
+    expect(wPoludnie.hour, 12);
+
+    final oPolnocy = stampJournalLine('o północy spacer');
+    expect(oPolnocy.text, 'spacer');
+    expect(oPolnocy.hour, 0);
+
+    final dotClock = stampJournalLine('7:30 ran 5k.');
+    expect(dotClock.text, 'ran 5k');
+    expect(dotClock.hour, 7);
+    expect(dotClock.minute, 30);
+
+    final polozylem = stampJournalLine('położyłem się o 23:10');
+    expect(polozylem.hour, isNull);
+    expect(polozylem.text, 'położyłem się o 23:10');
   });
 }

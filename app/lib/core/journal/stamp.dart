@@ -47,7 +47,7 @@ final _leadYesterday = RegExp(
 );
 
 final _leadLastNight = RegExp(
-  r'^(?:last\s+night|last\s+evening|wczoraj\s+wieczorem)\s+',
+  r'^(?:last\s+night|last\s+evening|wczoraj\s+wieczorem|w\s+nocy)\s+',
   caseSensitive: false,
 );
 
@@ -67,17 +67,17 @@ final _trailYesterday = RegExp(
 );
 
 final _trailLastNight = RegExp(
-  r'\s+(?:last\s+night|last\s+evening|wczoraj\s+wieczorem)\s*$',
+  r'\s+(?:last\s+night|last\s+evening|wczoraj\s+wieczorem|w\s+nocy)\s*$',
   caseSensitive: false,
 );
 
 final _sleepStaysOnLogDay = RegExp(
-  r'\b(slept?|spalem|spalam|sleep)\b',
+  r'\b(slept?|spalem|spalam|pospalem|pospalam|sleep)\b',
   caseSensitive: false,
 );
 
 StampedLine stampJournalLine(String raw) {
-  var t = foldDecimal(raw.trim());
+  var t = foldDecimal(raw.trim()).replaceAll(RegExp(r'[.!?]+$'), '').trim();
   var daysBack = 0;
   int? hour;
   int? minute;
@@ -95,7 +95,7 @@ StampedLine stampJournalLine(String raw) {
       final rest = t.substring(ln.end).trim();
       if (rest.isNotEmpty) {
         t = rest;
-        if (!_sleepStaysOnLogDay.hasMatch(rest)) daysBack = 1;
+        if (!_sleepStaysOnLogDay.hasMatch(foldLatin(rest))) daysBack = 1;
       }
     }
   }
@@ -118,7 +118,9 @@ StampedLine stampJournalLine(String raw) {
     final rest = t.substring(0, trailNight.start).trim();
     if (rest.isNotEmpty) {
       t = rest;
-      if (daysBack == 0 && !_sleepStaysOnLogDay.hasMatch(rest)) daysBack = 1;
+      if (daysBack == 0 && !_sleepStaysOnLogDay.hasMatch(foldLatin(rest))) {
+        daysBack = 1;
+      }
     }
   }
   if (hour == null) {
@@ -157,10 +159,11 @@ StampedLine? _consumeLead(String t) {
       minute: 0,
     );
   }
+  final f = foldLatin(t);
   final noon = RegExp(
-    r'^(?:at\s+)?noon\s+',
+    r'^(?:(?:at\s+)?noon|w\s+poludnie)\s+',
     caseSensitive: false,
-  ).firstMatch(t);
+  ).firstMatch(f);
   if (noon != null) {
     final rest = t.substring(noon.end).trim();
     if (rest.isNotEmpty) {
@@ -168,9 +171,9 @@ StampedLine? _consumeLead(String t) {
     }
   }
   final midnight = RegExp(
-    r'^(?:at\s+)?midnight\s+',
+    r'^(?:(?:at\s+)?midnight|o\s+polnocy)\s+',
     caseSensitive: false,
-  ).firstMatch(t);
+  ).firstMatch(f);
   if (midnight != null) {
     final rest = t.substring(midnight.end).trim();
     if (rest.isNotEmpty) {
@@ -194,7 +197,10 @@ const _periodHour = <String, int>{
   'dinner': 19,
   'supper': 19,
   'kolacja': 19,
+  'kolacje': 19,
   'brunch': 11,
+  'poludnie': 12,
+  'polnoc': 0,
 };
 
 StampedLine? _leadPeriod(String t, int daysBack) {
@@ -208,7 +214,7 @@ StampedLine? _leadPeriod(String t, int daysBack) {
     }
   }
   final period = RegExp(
-    r'^(?:this\s+)?(morning|afternoon|evening|tonight|rano|wieczorem)\s+',
+    r'^(?:(?:this|dzisiaj|dzis)\s+)?(morning|afternoon|evening|tonight|rano|wieczorem)\s+',
   ).firstMatch(f);
   if (period != null) {
     final rest = t.substring(period.end).trim();
@@ -218,7 +224,7 @@ StampedLine? _leadPeriod(String t, int daysBack) {
     }
   }
   final meal = RegExp(
-    r'^(?:(?:for|na)\s+)?(breakfast|lunch|dinner|supper|brunch|sniadanie|obiad|kolacja)\s+',
+    r'^(?:(?:for|na)\s+)?(breakfast|lunch|dinner|supper|brunch|sniadanie|obiad|kolacja|kolacje)\s+',
   ).firstMatch(f);
   if (meal != null) {
     final rest = t.substring(meal.end).trim();
@@ -267,17 +273,17 @@ StampedLine? _consumeTrail(String t) {
     }
   }
   final noon = RegExp(
-    r'\s+(?:at\s+)?noon\s*$',
+    r'\s+(?:(?:at\s+)?noon|w\s+poludnie)\s*$',
     caseSensitive: false,
-  ).firstMatch(t);
+  ).firstMatch(f);
   if (noon != null) {
     final hit = cut(noon, 12);
     if (hit != null) return hit;
   }
   final midnight = RegExp(
-    r'\s+(?:at\s+)?midnight\s*$',
+    r'\s+(?:(?:at\s+)?midnight|o\s+polnocy)\s*$',
     caseSensitive: false,
-  ).firstMatch(t);
+  ).firstMatch(f);
   if (midnight != null) {
     final hit = cut(midnight, 0);
     if (hit != null) return hit;
@@ -312,9 +318,9 @@ StampedLine? _consumeTrail(String t) {
 
 bool _sleepKeepsClock(String rest) {
   return RegExp(
-    r'(?:went to (?:bed|sleep)|fell asleep|headed to bed|in bed|bedtime|lights out|woke(?:\s+up)?|got up|(?:was\s+)?up|poszedlem spac|poszlam spac|wstalem|wstalam|obudzilem|obudzilam)\s*$',
+    r'(?:went to (?:bed|sleep)|fell asleep|headed to bed|in bed|bedtime|lights out|woke(?:\s+up)?|got up|(?:was\s+)?up|poszedlem spac|poszlam spac|poszedlem do lozka|poszlam do lozka|polozylem sie|polozylam sie|zasnalem|zasnelam|wstalem|wstalam|obudzilem|obudzilam)\s*$',
     caseSensitive: false,
-  ).hasMatch(rest.trim());
+  ).hasMatch(foldLatin(rest).trim());
 }
 
 int _to24(int hour, String ampm) {

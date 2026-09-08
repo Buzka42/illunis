@@ -538,7 +538,7 @@ const kCanon = <Exercise>[
   Exercise(
     id: 'sit-up',
     name: 'Sit-up',
-    aliases: ['situp', 'sit-ups', 'sit ups', 'crunches'],
+    aliases: ['situp', 'sit-ups', 'sit ups', 'crunches', 'brzuszki'],
     muscles: ['core'],
     isCompound: false,
   ),

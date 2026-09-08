@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:illunis/core/db/records.dart';
 import 'package:illunis/core/journal/parser.dart';
+import 'package:illunis/core/journal/stamp.dart';
 
 void main() {
   JournalEntry entry(String text) =>
@@ -591,4 +592,208 @@ void main() {
       closeTo(7.5, 1e-9),
     );
   });
+
+  test('Polish genitives, accusatives, punctuation, and measures parse', () {
+    expect(
+      parseJournal(entry('zjadłem kurczaka')).nutrition.single.label,
+      'Chicken breast',
+    );
+    expect(
+      parseJournal(entry('zjadłem steka')).nutrition.single.label,
+      'Steak',
+    );
+    expect(
+      parseJournal(entry('zjadłem schabowego')).nutrition.single.label,
+      'Schabowy',
+    );
+    expect(
+      parseJournal(entry('zjadłem kotleta')).nutrition.single.label,
+      'Schabowy',
+    );
+    expect(
+      parseJournal(entry('zjadłem kebaba')).nutrition.single.label,
+      'Kebab',
+    );
+    expect(
+      parseJournal(entry('zjadłem burgera')).nutrition.single.label,
+      'Burger',
+    );
+    expect(
+      parseJournal(entry('zjadłem pizzę')).nutrition.single.label,
+      'Pizza (2 slices)',
+    );
+    expect(
+      parseJournal(entry('zjadłem sałatkę')).nutrition.single.label,
+      'Salad',
+    );
+    expect(
+      parseJournal(entry('zjadłem kanapkę')).nutrition.single.label,
+      'Sandwich',
+    );
+    expect(
+      parseJournal(entry('zjadłem zupę')).nutrition.single.label,
+      'Soup',
+    );
+    expect(
+      parseJournal(entry('zjadłem kiełbasę')).nutrition.single.label,
+      'Kiełbasa',
+    );
+    expect(
+      parseJournal(entry('wypiłem herbatę')).nutrition.single.label,
+      'Tea',
+    );
+    expect(
+      parseJournal(entry('wypiłem wodę')).nutrition.single.label,
+      'Water',
+    );
+    expect(
+      parseJournal(entry('wypiłem piwo')).nutrition.single.label,
+      'Beer',
+    );
+    expect(
+      parseJournal(entry('zjadłem jajecznicę')).nutrition.single.label,
+      'Eggs',
+    );
+    expect(
+      parseJournal(entry('zjadłem bułkę')).nutrition.single.label,
+      'Bread (2 slices)',
+    );
+    expect(
+      parseJournal(entry('kurczaka z ryżem')).nutrition.single.label,
+      'Chicken and rice',
+    );
+    expect(
+      parseJournal(entry('kubek kawy')).nutrition.single.label,
+      'Coffee',
+    );
+    expect(
+      parseJournal(entry('talerz zupy')).nutrition.single.label,
+      'Soup',
+    );
+    expect(
+      parseJournal(entry('porcja kurczaka')).nutrition.single.label,
+      'Chicken breast',
+    );
+
+    // Dictated punctuation:
+    expect(parseJournal(entry('82,4 kg.')).weights.single.kg, 82.4);
+    final multi = parseJournal(entry('Biegłem 5 km. Zjadłem owsiankę.'));
+    expect(multi.activities.single.distanceKm, 5);
+    expect(multi.nutrition.single.label, 'Oatmeal');
+
+    final potem = parseJournal(entry('Biegłem 5k potem zjadłem ryż z kurczakiem.'));
+    expect(potem.activities.single.distanceKm, 5);
+    expect(potem.nutrition.single.label, 'Chicken and rice');
+
+    // Polish movement and duration:
+    final runTimed = parseJournal(entry('przebiegłem 5k w 24:30'));
+    expect(runTimed.activities.single.distanceKm, 5);
+    expect(runTimed.activities.single.minutes, closeTo(24.5, 1e-9));
+
+    final runMin = parseJournal(entry('biegłem 5 km w 25 minut'));
+    expect(runMin.activities.single.distanceKm, 5);
+    expect(runMin.activities.single.minutes, 25);
+
+    final runPrzez = parseJournal(entry('biegałem przez 45 minut'));
+    expect(runPrzez.activities.single.minutes, 45);
+
+    expect(
+      parseJournal(entry('trening 45 min')).activities.single.disciplineId,
+      'gym',
+    );
+    expect(
+      parseJournal(entry('zrobiłem trening 45')).activities.single.disciplineId,
+      'gym',
+    );
+    expect(
+      parseJournal(entry('ćwiczyłem 60 min')).activities.single.minutes,
+      60,
+    );
+    expect(
+      parseJournal(entry('spacerowałem 30 min')).activities.single.disciplineId,
+      'walk',
+    );
+    expect(
+      parseJournal(entry('20 km na rowerze')).activities.single.disciplineId,
+      'cycle',
+    );
+    expect(
+      parseJournal(entry('rowerem 25 km')).activities.single.distanceKm,
+      25,
+    );
+    expect(
+      parseJournal(entry('pływałam 45 min')).activities.single.disciplineId,
+      'swim',
+    );
+    expect(
+      parseJournal(entry('basen 45 min')).activities.single.disciplineId,
+      'swim',
+    );
+
+    // Polish sleep, nap, quality:
+    expect(
+      parseJournal(entry('pospałem 8 godzin')).sleeps.single.durationHours,
+      closeTo(8, 1e-9),
+    );
+    expect(
+      parseJournal(entry('drzemka 20 min')).sleeps.single.durationHours,
+      closeTo(20 / 60, 1e-9),
+    );
+    expect(
+      parseJournal(entry('położyłem się o 23:10')).sleeps.single.startHours,
+      closeTo(23 + 10 / 60, 1e-9),
+    );
+    expect(
+      parseJournal(entry('zasnąłem o 23:15')).sleeps.single.startHours,
+      closeTo(23 + 15 / 60, 1e-9),
+    );
+    expect(sleepWakeHoursOf('obudziłem się o 7:00'), 7);
+    expect(sleepQualityOf('źle spałem'), closeTo(0.32, 1e-9));
+    expect(sleepQualityOf('niewyspany'), closeTo(0.32, 1e-9));
+    expect(sleepQualityOf('świetnie spałem'), closeTo(0.92, 1e-9));
+    expect(sleepQualityOf('wyspany'), closeTo(0.92, 1e-9));
+
+    // Sit-ups:
+    final abs = parseJournal(entry('30 brzuszków'));
+    expect(abs.sets.single.exerciseId, 'sit-up');
+    expect(abs.sets.single.reps, 30);
+
+    // Blade handoff test lines:
+    final bladeSleep = parseJournal(entry('spałem siedem godzin'));
+    expect(bladeSleep.sleeps.single.durationHours, 7);
+
+    final bladeBreakfast = parseJournal(entry('zjadłem dwa jajka i chleb'));
+    expect(bladeBreakfast.nutrition, hasLength(2));
+    expect(bladeBreakfast.nutrition[0].label, 'Eggs');
+    expect(bladeBreakfast.nutrition[1].label, 'Bread (2 slices)');
+
+    final bladeChickenRice = parseJournal(entry('ryż z kurczakiem'));
+    expect(bladeChickenRice.nutrition.single.label, 'Chicken and rice');
+
+    final bladeOatmeal = parseJournal(entry('owsianka na śniadanie'));
+    expect(bladeOatmeal.nutrition.single.label, 'Oatmeal');
+
+    final bladeGym = parseJournal(entry('byłem na siłowni 45'));
+    expect(bladeGym.activities.single.disciplineId, 'gym');
+    expect(bladeGym.activities.single.minutes, 45);
+
+    final bladeWeight = parseJournal(entry('82,4 kg'));
+    expect(bladeWeight.weights.single.kg, closeTo(82.4, 1e-6));
+
+    final bladeRun = parseJournal(entry('biegłem 5,2 km'));
+    expect(bladeRun.activities.single.disciplineId, 'run');
+    expect(bladeRun.activities.single.distanceKm, 5.2);
+
+    final bladeStamp = stampJournalLine('7,30 ran 5k');
+    expect(bladeStamp.hour, 7);
+    expect(bladeStamp.minute, 30);
+    final bladeStampRun = parseJournal(entry(bladeStamp.text));
+    expect(bladeStampRun.activities.single.disciplineId, 'run');
+    expect(bladeStampRun.activities.single.distanceKm, 5);
+
+    final bladeBed = parseJournal(entry('went to bed at 23:10'));
+    expect(bladeBed.sleeps.single.startHours, closeTo(23 + 10 / 60, 1e-6));
+    expect(bladeBed.sleeps.single.durationHours, 0);
+  });
 }
+

@@ -49,7 +49,17 @@ const kFoods = <FoodEstimate>[
     fatG: 6,
   ),
   FoodEstimate(
-    aliases: ['eggs', 'egg', 'scrambled eggs', 'jajka', 'jajko', 'jajek'],
+    aliases: [
+      'eggs',
+      'egg',
+      'scrambled eggs',
+      'jajka',
+      'jajko',
+      'jajek',
+      'jajecznica',
+      'jajecznice',
+      'jajecznicy',
+    ],
     label: 'Eggs',
     kcal: 180,
     proteinG: 16,
@@ -58,7 +68,14 @@ const kFoods = <FoodEstimate>[
     unitCount: 2,
   ),
   FoodEstimate(
-    aliases: ['chicken', 'chicken breast', 'kurczak'],
+    aliases: [
+      'chicken',
+      'chicken breast',
+      'kurczak',
+      'kurczaka',
+      'kurczakiem',
+      'piers z kurczaka',
+    ],
     label: 'Chicken breast',
     kcal: 280,
     proteinG: 52,
@@ -79,7 +96,9 @@ const kFoods = <FoodEstimate>[
       'chicken rice',
       'chicken with rice',
       'ryz z kurczakiem',
+      'ryzu z kurczakiem',
       'kurczak z ryzem',
+      'kurczaka z ryzem',
     ],
     label: 'Chicken and rice',
     kcal: 530,
@@ -144,7 +163,7 @@ const kFoods = <FoodEstimate>[
     fatG: 2,
   ),
   FoodEstimate(
-    aliases: ['coffee', 'espresso', 'kawa', 'kawe'],
+    aliases: ['coffee', 'espresso', 'kawa', 'kawe', 'kawy'],
     label: 'Coffee',
     kcal: 5,
     proteinG: 0,
@@ -160,7 +179,16 @@ const kFoods = <FoodEstimate>[
     fatG: 6,
   ),
   FoodEstimate(
-    aliases: ['bread', 'toast', 'sourdough', 'chleb', 'chleba'],
+    aliases: [
+      'bread',
+      'toast',
+      'sourdough',
+      'chleb',
+      'chleba',
+      'bulka',
+      'bulke',
+      'bulki',
+    ],
     label: 'Bread (2 slices)',
     kcal: 180,
     proteinG: 6,
@@ -193,7 +221,7 @@ const kFoods = <FoodEstimate>[
     fatG: 20,
   ),
   FoodEstimate(
-    aliases: ['beef', 'steak'],
+    aliases: ['beef', 'steak', 'stek', 'steka', 'wolowina', 'wolowine'],
     label: 'Steak',
     kcal: 450,
     proteinG: 48,
@@ -201,7 +229,7 @@ const kFoods = <FoodEstimate>[
     fatG: 28,
   ),
   FoodEstimate(
-    aliases: ['pasta', 'spaghetti', 'makaron'],
+    aliases: ['pasta', 'spaghetti', 'makaron', 'makaronu'],
     label: 'Pasta',
     kcal: 380,
     proteinG: 13,
@@ -209,7 +237,7 @@ const kFoods = <FoodEstimate>[
     fatG: 2,
   ),
   FoodEstimate(
-    aliases: ['pizza'],
+    aliases: ['pizza', 'pizze', 'pizzy'],
     label: 'Pizza (2 slices)',
     kcal: 560,
     proteinG: 24,
@@ -218,7 +246,13 @@ const kFoods = <FoodEstimate>[
     unitCount: 2,
   ),
   FoodEstimate(
-    aliases: ['burger', 'cheeseburger', 'hamburger'],
+    aliases: [
+      'burger',
+      'burgera',
+      'cheeseburger',
+      'cheeseburgera',
+      'hamburger',
+    ],
     label: 'Burger',
     kcal: 650,
     proteinG: 32,
@@ -234,7 +268,7 @@ const kFoods = <FoodEstimate>[
     fatG: 17,
   ),
   FoodEstimate(
-    aliases: ['salad', 'salatka'],
+    aliases: ['salad', 'salatka', 'salatke', 'salatki'],
     label: 'Salad',
     kcal: 180,
     proteinG: 8,
@@ -242,7 +276,7 @@ const kFoods = <FoodEstimate>[
     fatG: 10,
   ),
   FoodEstimate(
-    aliases: ['sandwich', 'kanapka'],
+    aliases: ['sandwich', 'kanapka', 'kanapke', 'kanapki'],
     label: 'Sandwich',
     kcal: 420,
     proteinG: 22,
@@ -330,7 +364,7 @@ const kFoods = <FoodEstimate>[
     fatG: 0,
   ),
   FoodEstimate(
-    aliases: ['beer', 'piwo'],
+    aliases: ['beer', 'piwo', 'piwa'],
     label: 'Beer',
     kcal: 150,
     proteinG: 1,
@@ -338,7 +372,7 @@ const kFoods = <FoodEstimate>[
     fatG: 0,
   ),
   FoodEstimate(
-    aliases: ['wine', 'wino'],
+    aliases: ['wine', 'wino', 'wina'],
     label: 'Wine',
     kcal: 125,
     proteinG: 0,
@@ -378,7 +412,7 @@ const kFoods = <FoodEstimate>[
     fatG: 14,
   ),
   FoodEstimate(
-    aliases: ['soup', 'zupa'],
+    aliases: ['soup', 'zupa', 'zupe', 'zupy'],
     label: 'Soup',
     kcal: 180,
     proteinG: 8,
@@ -434,7 +468,7 @@ const kFoods = <FoodEstimate>[
     fatG: 28,
   ),
   FoodEstimate(
-    aliases: ['kebab', 'kebap', 'doner', 'durum'],
+    aliases: ['kebab', 'kebaba', 'kebap', 'doner', 'durum'],
     label: 'Kebab',
     kcal: 700,
     proteinG: 38,
@@ -466,7 +500,13 @@ const kFoods = <FoodEstimate>[
     fatG: 18,
   ),
   FoodEstimate(
-    aliases: ['schabowy', 'pork chop', 'kotlet'],
+    aliases: [
+      'schabowy',
+      'schabowego',
+      'pork chop',
+      'kotlet',
+      'kotleta',
+    ],
     label: 'Schabowy',
     kcal: 550,
     proteinG: 38,
@@ -482,7 +522,7 @@ const kFoods = <FoodEstimate>[
     fatG: 24,
   ),
   FoodEstimate(
-    aliases: ['zapiekanka'],
+    aliases: ['zapiekanka', 'zapiekanke', 'zapiekanki'],
     label: 'Zapiekanka',
     kcal: 450,
     proteinG: 18,
@@ -490,7 +530,7 @@ const kFoods = <FoodEstimate>[
     fatG: 18,
   ),
   FoodEstimate(
-    aliases: ['barszcz', 'borscht'],
+    aliases: ['barszcz', 'barszczu', 'borscht'],
     label: 'Barszcz',
     kcal: 80,
     proteinG: 3,
@@ -498,7 +538,7 @@ const kFoods = <FoodEstimate>[
     fatG: 2,
   ),
   FoodEstimate(
-    aliases: ['zurek'],
+    aliases: ['zurek', 'zurku'],
     label: 'Żurek',
     kcal: 220,
     proteinG: 12,
@@ -506,7 +546,7 @@ const kFoods = <FoodEstimate>[
     fatG: 10,
   ),
   FoodEstimate(
-    aliases: ['kielbasa', 'sausage'],
+    aliases: ['kielbasa', 'kielbase', 'kielbasy', 'sausage'],
     label: 'Kiełbasa',
     kcal: 300,
     proteinG: 18,
@@ -570,7 +610,7 @@ const kFoods = <FoodEstimate>[
     fatG: 12,
   ),
   FoodEstimate(
-    aliases: ['tea', 'herbata'],
+    aliases: ['tea', 'herbata', 'herbate', 'herbaty'],
     label: 'Tea',
     kcal: 2,
     proteinG: 0,
@@ -586,7 +626,7 @@ const kFoods = <FoodEstimate>[
     fatG: 15,
   ),
   FoodEstimate(
-    aliases: ['twarog', 'quark'],
+    aliases: ['twarog', 'twarogu', 'twarozek', 'twarozku', 'quark'],
     label: 'Twaróg',
     kcal: 160,
     proteinG: 18,
@@ -634,7 +674,7 @@ const kFoods = <FoodEstimate>[
     fatG: 10,
   ),
   FoodEstimate(
-    aliases: ['water', 'woda'],
+    aliases: ['water', 'woda', 'wode', 'wody'],
     label: 'Water',
     kcal: 0,
     proteinG: 0,
@@ -659,5 +699,42 @@ FoodEstimate? lookupFood(String raw) {
       }
     }
   }
-  return best;
+  if (best != null) return best;
+
+  // Polish declension fallback for unlisted inflected forms:
+  for (final word in n.split(' ')) {
+    if (word.length < 4) continue;
+    final candidates = <String>[];
+    if (word.endsWith('ego') && word.length > 5) {
+      candidates.add('${word.substring(0, word.length - 3)}y');
+    }
+    if (word.endsWith('e') && word.length > 3) {
+      candidates.add('${word.substring(0, word.length - 1)}a');
+    }
+    if ((word.endsWith('y') || word.endsWith('i')) && word.length > 3) {
+      candidates.add('${word.substring(0, word.length - 1)}a');
+    }
+    if (word.endsWith('a') && word.length > 3) {
+      candidates.add(word.substring(0, word.length - 1));
+      candidates.add('${word.substring(0, word.length - 1)}o');
+    }
+    if (word.endsWith('em') && word.length > 4) {
+      candidates.add(word.substring(0, word.length - 2));
+    }
+    if (word.endsWith('u') && word.length > 4) {
+      candidates.add(word.substring(0, word.length - 1));
+    }
+    for (final cand in candidates) {
+      for (final f in kFoods) {
+        for (final a in [...f.aliases, f.label.toLowerCase()]) {
+          final token = foldLatin(a).trim();
+          if (token.isEmpty) continue;
+          if (token == cand) {
+            return f;
+          }
+        }
+      }
+    }
+  }
+  return null;
 }

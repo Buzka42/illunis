@@ -1,7 +1,7 @@
 # Illunis — Handoff
 
-Next session: install the debug APK on the Blade, try Warsaw speech on
-the writing line, then keep capture honest. Do not restyle the sky.
+Next session: keep capture honest on the Blade, collect ~40 real dictated
+meals before scoring OpenFoodFacts vs USDA. Do not restyle the sky.
 
 Read `CURSOR_MANDATE.md` for the product, `PLAN.md` for architecture,
 `docs/DECISIONS.md` for closed doors, `docs/BACKEND_PLAN.md` for deferred
@@ -13,12 +13,20 @@ Application id: `com.illunis.illunis`.
 
 ---
 
-## Status (7 Sep 2026)
+## Status (8 Sep 2026)
 
 Phase 1 sky and Phase 2 on-device journal are in the tree. The last pushed
-sky+journal commit is `7ada496`. After that: stamps, spoken Polish, sleep
-belonging, comma decimals, a scrolling settings sheet, and Blade capture
-tests. `flutter analyze` clean; **119** tests green.
+sky+journal commit is `7ada496`. After that: stamps, spoken Polish (genitives,
+accusatives, measure prefixes, verbs), sleep belonging, comma decimals,
+a scrolling settings sheet, and Blade capture tests. `flutter analyze` clean;
+**120** tests green.
+
+Debug APK installed and verified live on the ZTE Blade V 5G (`20240920122`):
+- `RECORD_AUDIO` permission granted and active.
+- Dictation and text capture verified: sleep (`spalem siedem godzin`),
+  multi-food estimates with dock confirm (`zjadlem dwa jajka i chleb`),
+  and conditioning sessions (`bylem na silowni 45` -> Strain 1.00 LOAD).
+- Timeline and dashboard rollups update live on-device with Impeller 60+ fps.
 
 Production sky already reads rollups (`LocalSkyStateSource` via
 `illunisOverrides` in `main.dart`). Patterns stay silent until 21 paired
@@ -117,11 +125,12 @@ went to bed at 23:10
 
 ## Next (ordered)
 
-1. USB-stable `adb install -r` of the debug APK; dictate the lines above.
-2. Fix whatever the Blade actually says (punctuation, genitives, missed
-   verbs). Do not invent duration for quality-only nights or unit-less runs.
-3. Wearables / Drift / OFF vs USDA / Stellarium-precession only when those
-   doors open in `docs/DECISIONS.md`.
+1. Keep capture honest during daily use on the Blade; collect ~40 real
+   dictated meals before scoring OpenFoodFacts vs USDA.
+2. Maintain capture boundaries: no invented duration for quality-only nights
+   or unit-less runs.
+3. Wearables (Health Connect / HealthKit) / Drift / OFF vs USDA / Stellarium
+   precession only when those doors open in `docs/DECISIONS.md`.
 
 `ILLUNIS_AI_ENDPOINT` + consent + age gate still required before the worker
 enriches a page. The local parser is the record.

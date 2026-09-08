@@ -8,19 +8,19 @@ final _dist = RegExp(
   caseSensitive: false,
 );
 final _inHms = RegExp(
-  r'\bin\s+(\d+)\s*h(?:ours?)?\s*(?:(\d+)\s*m(?:in(?:utes?)?)?)?',
+  r'\b(?:in|w)\s+(\d+)\s*(?:h(?:ours?)?|godzin(?:y|e)?)\s*(?:(?:and|i)?\s*(\d+)\s*(?:m(?:in(?:utes?)?)?|minut(?:y|e)?))?',
   caseSensitive: false,
 );
 final _inClock = RegExp(
-  r'\bin\s+(\d+)[:.](\d{2})(?:[:.](\d{2}))?',
+  r'\b(?:in|w)\s+(\d+)[:.](\d{2})(?:[:.](\d{2}))?',
   caseSensitive: false,
 );
 final _inMin = RegExp(
-  r'\bin\s+(\d+(?:\.\d+)?)\s*(min|mins|minutes)\b',
+  r'\b(?:in|w)\s+(\d+(?:\.\d+)?)\s*(min|mins|minutes|minut(?:y|e)?)\b',
   caseSensitive: false,
 );
 final _forMin = RegExp(
-  r'\b(?:for\s+)?(\d+(?:\.\d+)?)\s*(min|mins|minutes|minut(?:y|e)?|h|hr|hours?|godzin(?:y|e)?)\b',
+  r'\b(?:for\s+|przez\s+)?(\d+(?:\.\d+)?)\s*(min|mins|minutes|minut(?:y|e)?|h|hr|hours?|godzin(?:y|e)?)\b',
   caseSensitive: false,
 );
 final _paceMark = RegExp(
@@ -60,7 +60,7 @@ ActivityEntry? parseSessionChunk(
     return null;
   }
   if (RegExp(
-    r'\b(ate|had|eaten|eating|drank|drink|drunk|grabbed|ordered|snacked|kcal|calories?|protein|zjadlem|zjadlam|jadlem|jadlam|wypilem|wypilam)\b',
+    r'\b(ate|had|eaten|eating|drank|drink|drunk|grabbed|ordered|snacked|kcal|calories?|protein|zjadlem|zjadlam|jadlem|jadlam|wypilem|wypilam|pilem|pilam|zamowilem|zamowilam|przekasilem|przekasilam)\b',
     caseSensitive: false,
   ).hasMatch(chunk)) {
     return null;
@@ -210,7 +210,7 @@ double? _raceKm(String chunk) {
   if (!half && !full) return null;
   final anchored =
       RegExp(
-        r'\b(ran|run|jog|raced|race|finished|completed|did)\b',
+        r'\b(ran|run|jog|raced|race|finished|completed|did|przebieglem|przebieglam|pobiegalem|pobieglam|zrobilem|zrobilam)\b',
         caseSensitive: false,
       ).hasMatch(n) ||
       _inClock.hasMatch(chunk) ||

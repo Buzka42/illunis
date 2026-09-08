@@ -56,10 +56,10 @@ final _bwCount = RegExp(
   caseSensitive: false,
 );
 final _nap = RegExp(
-  r'\b(?:napped|nap)\s+(?:for\s+)?(\d+(?:\.\d+)?)\s*(min|mins|minutes|h|hr|hours?)?\b',
+  r'\b(?:napped|nap|drzemka|zdrzemn[ae]l[ae]m(?:\s+sie)?)\s+(?:for\s+)?(\d+(?:\.\d+)?)\s*(min|mins|minutes|minut(?:y|e)?|h|hr|hours?|godzin(?:y|e)?)?\b',
   caseSensitive: false,
 );
-final _sleepVerb = r'(?:slept?|spalem|spalam)';
+final _sleepVerb = r'(?:slept?|spalem|spalam|pospalem|pospalam|przespalem|przespalam)';
 final _sleepClock = RegExp(
   '$_sleepVerb\\s+(\\d{1,2})[:.](\\d{2})\\s*[-–to]+\\s*(\\d{1,2})[:.](\\d{2})',
   caseSensitive: false,
@@ -81,7 +81,7 @@ final _sleepMin = RegExp(
   caseSensitive: false,
 );
 final _weight = RegExp(
-  r"\b(?:weigh(?:ed(?:\s+in)?(?:\s+at)?)?|weight|waze|i(?:['’]m|\s+am))\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds)?",
+  r"\b(?:weigh(?:ed(?:\s+in)?(?:\s+at)?)?|weight|waze|wazyl[ae]m|waga|i(?:['’]m|\s+am))\s+(\d+(?:\.\d+)?)\s*(kg|kgs|kilos?|lb|lbs|pounds)?",
   caseSensitive: false,
 );
 final _bareMass = RegExp(
@@ -94,11 +94,11 @@ final _protein = RegExp(
   caseSensitive: false,
 );
 final _ate = RegExp(
-  r'\b(?:ate|had|eaten|eating|drank|drink|drunk|grabbed|ordered|snacked(?:\s+on)?|zjadlem|zjadlam|jadlem|jadlam|wypilem|wypilam)\s+(.+)',
+  r'\b(?:ate|had|eaten|eating|drank|drink|drunk|grabbed|ordered|snacked(?:\s+on)?|zjadlem|zjadlam|jadlem|jadlam|wypilem|wypilam|pilem|pilam|zamowilem|zamowilam|przekasilem|przekasilam|wsunalem|wsunalam|wzialem|wzielam)\s+(.+)',
   caseSensitive: false,
 );
 final _foodSplit = RegExp(
-  r'\s+and\s+|,\s+|\s+with\s+|\s+z\s+|\s+i\s+',
+  r'\s+and\s+|,\s+|\s+with\s+|\s+z\s+|\s+i\s+|\s+oraz\s+',
   caseSensitive: false,
 );
 final _sleepQualityBad = RegExp(
@@ -111,15 +111,15 @@ final _sleepQualityGood = RegExp(
 );
 
 final _bed = RegExp(
-  r'(?:went to (?:bed|sleep)|fell asleep|headed to bed|in bed|bedtime|lights out|poszedl[ae]m spac|poszlam spac)\s+(?:(?:at|around|about|o)\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
+  r'(?:went to (?:bed|sleep)|fell asleep|headed to bed|in bed|bedtime|lights out|poszedl[ae]m spac|poszlam spac|poszedl[ae]m do lozka|polozyl[ae]m sie|zasn[ae]l[ae]m)\s+(?:(?:at|around|about|o)\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
   caseSensitive: false,
 );
 final _woke = RegExp(
-  r'(?:woke(?:\s+up)?|got up|(?:was\s+)?\bup\b|wstal[ae]m|obudzil[ae]m(?:\s+sie)?)\s+(?:(?:at|around|about|o)\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
+  r'(?:woke(?:\s+up)?|got up|(?:was\s+)?\bup\b|wstal[ae]m|obudzil[ae]m(?:\s+sie)?|pobudka)\s+(?:(?:at|around|about|o)\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
   caseSensitive: false,
 );
 final _sleptUntil = RegExp(
-  r'\b(?:slept?|spalem|spalam)\s+(?:until|till)\s+(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
+  r'\b(?:slept?|spalem|spalam|pospalem|pospalam)\s+(?:until|till|do)\s+(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?',
   caseSensitive: false,
 );
 
@@ -145,8 +145,13 @@ ParsedJournal parseJournal(
   final weights = <WeightEntry>[];
 
   final chunks = foldDecimal(entry.text)
-      .split(RegExp(r'[\n;,]+|\bthen\b', caseSensitive: false))
-      .map((s) => s.trim())
+      .split(
+        RegExp(
+          r'[\n;,]+|(?<=[^\d])\.\s+|\.(?=\s+[A-Za-z])|\b(?:then|potem)\b',
+          caseSensitive: false,
+        ),
+      )
+      .map((s) => s.trim().replaceAll(RegExp(r'[.!?]+$'), '').trim())
       .where((s) => s.isNotEmpty);
 
   final quality = sleepQualityOf(entry.text);
@@ -368,9 +373,23 @@ double? sleepQualityOf(String text) {
   final t = foldLatin(text);
   if (_sleepQualityBad.hasMatch(t)) return 0.32;
   if (_sleepQualityGood.hasMatch(t)) return 0.92;
-  if (RegExp(r'\b(zle|slabo|okropnie)\b').hasMatch(t) &&
-      RegExp(r'\b(spalem|spalam|slept?|sleep)\b').hasMatch(t)) {
+  if (RegExp(r'\b(niewyspany|niewyspana)\b').hasMatch(t)) return 0.32;
+  if (RegExp(r'\b(wyspany|wyspana)\b').hasMatch(t)) return 0.92;
+  if (RegExp(
+        r'\b(zle|slabo|okropnie|ciezko|beznadziejnie|fatalnie)\b',
+      ).hasMatch(t) &&
+      RegExp(
+        r'\b(spalem|spalam|pospalem|pospalam|slept?|sleep|sen|nocy)\b',
+      ).hasMatch(t)) {
     return 0.32;
+  }
+  if (RegExp(
+        r'\b(dobrze|swietnie|gleboko|twardo)\b',
+      ).hasMatch(t) &&
+      RegExp(
+        r'\b(spalem|spalam|pospalem|pospalam|slept?|sleep|sen|nocy)\b',
+      ).hasMatch(t)) {
+    return 0.92;
   }
   if (RegExp(r'\bnie mog[el][ae]m\b').hasMatch(t) &&
       RegExp(r'\b(spac|slept?|sleep)\b').hasMatch(t)) {
@@ -382,7 +401,7 @@ double? sleepQualityOf(String text) {
 String _stripLeadIn(String chunk) {
   var s = chunk.trim();
   final lead = RegExp(
-    r"^(?:i(?:['’]ve| have)?|we|just|went\s+(?:for|on)\s+a|(?:did|finished|completed)(?:\s+a)?|last\s+night|(?:this\s+)?(?:morning|afternoon|evening)|tonight|today|yesterday|(?:bylem|bylam)\s+na|na\s+(?:sniadanie|obiad|kolacje)|for\s+(?:breakfast|lunch|dinner|supper|brunch)|(?:breakfast|lunch|dinner|supper|brunch)\s+was)\s+",
+    r"^(?:i(?:['’]ve| have)?|we|just|went\s+(?:for|on)\s+a|(?:did|finished|completed)(?:\s+a)?|last\s+night|(?:this\s+)?(?:morning|afternoon|evening)|tonight|today|yesterday|dzisiaj|dzis|wczoraj|(?:bylem|bylam|poszedlem|poszlam)\s+na|(?:zrobilem|zrobilam)\s+(?:trening\s+)?|na\s+(?:sniadanie|obiad|kolacje)|for\s+(?:breakfast|lunch|dinner|supper|brunch)|(?:breakfast|lunch|dinner|supper|brunch)\s+was)\s+",
     caseSensitive: false,
   );
   while (true) {
@@ -396,7 +415,7 @@ String _measureOf(String rest) {
   return rest
       .replaceFirst(
         RegExp(
-          r'^(?:bowls?|slices?|cups?|pieces?|servings?|plates?|misk[aei]|kromk[aei]|szklank[aei])\s+(?:of\s+)?',
+          r'^(?:bowls?|slices?|cups?|pieces?|servings?|plates?|misk[aei]|kromk[aei]|szklank[aei]|kub[ek][ka]?|talerz[ae]?|porcj[aei]|kawa[lł]ek|kawa[lł]k[ai]|filizank[aei]|puszk[aei]|butelk[aei])\s+(?:of\s+)?',
           caseSensitive: false,
         ),
         '',
@@ -452,6 +471,18 @@ String _singular(String raw) {
     return '${t.substring(0, t.length - 3)}y';
   }
   if (t.endsWith('s') && !t.endsWith('ss') && t.length > 3) {
+    return t.substring(0, t.length - 1);
+  }
+  if (t.endsWith('ego') && t.length > 5) {
+    return '${t.substring(0, t.length - 3)}y';
+  }
+  if (t.endsWith('e') && t.length > 3) {
+    return '${t.substring(0, t.length - 1)}a';
+  }
+  if ((t.endsWith('y') || t.endsWith('i')) && t.length > 3) {
+    return '${t.substring(0, t.length - 1)}a';
+  }
+  if (t.endsWith('a') && t.length > 3) {
     return t.substring(0, t.length - 1);
   }
   return t;

@@ -25,7 +25,10 @@ Latin-fold (`app/lib/core/i18n/fold.dart`) so dictated Polish hits the
 same food and lift aliases. `foldSpoken` also turns a comma between
 digits into a decimal (`82,4 kg`, `5,2 km`) *before* the page is split
 on `,`, so lists (`eggs, bread`) still split and mass does not become
-`4 kg`. Listen uses the device locale, 60 s, pause 4 s.
+`4 kg`. Unlisted Polish noun declensions (genitive `-a`, `-ego`, accusative
+`-ę`/`-e`) fall back to nominative stems in `lookupFood`. Sentence
+punctuation (`.`, `!`, `?`) and Polish `potem` split chunks cleanly.
+Listen uses the device locale, 60 s, pause 4 s.
 
 ## Estimates
 
