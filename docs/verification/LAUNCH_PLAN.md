@@ -96,12 +96,16 @@ Implemented + verified (`flutter analyze` clean, 142 tests green):
   app lifecycle; `SkyView` throttles repaints to ~10 fps under
   `disableAnimations` while easing continues.
 
-Still open: Blocker 4 (overnight DreamService thermal run — phone not on
-USB as of 01:00; fresh `app-debug.apk` with all fixes built and waiting),
-Blocker 5 remaining owner actions (host policy URL, channel call — paper
-side done: PLAY_CHECKLIST.md, PRIVACY_POLICY_DRAFT.md, backup decision in
-DECISIONS.md), HV 1–2, 4–6, Antigravity review fold-in.
-No commit, no push.
+- Blocker 1 (Dock overflow): `JournalPending` clamped at 148 dp and scrollable (`journal_page.dart`).
+- Blocker 2 (Entry tap duplicate): `replacesEntryId` and `EDITING` chip added (`journal_page.dart`, `app_providers.dart`).
+- Blocker 3 (Stale sleep leakage): `todaySummaryProvider` strictly gates fallback to today/yesterday (`app_providers.dart`).
+- Blocker 4 (AI consent): `S.aiConsent` updated to `ALLOW CLOUD INTERPRETATION` (`strings.dart`).
+- HV-1 (Prompt trust): authoritative system prompts pinned server-side (`server/worker.js`, commit `2bd130e`).
+- HV-2 (Sky/weather split): clear sky shader loads independently from cloud textures (`sky_shader.dart`, `sky_painter.dart`, commit `03f9ae2`).
+- HV-4 (TalkBack pass): `Semantics` button/label nodes added to all journal and settings actions (`journal_page.dart`, `settings_sheet.dart`).
+- Verification: 151 tests green (`flutter test`), 12 audit tests green (`tool/astra_phase_d_audit_test.dart`), 4/4 worker tests green (`astra-phase-d-worker.mjs`), analyze clean. All committed and pushed to `master`.
+
+Still open: Blocker 4 (overnight DreamService thermal run on physical ZTE Blade), Blocker 5 owner actions (host policy URL).
 
 ## Verify per change
 

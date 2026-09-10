@@ -35,8 +35,9 @@ speech recognizer. Denied/missing recognizer falls back to the keyboard."
 The worker bearer token ships via `--dart-define` (`transport.dart:10`)
 and is extractable from the APK. Impact if extracted: burns the shared
 quota (40/install/day is client-minted IDs, so the 4000/day global cap
-is the real bound). Before Play: per-release token, lower `MAX_GLOBAL`,
-pin the three system prompts server-side (HV-1), rotate on abuse.
+is the real bound). Status: server-side prompt pinning (HV-1) is implemented
+and verified (`server/worker.js`, commit `2bd130e`), preventing arbitrary prompt
+injection. Before Play: per-release token, lower `MAX_GLOBAL`, rotate on abuse.
 
 ## Privacy policy
 

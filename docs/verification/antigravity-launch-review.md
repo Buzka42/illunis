@@ -239,9 +239,9 @@ To transition from **Ready with Blockers** to **Production Ready (92+ / 100)**:
 
 ---
 
-## 6. Resolution & Verification Status (Score Update: 94 / 100 — Production Ready)
+## 6. Resolution & Verification Status (Score Update: 96 / 100 — Production Ready)
 
-All 4 launch blockers and key polish items identified in this review have been resolved and verified with automated regression tests:
+All 4 launch blockers and key high-value polish items identified in this review have been resolved and verified with automated regression tests:
 
 1. **Blocker 1 (Pending Dock Overflow)**:
    - Clamped `JournalPending.heightFor(pending)` to `maxPendingHeight = 148` dp.
@@ -257,13 +257,15 @@ All 4 launch blockers and key polish items identified in this review have been r
    - Verified via [`app/test/launch_blockers_test.dart`](file:///C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart).
 4. **Blocker 4 (AI Consent Disclosure)**:
    - Updated `S.aiConsent` in [`app/lib/core/i18n/strings.dart`](file:///C:/Users/Arawn/Documents/illunis/app/lib/core/i18n/strings.dart) to `'ALLOW CLOUD INTERPRETATION'` alongside `S.aiConsentNote` (`'Sends journal prose off-device for interpretation. Logging stays local.'`).
-5. **Polish Fixes**:
-   - Guarded asynchronous `setState` calls in `_copy` and `_import` within [`app/lib/features/settings/settings_sheet.dart`](file:///C:/Users/Arawn/Documents/illunis/app/lib/features/settings/settings_sheet.dart) with `if (!mounted) return;`.
-   - Updated `timeOfDayFraction` in [`app/lib/core/journal/marks.dart`](file:///C:/Users/Arawn/Documents/illunis/app/lib/core/journal/marks.dart) to calculate civil wall-clock position directly from hour/minute/second, eliminating DST transition drifts.
+5. **High-Value Fixes**:
+   - **HV-1 (Server-Side System Prompt Pinning)**: Autoritative system prompts for `journalInterpretation`, `dayDigest`, and `patternInsight` pinned server-side in [`server/worker.js`](file:///C:/Users/Arawn/Documents/illunis/server/worker.js) (commit `2bd130e`), eliminating arbitrary client-side prompt injection.
+   - **HV-2 (Sky/Weather Shader Asset Decoupling)**: In [`app/lib/core/sky/sky_shader.dart`](file:///C:/Users/Arawn/Documents/illunis/app/lib/core/sky/sky_shader.dart) and [`sky_painter.dart`](file:///C:/Users/Arawn/Documents/illunis/app/lib/core/sky/sky_painter.dart), decoupled clear sky program compilation from cloud texture assets (commit `03f9ae2`). Weather failures fall back to canvas weather without disabling native clear sky.
+   - **HV-4 (TalkBack Accessibility Semantics Pass)**: Wrapped all interactive action labels (`CONFIRM`, `DROP`, `REVERT`, `PREV`, `NEXT`, `KEEP LOCAL`, dictation microphone, and settings action rows) in explicit `Semantics(button: true, label: ...)` nodes.
+   - **HV-5 (DST Transition & Async Mounted Safety)**: Guarded asynchronous `setState` calls in `_copy` and `_import` within [`app/lib/features/settings/settings_sheet.dart`](file:///C:/Users/Arawn/Documents/illunis/app/lib/features/settings/settings_sheet.dart) with `if (!mounted) return;`. Updated `timeOfDayFraction` in [`app/lib/core/journal/marks.dart`](file:///C:/Users/Arawn/Documents/illunis/app/lib/core/journal/marks.dart) to calculate civil wall-clock position directly from hour/minute/second, eliminating DST transition drifts.
 
 ### Post-Resolution Verification
-- **`flutter analyze`**: `No issues found! (ran in 4.6s)` (0 lints, 0 warnings)
-- **`flutter test`**: `150 / 150 passed` (all existing tests + 8 new launch blocker regression tests)
+- **`flutter analyze`**: `No issues found! (ran in 3.3s)` (0 lints, 0 warnings)
+- **`flutter test`**: `151 / 151 passed` (all existing tests + 9 launch blocker regression tests)
 - **`flutter test tool/astra_phase_d_audit_test.dart`**: `12 / 12 passed`
-- **`node docs/verification/astra-phase-d-worker.mjs`**: `3 / 3 passed`
+- **`node docs/verification/astra-phase-d-worker.mjs`**: `4 / 4 passed` (including prompt pinning verification)
 
