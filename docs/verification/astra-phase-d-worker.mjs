@@ -60,5 +60,27 @@ assert.deepEqual(statuses, [200, 429]);
 assert.equal(upstreamCalls, 1);
 assert.deepEqual([...values.values()], ['1', '1']);
 console.log('Verified: concurrent requests serialize quota; 1 succeeds (200), 1 limited (429), counters at 1.');
+
+// 4. Prompt trust: system prompt sent upstream is pinned server-side
+let lastUpstreamBody = null;
+globalThis.fetch = async (url, opts) => {
+  lastUpstreamBody = JSON.parse(opts.body);
+  return Response.json({ choices: [{ message: { content: '{}' } }] });
+};
+const env2 = {
+  OPENAI_API_KEY: 'fake',
+  ILLUNIS_TOKEN: 'secret',
+  MAX_PER_INSTALL: '10',
+  MAX_GLOBAL: '100',
+  METER: {
+    async get() { return '0'; },
+    async put() {},
+  },
+};
+await worker.fetch(request(), env2);
+assert.ok(lastUpstreamBody.messages[0].content.includes('instrument sentence'));
+assert.notEqual(lastUpstreamBody.messages[0].content, 'audit');
+console.log('Verified: server pins system prompt per call, preventing arbitrary proxy prompt injection.');
+
 console.log('All hardened worker tests passed; no real network or secrets used.');
 

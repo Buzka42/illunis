@@ -6,6 +6,40 @@
  * Bindings: OPENAI_API_KEY, ILLUNIS_TOKEN (optional shared secret),
  * MODEL (optional), METER (KV namespace, optional).
  */
+const PINNED_PROMPTS = {
+  journalInterpretation: `You extract structured health-log items from one journal entry for a
+general fitness app (running, riding, swimming, team sports, mobility,
+climbing, martial arts, gym sets, food, sleep, body mass — not gym-only).
+
+Return JSON only, matching the schema.
+Rules:
+- Prefer stated numbers. Do not invent precise calories, pace, distance or
+  heart rate; mark those estimates.
+- Gym lifts belong in sets (exercise, kg, reps). Do not also invent a gym
+  activity unless they named a timed session ("gym 45 min").
+- Endurance belongs in activities: discipline, distance, minutes, pace if
+  given ("5k in 24:30" → run, 5 km, 24.5 min, pace 4:54/km).
+- Name effort when they did: easy, steady, tempo, intervals, race, long.
+- Sports and mobility belong in activities with minutes ("football 90 min",
+  "yoga 45", "played rugby 80").
+- Derive pace from distance + time when both are present.
+- Never include advice. Never echo the raw entry as a field.
+- If they said how the night felt (poorly, restless, well, deep), set
+  sleep.quality from 0 (poor) to 1 (well). Do not invent a quality.
+- If nothing structured is present, return empty arrays.`,
+
+  dayDigest: `You write one instrument sentence about a day of movement, intake and sleep.
+Cover whatever actually happened — a run, a ride, a match, a lift, a rest.
+No advice. No second person coaching. No exclamation. At most 140 characters.
+If the figures cannot support a sentence, return an empty sentence.`,
+
+  patternInsight: `You find one quiet truth in the correlation between two lifestyle series.
+The correlation is already computed. You explain the direction and the
+practical consequence in one or two restrained sentences.
+No coaching. No exclamation. No advice.
+If the correlation is weak, note that gently without enthusiasm.`
+};
+
 let reservationLock = Promise.resolve();
 
 async function reserveQuota(env, install, day, capInstall, capGlobal) {
@@ -105,6 +139,8 @@ export default {
       return new Response('meter', { status: 429, headers: cors() });
     }
 
+    const pinnedSystem = PINNED_PROMPTS[call] || system;
+
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 15000);
@@ -118,7 +154,7 @@ export default {
         body: JSON.stringify({
           model: env.MODEL || 'gpt-4.1-mini',
           messages: [
-            { role: 'system', content: system },
+            { role: 'system', content: pinnedSystem },
             { role: 'user', content: user },
           ],
           response_format: {
