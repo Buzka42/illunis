@@ -201,24 +201,28 @@ class _Line extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(label, style: Type.label.copyWith(color: Inks.strong)),
-            if (sub != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  sub!,
-                  style: Type.micro.copyWith(color: Inks.muted),
+    return Semantics(
+      button: true,
+      label: sub != null ? '$label, $sub' : label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(label, style: Type.label.copyWith(color: Inks.strong)),
+              if (sub != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    sub!,
+                    style: Type.micro.copyWith(color: Inks.muted),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

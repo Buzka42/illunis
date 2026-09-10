@@ -158,14 +158,18 @@ class _Word extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 0, 10),
-        child: Text(
-          label,
-          style: Type.label.copyWith(color: faint ? Inks.faint : Inks.strong),
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 0, 10),
+          child: Text(
+            label,
+            style: Type.label.copyWith(color: faint ? Inks.faint : Inks.strong),
+          ),
         ),
       ),
     );
@@ -180,12 +184,17 @@ class _NavWord extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Text(
-        label,
-        style: Type.label.copyWith(color: active ? Inks.muted : Inks.faint),
+    return Semantics(
+      button: true,
+      enabled: active && onTap != null,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Text(
+          label,
+          style: Type.label.copyWith(color: active ? Inks.muted : Inks.faint),
+        ),
       ),
     );
   }
@@ -579,32 +588,40 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
               ),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => setState(() => _keepLocal = !_keepLocal),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                child: Text(
-                  _keepLocal ? '[ LOCAL ]' : S.keepLocal,
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.fade,
-                  style: Type.label.copyWith(
-                    color: _keepLocal ? Inks.warm : Inks.faint,
+            Semantics(
+              button: true,
+              label: _keepLocal ? 'Keep local enabled' : 'Keep local disabled',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _keepLocal = !_keepLocal),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                  child: Text(
+                    _keepLocal ? '[ LOCAL ]' : S.keepLocal,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.fade,
+                    style: Type.label.copyWith(
+                      color: _keepLocal ? Inks.warm : Inks.faint,
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            GestureDetector(
-              key: const ValueKey('journal-mic'),
-              behavior: HitTestBehavior.opaque,
-              onTap: _toggleMic,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 0, 8),
-                child: CustomPaint(
-                  size: const Size(14, 18),
-                  painter: _MicMark(_listening ? Inks.warm : Inks.body),
+            Semantics(
+              button: true,
+              label: _listening ? 'Stop dictation' : 'Start dictation',
+              child: GestureDetector(
+                key: const ValueKey('journal-mic'),
+                behavior: HitTestBehavior.opaque,
+                onTap: _toggleMic,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 0, 8),
+                  child: CustomPaint(
+                    size: const Size(14, 18),
+                    painter: _MicMark(_listening ? Inks.warm : Inks.body),
+                  ),
                 ),
               ),
             ),

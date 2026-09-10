@@ -11,10 +11,13 @@ class SkyShader {
   SkyShader._(this._program, this._weatherProgram, this._cloudTextures);
 
   final ui.FragmentProgram _program;
-  final ui.FragmentProgram _weatherProgram;
+  final ui.FragmentProgram? _weatherProgram;
   final List<ui.Image> _cloudTextures;
   ui.FragmentShader? _skyInstance;
   ui.FragmentShader? _weatherInstance;
+
+  bool get hasWeather =>
+      _weatherProgram != null && _cloudTextures.length >= 3;
 
   static Future<SkyShader>? _loading;
 
@@ -32,14 +35,20 @@ class SkyShader {
   }
 
   static Future<SkyShader> _loadResources() async {
-    final programs = await Future.wait([
-      ui.FragmentProgram.fromAsset('shaders/sky.frag'),
-      ui.FragmentProgram.fromAsset('shaders/weather.frag'),
-    ]);
-    final textures = await Future.wait([
-      for (final name in ['stratus', 'cumulus', 'cirrus']) _loadTexture(name),
-    ]);
-    return SkyShader._(programs[0], programs[1], textures);
+    final skyProgram = await ui.FragmentProgram.fromAsset('shaders/sky.frag');
+    ui.FragmentProgram? weatherProgram;
+    final cloudTextures = <ui.Image>[];
+    try {
+      weatherProgram =
+          await ui.FragmentProgram.fromAsset('shaders/weather.frag');
+      final textures = await Future.wait([
+        for (final name in ['stratus', 'cumulus', 'cirrus']) _loadTexture(name),
+      ]);
+      cloudTextures.addAll(textures);
+    } catch (e) {
+      debugPrint('weather shader assets unavailable: $e');
+    }
+    return SkyShader._(skyProgram, weatherProgram, cloudTextures);
   }
 
   static Future<ui.Image> _loadTexture(String name) async {
@@ -61,13 +70,14 @@ class SkyShader {
 
   /// Weather is composited after the catalog so a cloud occludes every
   /// celestial body, including points drawn by Canvas. Clear pays no pass.
-  ui.FragmentShader weatherShader({
+  ui.FragmentShader? weatherShader({
     required ResolvedScene scene,
     required SkyCamera camera,
     required double time,
     required double pixelScale,
   }) {
-    final shader = _weatherInstance ??= _weatherProgram.fragmentShader();
+    if (!hasWeather) return null;
+    final shader = _weatherInstance ??= _weatherProgram!.fragmentShader();
     final weather = scene.state.weather!;
     var i = 0;
     void f(double value) => shader.setFloat(i++, value);

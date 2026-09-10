@@ -64,16 +64,20 @@ class SkyPainter extends CustomPainter {
       paintCatalogStars(canvas, scene: scene, camera: camera, time: time);
     }
     if (weather != null && !weather.isClear) {
-      canvas.drawRect(
-        Offset.zero & size,
-        Paint()
-          ..shader = s.weatherShader(
-            scene: scene,
-            camera: camera,
-            time: time,
-            pixelScale: devicePixelRatio,
-          ),
+      final ws = s.weatherShader(
+        scene: scene,
+        camera: camera,
+        time: time,
+        pixelScale: devicePixelRatio,
       );
+      if (ws != null) {
+        canvas.drawRect(
+          Offset.zero & size,
+          Paint()..shader = ws,
+        );
+      } else {
+        _paintFallbackWeather(canvas, size);
+      }
     }
   }
 

@@ -215,4 +215,42 @@ void main() {
       expect(S.aiConsentNote, contains('off-device'));
     });
   });
+
+  group('Launch Polish: Accessibility Semantics pass', () {
+    testWidgets('Journal controls provide accessibility semantics', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const IllunisApp(
+            home: Scaffold(body: JournalWritingLine()),
+          ),
+        ),
+      );
+
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.button == true &&
+              w.properties.label == 'Start dictation',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.button == true &&
+              w.properties.label == 'Keep local disabled',
+        ),
+        findsOneWidget,
+      );
+    });
+  });
 }
+
