@@ -15,6 +15,10 @@ class Inks {
   static const Color warm = Color(0xFFF2C99A);
   static const Color cool = Color(0xFFB9C6E0);
   static const Color negative = Color(0xFFE8A39A);
+  static const Color slate = Color(0xFF1B2433);
+
+  /// Header ink follows the same resolved sky blend as the instrument layer.
+  static Color sky(double blend) => Color.lerp(full, slate, blend)!;
 }
 
 class Type {
@@ -67,6 +71,14 @@ class Type {
 
   /// A figure in a table row.
   static TextStyle get figure => _m(17, 400, spacing: -0.2, color: Inks.strong);
+
+  /// Compact rows, including paired rise and set times.
+  static TextStyle get figureSmall =>
+      _m(14.5, 400, spacing: -0.2, color: Inks.strong);
+
+  /// Figures painted into the fixed-height timeline.
+  static TextStyle track({required double size, int weight = 400}) =>
+      _m(size, weight, spacing: 0.4, height: 1.0);
 
   /// The one big number on a surface.
   static TextStyle get figureLarge =>

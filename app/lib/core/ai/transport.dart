@@ -47,24 +47,31 @@ class AiTransport {
     if (!profile.hasAiConsent) return const AiResult(error: 'no-consent');
     if (!profile.ageAtLeast16) return const AiResult(error: 'age');
 
+    if (user.length > 8192) return const AiResult(error: 'payload-too-large');
+
     try {
-      final res = await _client.post(
-        Uri.parse(endpoint),
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer $token',
-          'x-illunis-install': profile.installId,
-          'x-illunis-call': name,
-        },
-        body: jsonEncode({
-          'call': name,
-          'system': system,
-          'user': user,
-          'responseSchema': responseSchema,
-        }),
-      );
+      final res = await _client
+          .post(
+            Uri.parse(endpoint),
+            headers: {
+              'content-type': 'application/json',
+              'authorization': 'Bearer $token',
+              'x-illunis-install': profile.installId,
+              'x-illunis-call': name,
+            },
+            body: jsonEncode({
+              'call': name,
+              'system': system,
+              'user': user,
+              'responseSchema': responseSchema,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
       if (res.statusCode < 200 || res.statusCode >= 300) {
         return AiResult(error: 'http-${res.statusCode}');
+      }
+      if (res.body.length > 128 * 1024) {
+        return const AiResult(error: 'response-too-large');
       }
       final body = jsonDecode(res.body);
       if (body is Map && body['raw'] is String) {
@@ -74,6 +81,11 @@ class AiTransport {
     } catch (e) {
       return AiResult(error: e.toString());
     }
+  }
+
+  void dispose() {
+    _created?.close();
+    _created = null;
   }
 
   Future<AiResult> interpretJournal({
@@ -115,6 +127,7 @@ class AiTransport {
 }
 
 Map<String, Object?>? decodeRawJson(String raw) {
+  if (raw.length > 128 * 1024) return null;
   try {
     final v = jsonDecode(raw);
     if (v is Map<String, dynamic>) return v.cast<String, Object?>();

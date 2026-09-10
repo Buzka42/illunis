@@ -12,6 +12,10 @@ abstract class SkyStateSource {
   Stream<SkyState> get states;
   SkyState peek();
   Future<void> dispose();
+
+  /// Pause/resume periodic emissions (app lifecycle). Default is a no-op so
+  /// future sources stay backward compatible.
+  void setSuspended(bool suspended) {}
 }
 
 /// Real clock, real calendar, real moon phase, fixed observer, mock vitals.
@@ -19,10 +23,11 @@ class LiveMockSource implements SkyStateSource {
   LiveMockSource({
     this.latitudeDeg = 52.23,
     this.vitals = const MockVitals.none(),
-    Duration period = const Duration(seconds: 1),
+    this.period = const Duration(seconds: 1),
   }) {
     _controller = StreamController<SkyState>.broadcast(
       onListen: () {
+        if (_suspended) return;
         _emit();
         _timer = Timer.periodic(period, (_) => _emit());
       },
@@ -34,8 +39,22 @@ class LiveMockSource implements SkyStateSource {
 
   final double latitudeDeg;
   final MockVitals vitals;
+  final Duration period;
   late final StreamController<SkyState> _controller;
   Timer? _timer;
+  bool _suspended = false;
+
+  @override
+  void setSuspended(bool suspended) {
+    _suspended = suspended;
+    if (suspended) {
+      _timer?.cancel();
+      _timer = null;
+    } else if (_controller.hasListener && _timer == null) {
+      _emit();
+      _timer = Timer.periodic(period, (_) => _emit());
+    }
+  }
 
   @override
   Stream<SkyState> get states => _controller.stream;
@@ -51,15 +70,19 @@ class LiveMockSource implements SkyStateSource {
   SkyState peek() => stateFor(DateTime.now());
 
   static SkyState stateAt(DateTime now, double latitudeDeg, MockVitals vitals) {
-    final midnight = DateTime(now.year, now.month, now.day);
-    final t = now.difference(midnight).inMilliseconds / 86400000.0;
-    final dayOfYear = now.difference(DateTime(now.year)).inHours / 24.0 + 1;
+    final t = civilDayFraction(now);
+    final dayOfYear = civilDayOfYear(now);
     return SkyState(
       timeOfDay: t,
       dayOfYear: dayOfYear,
-      epochDays: epochDaysForDate(now.year, now.month, now.day),
+      epochDays: civilMidnightEpoch(now),
       latitudeDeg: latitudeDeg,
       moonPhase: moonPhaseFor(now.toUtc()),
+      solarNoon: solarNoonFor(
+        civilMidnightEpoch(now) + t,
+        21.01,
+        now.timeZoneOffset.inMinutes / 60.0,
+      ),
       sleepScore: vitals.sleepScore,
       recovery: vitals.recovery,
       strain: vitals.strain,
@@ -138,6 +161,51 @@ enum SkyPreset {
   };
 }
 
+/// Wall-clock fractions do not gain/lose an hour on DST transition days.
+double civilDayFraction(DateTime date) =>
+    (date.hour * 3600 +
+        date.minute * 60 +
+        date.second +
+        date.millisecond / 1000) /
+    86400;
+
+double civilDayOfYear(DateTime date) =>
+    DateTime.utc(
+      date.year,
+      date.month,
+      date.day,
+    ).difference(DateTime.utc(date.year)).inDays +
+    1.0;
+
+/// Epoch basis using the offset at the represented instant. Adding the
+/// wall-clock fraction reconstructs UTC even on a daylight-saving boundary.
+double civilMidnightEpoch(DateTime date) =>
+    epochDaysForDate(date.year, date.month, date.day) -
+    date.timeZoneOffset.inSeconds / 86400.0;
+
+/// Simulated observations for debug review. Product sources bypass this
+/// enum and supply SkyState.weather directly.
+enum WeatherPreset {
+  source('Source', null),
+  clear('Clear', SkyWeather.clear()),
+  cloudy('Cloudy', SkyWeather(cloudCoverage: 0.58, cumulus: 0.9)),
+  cirrus('Cirrus', SkyWeather(cloudCoverage: 0.45, cumulus: 0, cirrus: 1)),
+  overcast('Overcast', SkyWeather(cloudCoverage: 1, cumulus: 0.12)),
+  rain(
+    'Rain',
+    SkyWeather(cloudCoverage: 0.96, cumulus: 0.3, rain: 0.8, fog: 0.18),
+  ),
+  fog('Fog', SkyWeather(cloudCoverage: 0.18, cumulus: 0.05, fog: 0.9)),
+  snow(
+    'Snow',
+    SkyWeather(cloudCoverage: 0.92, cumulus: 0.2, snow: 0.8, fog: 0.16),
+  );
+
+  const WeatherPreset(this.label, this.weather);
+  final String label;
+  final SkyWeather? weather;
+}
+
 /// Manual overrides for the debug sheet. Null means "follow the source".
 @immutable
 class SkyOverrides {
@@ -147,16 +215,22 @@ class SkyOverrides {
     this.latitudeDeg,
     this.moonPhase,
     this.preset = SkyPreset.live,
+    this.weatherPreset = WeatherPreset.source,
+    this.weather,
   });
 
   final double? timeOfDay, dayOfYear, latitudeDeg, moonPhase;
   final SkyPreset preset;
+  final WeatherPreset weatherPreset;
+  final SkyWeather? weather;
 
   bool get any =>
       timeOfDay != null ||
       dayOfYear != null ||
       latitudeDeg != null ||
-      moonPhase != null;
+      moonPhase != null ||
+      weatherPreset != WeatherPreset.source ||
+      weather != null;
 
   SkyOverrides copyWith({
     Object? timeOfDay = _unset,
@@ -164,6 +238,8 @@ class SkyOverrides {
     Object? latitudeDeg = _unset,
     Object? moonPhase = _unset,
     SkyPreset? preset,
+    WeatherPreset? weatherPreset,
+    Object? weather = _unset,
   }) => SkyOverrides(
     timeOfDay: timeOfDay == _unset ? this.timeOfDay : timeOfDay as double?,
     dayOfYear: dayOfYear == _unset ? this.dayOfYear : dayOfYear as double?,
@@ -172,15 +248,44 @@ class SkyOverrides {
         : latitudeDeg as double?,
     moonPhase: moonPhase == _unset ? this.moonPhase : moonPhase as double?,
     preset: preset ?? this.preset,
+    weatherPreset: weatherPreset ?? this.weatherPreset,
+    weather: weather == _unset ? this.weather : weather as SkyWeather?,
   );
 
   SkyState apply(SkyState s) {
     final v = preset.vitals;
+    final sourceEpoch = s.epochDays + s.timeOfDay;
+    final targetEpoch =
+        s.epochDays +
+        ((dayOfYear ?? s.dayOfYear) - s.dayOfYear) +
+        (timeOfDay ?? s.timeOfDay);
+    final moved = timeOfDay != null || dayOfYear != null;
+    final phase =
+        moonPhase ??
+        (moved
+            ? (s.moonPhase +
+                      moonPhaseAt(targetEpoch) -
+                      moonPhaseAt(sourceEpoch)) %
+                  1
+            : s.moonPhase);
     return s.copyWith(
       timeOfDay: timeOfDay,
       dayOfYear: dayOfYear,
       latitudeDeg: latitudeDeg,
-      moonPhase: moonPhase,
+      moonPhase: phase,
+      solarNoon: moved
+          ? (s.solarNoon -
+                    (equationOfTimeMinutes(targetEpoch) -
+                            equationOfTimeMinutes(sourceEpoch)) /
+                        1440) %
+                1
+          : s.solarNoon,
+      weather: kDebugMode
+          ? weather ??
+                (weatherPreset == WeatherPreset.source
+                    ? s.weather
+                    : weatherPreset.weather)
+          : s.weather,
       sleepScore: preset == SkyPreset.live ? s.sleepScore : v.sleepScore,
       recovery: preset == SkyPreset.live ? s.recovery : v.recovery,
       strain: preset == SkyPreset.live ? s.strain : v.strain,

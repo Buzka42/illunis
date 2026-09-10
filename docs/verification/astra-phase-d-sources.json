@@ -1,0 +1,287 @@
+[
+  {
+    "path": "app/lib/core/ai/prompts.dart",
+    "lines": 121,
+    "sha256": "6327ed578e175e5f8b97e6b15b3b4dfe117c5aafbeb2312d874b6b038c2801bc"
+  },
+  {
+    "path": "app/lib/core/ai/transport.dart",
+    "lines": 124,
+    "sha256": "b333a5022480ae15f204056d88480d528b29030a5794005646f6e825978add0a"
+  },
+  {
+    "path": "app/lib/core/db/records.dart",
+    "lines": 572,
+    "sha256": "a5e762e40289e5031977b09ee2114072cd05ccc6948ac716f97624176ec566ad"
+  },
+  {
+    "path": "app/lib/core/db/store.dart",
+    "lines": 343,
+    "sha256": "edb2904704ae4a195dc0ae982bbf1e90a16888c87eb49a525478c95096c9de2c"
+  },
+  {
+    "path": "app/lib/core/fitness/disciplines.dart",
+    "lines": 410,
+    "sha256": "32a02c415bd9e7761acefc109b0970b8e7bb0cf6216a9a18fc444340ebbbd0b4"
+  },
+  {
+    "path": "app/lib/core/fitness/format.dart",
+    "lines": 58,
+    "sha256": "83941c92157d0d335974f1185438942f57e53ce8c04ea3d52d3d31d1aadb01de"
+  },
+  {
+    "path": "app/lib/core/fitness/progress.dart",
+    "lines": 93,
+    "sha256": "e92489fa979ae755e16f7cf49e3938e1d9c91fde742503fd7619c78ca50d75f7"
+  },
+  {
+    "path": "app/lib/core/fitness/session.dart",
+    "lines": 258,
+    "sha256": "aa6a12fd4a4623054e5a62d687ebf9617dfdd6e0d5b177deb668c9346644a256"
+  },
+  {
+    "path": "app/lib/core/health/digest.dart",
+    "lines": 65,
+    "sha256": "bb238febfa73d574c36e8821f3a7d24d939d205ab92e6ec68b3d84786b4021c6"
+  },
+  {
+    "path": "app/lib/core/health/local_sky_source.dart",
+    "lines": 79,
+    "sha256": "a7537f7b8ce6b2878885316888620d8d680a63b049b93cc63e90dde5e431f64b"
+  },
+  {
+    "path": "app/lib/core/health/rollups.dart",
+    "lines": 358,
+    "sha256": "856388abbf7c2363bf52d5115a268afabcd2d3a8c9edf3e5a669757dc8b0be61"
+  },
+  {
+    "path": "app/lib/core/i18n/dates.dart",
+    "lines": 47,
+    "sha256": "e4b445d2ea867b0d04076430d12907bdaf6a7e91a37734eb7f08cd61afc1f0d4"
+  },
+  {
+    "path": "app/lib/core/i18n/fold.dart",
+    "lines": 68,
+    "sha256": "fc26f8edb2a4b9e32d73aaa850cd10653c1d6a51295e41cd8d92aaf522173170"
+  },
+  {
+    "path": "app/lib/core/i18n/strings.dart",
+    "lines": 61,
+    "sha256": "598b69ad9bb87259693b499ef5a7075e452eceb36e87cd8a6b28c668be6663c9"
+  },
+  {
+    "path": "app/lib/core/journal/dictation.dart",
+    "lines": 95,
+    "sha256": "4b9dab7ead5416fca01024bb50b266cbb9541b35890442e5be20c184ee4d44b6"
+  },
+  {
+    "path": "app/lib/core/journal/marks.dart",
+    "lines": 17,
+    "sha256": "5c959789f697eb7bee17d31107ccc6a252c8aaee759cdfe65e2697b1e6c9119b"
+  },
+  {
+    "path": "app/lib/core/journal/parser.dart",
+    "lines": 734,
+    "sha256": "9f6b72ed416a13a8e52052465f6b8dafd4eb7f2bf105eb051a1a24be211425c7"
+  },
+  {
+    "path": "app/lib/core/journal/repository.dart",
+    "lines": 478,
+    "sha256": "01e8f11113c938045de3c30a37ce71ebfb8f8820db6c52d28309f9b5d73d65cb"
+  },
+  {
+    "path": "app/lib/core/journal/stamp.dart",
+    "lines": 343,
+    "sha256": "7e473ec8c6a6a623473aa36e87c5fcfb8373e3d9b28b2c8cc4980892fb610045"
+  },
+  {
+    "path": "app/lib/core/nutrition/foods.dart",
+    "lines": 740,
+    "sha256": "d768818fe9093550161f547dbb45964fd3c7aa9ebc100f02f8b6cb8897356e2c"
+  },
+  {
+    "path": "app/lib/core/patterns/statistics.dart",
+    "lines": 124,
+    "sha256": "9ce8b259e752deccad75eca3bb5f83045e5a52087b7a27543182b018be11369b"
+  },
+  {
+    "path": "app/lib/core/patterns/sweep.dart",
+    "lines": 301,
+    "sha256": "f512d0a0890421d41e6d5c92aa09706a5436e8cdae736dca7f80f951abd1c9f7"
+  },
+  {
+    "path": "app/lib/core/place/homes.dart",
+    "lines": 47,
+    "sha256": "a122ffef5051b25738daa74eb6d83b82600ca0e32c7b650a2cbf055ae058f5ac"
+  },
+  {
+    "path": "app/lib/core/platform/host.dart",
+    "lines": 35,
+    "sha256": "a3d54a9265b991bf36b759f8c551a73640a08ffc2cdd1813e62beafa84193233"
+  },
+  {
+    "path": "app/lib/core/sky/celestial_glyphs.dart",
+    "lines": 102,
+    "sha256": "2c1f0bc348eff2c53de3458e49209bb762adf081f509fa2214222106fb804bce"
+  },
+  {
+    "path": "app/lib/core/sky/celestial_math.dart",
+    "lines": 508,
+    "sha256": "0ea3cdf4498f8b8376e44c84c793081368e8932b7d63f7ac7785bd4f8b6ab763"
+  },
+  {
+    "path": "app/lib/core/sky/celestial_scene.dart",
+    "lines": 404,
+    "sha256": "29bc107e31ec6df5f9388ba2df2b76feedbf86072f0ebea44d2c4d71b6e97652"
+  },
+  {
+    "path": "app/lib/core/sky/sky_camera.dart",
+    "lines": 79,
+    "sha256": "90f4171e36adf7a966552f555ddd71f44987f8eab0a14db8a0579638b9d36189"
+  },
+  {
+    "path": "app/lib/core/sky/sky_overlay_painter.dart",
+    "lines": 663,
+    "sha256": "1f57249d7de2b34bcfe53b8d26a769edd9985850658da00c3a2a0eac6207204f"
+  },
+  {
+    "path": "app/lib/core/sky/sky_painter.dart",
+    "lines": 141,
+    "sha256": "8c2fbf97c8aeb72c9240128ecf6c8253004de400b0e80b37e6ab2a640dc7feee"
+  },
+  {
+    "path": "app/lib/core/sky/sky_shader.dart",
+    "lines": 145,
+    "sha256": "358b329320b6a7d57b620397657f0bb87a27c7ba0f1052fc3937c8ed93c13a81"
+  },
+  {
+    "path": "app/lib/core/sky/sky_state.dart",
+    "lines": 184,
+    "sha256": "c1091d0b07460c0b04a28b208bd5dbcfde15640d6af98170e7bcf1132d464d90"
+  },
+  {
+    "path": "app/lib/core/sky/sky_view.dart",
+    "lines": 179,
+    "sha256": "6db91e93017a7fb197a20c9670a466363aa81abaae36004f805b248a39bb7969"
+  },
+  {
+    "path": "app/lib/core/sky/sky_weather.dart",
+    "lines": 103,
+    "sha256": "e0f78b2b4945a25e275d2340c67979e6bfe63daebdc95ef357744286129ea1ac"
+  },
+  {
+    "path": "app/lib/core/sky/star_catalog.dart",
+    "lines": 5104,
+    "sha256": "888d2d0d21ec2f371398bd896ce582944620ebb70c49781938c443206b2a27ff"
+  },
+  {
+    "path": "app/lib/core/sky/star_field.dart",
+    "lines": 189,
+    "sha256": "c36bbe0df2111df138cee7301b6844f5340690a0f67c59979a07c46bcd0beb6b"
+  },
+  {
+    "path": "app/lib/core/state/app_providers.dart",
+    "lines": 230,
+    "sha256": "4f9c3fce1f0e63566bc60eaae48196a7fc96ed22115bb7d9cc2aa4d78a48e052"
+  },
+  {
+    "path": "app/lib/core/state/sky_state_source.dart",
+    "lines": 313,
+    "sha256": "aa1256dc00a1f83e5466cc5a24c9745f278893a40339aec149d4bca181c15bf2"
+  },
+  {
+    "path": "app/lib/core/state/sleep_record.dart",
+    "lines": 119,
+    "sha256": "a22b2e70c43836bef7f8b53ca313abcc6a9a8935e09de1d1ee6c366c995b231c"
+  },
+  {
+    "path": "app/lib/core/strength/canon.dart",
+    "lines": 646,
+    "sha256": "50c364816c72435eb8adf13632e6fd8de9d3ad018835b5ba5214ef0b4169cd09"
+  },
+  {
+    "path": "app/lib/core/strength/one_rm.dart",
+    "lines": 15,
+    "sha256": "0d5627d8c05af0db18f606057c2ebe2985b0c21700b5f7d5448cca85f73fe3a7"
+  },
+  {
+    "path": "app/lib/core/strength/progress.dart",
+    "lines": 65,
+    "sha256": "426ba7131361b3d60059c41e2d75918490ac83d8288c7696851ff704f3cb33b2"
+  },
+  {
+    "path": "app/lib/core/theme/tokens.dart",
+    "lines": 14,
+    "sha256": "bb6567be503a622487a8caa80b61e12721fb1e62b5abdece5f96c4030f122964"
+  },
+  {
+    "path": "app/lib/core/theme/typography.dart",
+    "lines": 118,
+    "sha256": "774d394be6948f0aab145642fe36a1bb1a8aa6ec04400d3d2db96fa62070534f"
+  },
+  {
+    "path": "app/lib/core/units/mass.dart",
+    "lines": 36,
+    "sha256": "dc5a18efc8738025945c7bfd9a60b05a3065807c4e4a19a22d182b4c5b608506"
+  },
+  {
+    "path": "app/lib/features/dashboard/dashboard_page.dart",
+    "lines": 480,
+    "sha256": "dec35801e7fbd72eff710001bdfd3f78a221462cd67e967a07d18ab1464d58c7"
+  },
+  {
+    "path": "app/lib/features/debug/capture.dart",
+    "lines": 61,
+    "sha256": "542fcc4d3576a0e843a2ef85e34edafa59bafbe81a0914e56357749aa4d23fe6"
+  },
+  {
+    "path": "app/lib/features/debug/frame_budget.dart",
+    "lines": 48,
+    "sha256": "df42c1077650e4b485fc9f7faec8487ddeb894937cf20b16aeb6981bb381fdd5"
+  },
+  {
+    "path": "app/lib/features/debug/sky_debug_sheet.dart",
+    "lines": 323,
+    "sha256": "aec9846e8a820ba9b834dd813c0ba395f9ddcc7fd5b23b2a2359f7144a452767"
+  },
+  {
+    "path": "app/lib/features/journal/journal_page.dart",
+    "lines": 594,
+    "sha256": "ca4290ceefffa40de3d4ca8136495639c54d388c17db443147fe9a5e0ebc5be7"
+  },
+  {
+    "path": "app/lib/features/settings/settings_sheet.dart",
+    "lines": 206,
+    "sha256": "e7d0fab44ea330db5df9b8df2773155778be12b4b7060470982c38816296a63a"
+  },
+  {
+    "path": "app/lib/features/shell/dream_shell.dart",
+    "lines": 258,
+    "sha256": "39691552fcdef0ac5b2b1155814781e0936abce7bf003f4b4471b260e1a863ee"
+  },
+  {
+    "path": "app/lib/features/shell/illunis_shell.dart",
+    "lines": 244,
+    "sha256": "8dbbdbab3edb75556451e8eb75f2491c3dcf2694fbcda30d96acb4efb7764be7"
+  },
+  {
+    "path": "app/lib/features/shell/shell_header.dart",
+    "lines": 80,
+    "sha256": "4282fdefb46631f176a90c2bc953b3aa57eda734417bae861a221126b82b7c60"
+  },
+  {
+    "path": "app/lib/features/timeline/timeline_bar.dart",
+    "lines": 411,
+    "sha256": "d7acbf88744afc5d64a61df804d6f37c1e942f4bb558d85f8c8c95ab90b399dc"
+  },
+  {
+    "path": "app/lib/main.dart",
+    "lines": 82,
+    "sha256": "891c7e1d458efa1089f8df6cd0389fde584ac4187f8c21b741cf9de13b5d5edb"
+  },
+  {
+    "path": "server/worker.js",
+    "lines": 99,
+    "sha256": "d078acec69da1ce5dbef2ffb2b9de8ac0237d005fe5c8618e4f54d1f3f1db17b"
+  }
+]

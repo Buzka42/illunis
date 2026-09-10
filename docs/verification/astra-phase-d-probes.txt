@@ -1,0 +1,31 @@
+Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  code_assets 1.2.1 (2.0.0 available)
+  hooks 2.0.2 (2.2.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  objective_c 9.5.0 (9.6.0 available)
+  platform 3.1.6 (3.2.0 available)
+  record_use 0.6.0 (1.1.1 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.11 (0.7.14 available)
+  vector_math 2.2.0 (2.4.2 available)
+Got dependencies!
+12 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/Arawn/Documents/illunis/app/tool/astra_phase_d_audit_test.dart
+00:00 +0: D: invalid import clears existing record before throwing
+00:00 +1: D: empty object import replaces records and imported consent transfers
+00:00 +2: D: Polish nap hours disappear; mass comma decimal works
+00:00 +3: D: short Polish genitive and fractional food quantity
+00:00 +4: D: settings delete row scrolls above Blade-sized safe inset
+00:01 +5: D: activity with explicit kcal becomes confirmed intake
+00:01 +6: D: invalid sleep duration and zero set count are accepted
+00:01 +7: D: sleep completion survives reverting its wake entry
+00:01 +8: D: same-day mass correction returns first mass
+00:01 +9: D: CSV comma in label produces six fields
+00:01 +10: D: keep-local sleep reaches a later digest
+00:01 +11: D: AI response resurrects derived records after delete all
+00:01 +12: All tests passed!

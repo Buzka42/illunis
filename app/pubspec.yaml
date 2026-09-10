@@ -23,10 +23,13 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # The whole sky is one fragment program. Declared here so impellerc compiles
-  # it for every target; loaded by core/sky/sky_shader.dart.
+  assets:
+    - assets/sky/clouds/
+
+  # Native sky and weather passes, compiled for each target.
   shaders:
     - shaders/sky.frag
+    - shaders/weather.frag
 
   # Inter carries text. JetBrains Mono carries every figure and every label
   # that reads as an instrument — tabular by construction.

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import '../db/records.dart';
 import '../db/store.dart';
@@ -13,10 +12,11 @@ class LocalSkyStateSource implements SkyStateSource {
   LocalSkyStateSource(
     this.store, {
     DateTime Function()? clock,
-    Duration period = const Duration(seconds: 1),
+    this.period = const Duration(seconds: 1),
   }) : _clock = clock ?? DateTime.now {
     _controller = StreamController<SkyState>.broadcast(
       onListen: () {
+        if (_suspended) return;
         _emit();
         _timer = Timer.periodic(period, (_) => _emit());
       },
@@ -27,14 +27,28 @@ class LocalSkyStateSource implements SkyStateSource {
 
   final AppStore store;
   final DateTime Function() _clock;
+  final Duration period;
   late final StreamController<SkyState> _controller;
   Timer? _timer;
+  bool _suspended = false;
 
   @override
   Stream<SkyState> get states => _controller.stream;
 
+  @override
+  void setSuspended(bool suspended) {
+    _suspended = suspended;
+    if (suspended) {
+      _timer?.cancel();
+      _timer = null;
+    } else if (_controller.hasListener && _timer == null) {
+      _emit();
+      _timer = Timer.periodic(period, (_) => _emit());
+    }
+  }
+
   void _emit() {
-    if (_controller.isClosed) return;
+    if (_suspended || _controller.isClosed) return;
     _controller.add(snapshot());
   }
 
@@ -44,14 +58,13 @@ class LocalSkyStateSource implements SkyStateSource {
   SkyState peek() => snapshot();
 
   static SkyState stateAt(DateTime now, AppStore store) {
-    final midnight = DateTime(now.year, now.month, now.day);
-    final t = now.difference(midnight).inMilliseconds / 86400000.0;
-    final dayOfYear = now.difference(DateTime(now.year)).inHours / 24.0 + 1;
+    final t = civilDayFraction(now);
+    final dayOfYear = civilDayOfYear(now);
     final summary = store.summaryOn(dayKey(now));
     return SkyState(
       timeOfDay: t,
       dayOfYear: dayOfYear,
-      epochDays: epochDaysForDate(now.year, now.month, now.day),
+      epochDays: civilMidnightEpoch(now),
       latitudeDeg: store.profile.latitudeDeg,
       moonPhase: moonPhaseFor(now.toUtc()),
       solarNoon: civilSolarNoon(now, store.profile.longitudeDeg),
@@ -73,14 +86,9 @@ class LocalSkyStateSource implements SkyStateSource {
 /// Longitude, zone offset and the equation of time, folded into the
 /// fraction of the civil day when the sun transits.
 double civilSolarNoon(DateTime now, double longitudeDeg) {
-  final start = DateTime(now.year);
-  final dayOfYear = now.difference(start).inMilliseconds / 86400000.0 + 1;
-  final b = 2 * math.pi * (dayOfYear - 81) / 364;
-  final eotMin =
-      9.87 * math.sin(2 * b) - 7.53 * math.cos(b) - 1.5 * math.sin(b);
-  final tzHours = now.timeZoneOffset.inMinutes / 60.0;
-  final offsetDays = ((tzHours * 15) - longitudeDeg) / 360.0 + eotMin / 1440.0;
-  var noon = 0.5 + offsetDays;
-  noon -= noon.floorToDouble();
-  return noon;
+  return solarNoonFor(
+    civilMidnightEpoch(now) + civilDayFraction(now),
+    longitudeDeg,
+    now.timeZoneOffset.inMinutes / 60.0,
+  );
 }

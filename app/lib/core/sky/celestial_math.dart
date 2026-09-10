@@ -1,9 +1,8 @@
 /// Positional astronomy, reduced to what a sky needs and nothing the
 /// backend might be tempted to depend on.
 ///
-/// Accuracy target: the sun within ~1° and rise/set within a few minutes for
-/// a given local solar time. That is enough for the picture to be honest;
-/// a real ephemeris is a backend concern (see docs/BACKEND_PLAN.md).
+/// Low-precision solar/lunar orbits, checked against JPL Horizons fixtures.
+/// Coordinates are of date; catalog precession remains a separate decision.
 library;
 
 import 'dart:math' as math;
@@ -88,21 +87,24 @@ Vec3 horizontalDirection(double decRad, double hourAngleRad, double latRad) {
   final sinDec = math.sin(decRad), cosDec = math.cos(decRad);
   final cosH = math.cos(hourAngleRad), sinH = math.sin(hourAngleRad);
   final y = sinLat * sinDec + cosLat * cosDec * cosH;
-  // Azimuth from south, westward positive — then turned to compass bearing.
-  final azFromSouth = math.atan2(
-    sinH,
-    cosH * sinLat - math.tan(decRad) * cosLat,
-  );
-  final az = azFromSouth + math.pi;
-  final alt = math.asin(y.clamp(-1.0, 1.0));
-  return directionFromAltAz(alt, az);
+  // Rotate directly into east/up/south. Avoid the spherical round trip
+  // (atan2/asin followed by sin/cos) for every catalog point each frame.
+  return Vec3(-cosDec * sinH, y, sinLat * cosDec * cosH - cosLat * sinDec);
 }
 
 /// Equatorial (RA, Dec) of a point on the ecliptic at longitude [lambda].
-({double ra, double dec}) equatorialFromEcliptic(double lambda) {
-  final sinL = math.sin(lambda), cosL = math.cos(lambda);
-  final dec = math.asin(math.sin(obliquityRad) * sinL);
-  final ra = math.atan2(math.cos(obliquityRad) * sinL, cosL);
+({double ra, double dec}) equatorialFromEcliptic(
+  double lambda, {
+  double latitude = 0,
+  double obliquity = obliquityRad,
+}) {
+  final x = math.cos(lambda) * math.cos(latitude);
+  final y = math.sin(lambda) * math.cos(latitude);
+  final z = math.sin(latitude);
+  final ye = y * math.cos(obliquity) - z * math.sin(obliquity);
+  final ze = y * math.sin(obliquity) + z * math.cos(obliquity);
+  final dec = math.asin(ze.clamp(-1.0, 1.0));
+  final ra = math.atan2(ye, x);
   return (ra: ra, dec: dec);
 }
 
@@ -131,13 +133,112 @@ double moonIlluminatedFraction(double phase) {
 /// Mean synodic month, days.
 const double synodicMonthDays = 29.530588853;
 
-/// Moon phase in `0..1` from a UTC instant, against a known new moon.
+/// Moon phase from the perturbed lunar orbit, not a mean synodic clock.
 double moonPhaseFor(DateTime utc) {
-  // New moon, 2000-01-06 18:14 UTC.
-  final epoch = DateTime.utc(2000, 1, 6, 18, 14);
-  final days = utc.difference(epoch).inSeconds / 86400.0;
-  final cycles = days / synodicMonthDays;
-  return cycles - cycles.floorToDouble();
+  return moonPhaseAt(
+    utc.toUtc().difference(DateTime.utc(2000, 1, 1, 12)).inMilliseconds /
+        86400000.0,
+  );
+}
+
+double obliquityAt(double epoch) =>
+    (23.4393 - 3.563e-7 * schlyterDay(epoch)) * degToRad;
+
+/// Apparent solar time minus mean solar time, minutes. Positive values
+/// make meridian transit earlier on the civil clock.
+double equationOfTimeMinutes(double epoch) {
+  final d = schlyterDay(epoch);
+  final mean = (638.9874 + 0.985647352 * d) * degToRad;
+  final ra = equatorialFromEcliptic(
+    sunEclipticLongitude(epoch),
+    obliquity: obliquityAt(epoch),
+  ).ra;
+  final delta = wrapAngle(mean - ra + math.pi) - math.pi;
+  return delta * radToDeg * 4;
+}
+
+double solarNoonFor(
+  double utcEpoch,
+  double longitudeDeg,
+  double utcOffsetHours,
+) =>
+    (0.5 +
+        (utcOffsetHours * 60 -
+                longitudeDeg * 4 -
+                equationOfTimeMinutes(utcEpoch)) /
+            1440) %
+    1;
+
+/// Geocentric Moon: Schlyter elements plus the leading longitude, latitude
+/// and distance perturbations. Angles of date; distance in Earth radii.
+({double longitude, double latitude, double distance}) moonEcliptic(
+  double epoch,
+) {
+  final d = schlyterDay(epoch);
+  final v = _heliocentric(_moonElements, d);
+  final m = (115.3654 + 13.0649929509 * d) * degToRad;
+  final ms = (356.0470 + 0.9856002585 * d) * degToRad;
+  final n = (125.1228 - 0.0529538083 * d) * degToRad;
+  final w = (318.0634 + 0.1643573223 * d) * degToRad;
+  final ls = (638.9874 + 0.985647352 * d) * degToRad;
+  final lm = m + w + n, elong = lm - ls, f = lm - n;
+  final lonCorrection =
+      -1.274 * math.sin(m - 2 * elong) +
+      0.658 * math.sin(2 * elong) -
+      0.186 * math.sin(ms) -
+      0.059 * math.sin(2 * m - 2 * elong) -
+      0.057 * math.sin(m - 2 * elong + ms) +
+      0.053 * math.sin(m + 2 * elong) +
+      0.046 * math.sin(2 * elong - ms) +
+      0.041 * math.sin(m - ms) -
+      0.035 * math.sin(elong) -
+      0.031 * math.sin(m + ms) -
+      0.015 * math.sin(2 * f - 2 * elong) +
+      0.011 * math.sin(m - 4 * elong);
+  final latCorrection =
+      -0.173 * math.sin(f - 2 * elong) -
+      0.055 * math.sin(m - f - 2 * elong) -
+      0.046 * math.sin(m + f - 2 * elong) +
+      0.033 * math.sin(f + 2 * elong) +
+      0.017 * math.sin(2 * m + f);
+  return (
+    longitude: wrapAngle(math.atan2(v.y, v.x) + lonCorrection * degToRad),
+    latitude:
+        math.atan2(v.z, math.sqrt(v.x * v.x + v.y * v.y)) +
+        latCorrection * degToRad,
+    distance:
+        v.length - 0.58 * math.cos(m - 2 * elong) - 0.46 * math.cos(2 * elong),
+  );
+}
+
+double moonPhaseAt(double epoch) =>
+    wrapAngle(moonEcliptic(epoch).longitude - sunEclipticLongitude(epoch)) /
+    (2 * math.pi);
+
+/// Subtract the observer's geocentric radius before normalising. This
+/// includes lunar parallax (nearly a degree near the horizon).
+Vec3 topocentricMoonDirection({
+  required double epoch,
+  required double sidereal,
+  required double latitude,
+  double phaseOffset = 0,
+}) {
+  final moon = moonEcliptic(epoch);
+  final eq = equatorialFromEcliptic(
+    moon.longitude + phaseOffset,
+    latitude: moon.latitude,
+    obliquity: obliquityAt(epoch),
+  );
+  final geocentric = horizontalDirection(eq.dec, sidereal - eq.ra, latitude);
+  return lunarParallax(geocentric, moon.distance, latitude);
+}
+
+Vec3 lunarParallax(Vec3 geocentric, double distance, double latitude) {
+  final geocentricLat = math.atan(0.99330562 * math.tan(latitude));
+  final radius = 1 - 0.00335281 * math.sin(latitude) * math.sin(latitude);
+  final tilt = latitude - geocentricLat;
+  final observer = Vec3(0, radius * math.cos(tilt), radius * math.sin(tilt));
+  return (geocentric * distance - observer).normalized;
 }
 
 // --- planets (Schlyter mean elements, epoch J2000; ~1° for ±50 y) --------
@@ -205,6 +306,20 @@ const _sunElements = _Elements(
   -1.151e-9,
   356.0470,
   0.9856002585,
+);
+
+const _moonElements = _Elements(
+  125.1228,
+  -0.0529538083,
+  5.1454,
+  0,
+  318.0634,
+  0.1643573223,
+  60.2666,
+  0.0549,
+  0,
+  115.3654,
+  13.0649929509,
 );
 
 const _planetElements = <Planet, _Elements>{

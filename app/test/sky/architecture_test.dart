@@ -9,17 +9,30 @@ void main() {
   test('core/sky imports nothing above its station', () {
     final dir = Directory('lib/core/sky');
     expect(dir.existsSync(), isTrue);
-    final forbidden = RegExp(
-      r"import\s+'(package:flutter_riverpod|package:riverpod|\.\./state|\.\./\.\./features|\.\./theme|package:illunis/core/state|package:illunis/features|dart:io)",
-    );
+    final imports = RegExp(r'''(?:import|export)\s+['"]([^'"]+)['"]''');
     final health = RegExp(r'\b(kcal|calorie|workout|DateTime\.now)\b');
-    for (final f in dir.listSync().whereType<File>()) {
+    for (final f
+        in dir
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
       final src = f.readAsStringSync();
-      expect(
-        forbidden.hasMatch(src),
-        isFalse,
-        reason: '${f.path} imports across the seam',
-      );
+      for (final match in imports.allMatches(src)) {
+        final uri = match.group(1)!;
+        final own =
+            !uri.contains(':') &&
+            !uri.contains('..') &&
+            File('${dir.path}/$uri').existsSync();
+        expect(
+          uri == 'dart:math' ||
+              uri == 'dart:ui' ||
+              uri.startsWith('package:flutter/') ||
+              own ||
+              uri == '../theme/tokens.dart',
+          isTrue,
+          reason: '${f.path} imports across the seam: $uri',
+        );
+      }
       expect(
         health.hasMatch(src),
         isFalse,

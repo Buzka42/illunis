@@ -10,23 +10,29 @@ import 'digest.dart';
 /// enter totals; pending work leaves strain unknown rather than calling
 /// the day rest.
 Future<void> recomputeSummaries(AppStore store, {Set<String>? days}) async {
-  final keys = days ?? _allDays(store);
-  final extra = <String>{};
-  for (final d in keys) {
-    extra.add(d);
-    var cursor = dayKeyDate(d);
-    for (var i = 0; i < 7; i++) {
+  final today = dayKey(DateTime.now());
+  final Set<String> targetDays;
+  if (days == null || days.isEmpty) {
+    targetDays = _allDays(store);
+  } else {
+    final sorted = days.toList()..sort();
+    final earliest = dayKeyDate(sorted.first);
+    final todayDate = dayKeyDate(today);
+    targetDays = <String>{};
+    var cursor = earliest;
+    while (!cursor.isAfter(todayDate)) {
+      targetDays.add(dayKey(cursor));
       cursor = cursor.add(const Duration(days: 1));
-      extra.add(dayKey(cursor));
     }
   }
-  final today = dayKey(DateTime.now());
-  extra.add(today);
-  final ordered = extra.toList()..sort();
-  for (final d in ordered) {
-    if (d.compareTo(today) > 0) continue;
-    await store.putSummary(_summaryFor(store, d));
-  }
+  targetDays.add(today);
+  final ordered = targetDays.toList()..sort();
+  await store.transaction(() async {
+    for (final d in ordered) {
+      if (d.compareTo(today) > 0) continue;
+      await store.putSummary(_summaryFor(store, d));
+    }
+  });
 }
 
 Set<String> _allDays(AppStore store) {
@@ -52,48 +58,107 @@ Set<String> _allDays(AppStore store) {
   return s;
 }
 
-DaySummary _summaryFor(AppStore store, String day) {
+/// Computes an AI-eligible summary for [day], strictly filtering out any entry
+/// that is marked KEEP LOCAL (excludedFromAi == true) or whose source entry is missing.
+DaySummary summaryForAi(AppStore store, String day) {
+  return _summaryFor(store, day, forAi: true);
+}
+
+double dailyLoad(AppStore store, String day, {bool forAi = false}) {
+  final sets = store.sets.where(
+    (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+  );
+  final acts = store.activities.where(
+    (e) =>
+        e.day == day &&
+        e.confirmed &&
+        (!forAi || store.isAiEligible(e.journalEntryId)),
+  );
+  final volume = sets.fold<double>(0, (a, s) => a + s.volumeKg);
+  final actKcal = acts.fold<double>(0, (a, s) => a + s.kcal);
+  return volume / 1000.0 + actKcal / 400.0;
+}
+
+DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
   final hasLog =
-      store.journal.any((e) => e.day == day) ||
-      store.sleeps.any((e) => e.day == day) ||
-      store.sets.any((e) => e.day == day) ||
-      store.nutrition.any((e) => e.day == day) ||
-      store.activities.any((e) => e.day == day) ||
-      store.weights.any((e) => e.day == day);
+      store.journal.any((e) => e.day == day && (!forAi || !e.excludedFromAi)) ||
+      store.sleeps.any(
+        (e) => e.day == day && (!forAi || store.isSleepAiEligible(e)),
+      ) ||
+      store.sets.any(
+        (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+      ) ||
+      store.nutrition.any(
+        (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+      ) ||
+      store.activities.any(
+        (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+      ) ||
+      store.weights.any(
+        (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+      );
   if (!hasLog) {
     return DaySummary(day: day);
   }
 
-  final sleeps = store.sleeps
-      .where((e) => e.day == day && e.isComplete)
-      .toList();
-  final sets = store.sets.where((e) => e.day == day).toList();
-  final foods = store.nutrition
-      .where((e) => e.day == day && e.confirmed)
-      .toList();
-  final acts = store.activities
-      .where((e) => e.day == day && e.confirmed)
-      .toList();
-  final pendingWork = store.activities.any((e) => e.day == day && !e.confirmed);
+  final sleeps =
+      store.sleeps
+          .where(
+            (e) =>
+                e.day == day &&
+                e.isComplete &&
+                (!forAi || store.isSleepAiEligible(e)),
+          )
+          .toList();
+  final sets =
+      store.sets
+          .where(
+            (e) =>
+                e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+          )
+          .toList();
+  final foods =
+      store.nutrition
+          .where(
+            (e) =>
+                e.day == day &&
+                e.confirmed &&
+                (!forAi || store.isAiEligible(e.journalEntryId)),
+          )
+          .toList();
+  final acts =
+      store.activities
+          .where(
+            (e) =>
+                e.day == day &&
+                e.confirmed &&
+                (!forAi || store.isAiEligible(e.journalEntryId)),
+          )
+          .toList();
+  final pendingWork = store.activities.any(
+    (e) =>
+        e.day == day &&
+        !e.confirmed &&
+        (!forAi || store.isAiEligible(e.journalEntryId)),
+  );
 
   double? sleepHours;
   if (sleeps.isNotEmpty) {
     sleepHours = sleeps.fold<double>(0, (a, s) => a + s.durationHours);
   }
 
-  final sleepScore = _sleepScore(store, day, sleeps, sleepHours);
-  final recovery = sleepScore == null
-      ? null
-      : (0.35 + 0.65 * sleepScore).clamp(0.0, 1.0);
+  final sleepScore = _sleepScore(store, day, sleeps, sleepHours, forAi: forAi);
+  final recovery =
+      sleepScore == null ? null : (0.35 + 0.65 * sleepScore).clamp(0.0, 1.0);
 
   final nSets = sets.fold<int>(0, (a, s) => a + s.sets);
   final volume = sets.fold<double>(0, (a, s) => a + s.volumeKg);
-  final load =
-      volume / 1000.0 + acts.fold<double>(0, (a, s) => a + s.kcal) / 400.0;
+  final load = dailyLoad(store, day, forAi: forAi);
   final trained = sets.isNotEmpty || acts.isNotEmpty;
-  final strain = trained
-      ? _strain(store, day, load, nSets + acts.length)
-      : (pendingWork ? null : 0.0);
+  final strain =
+      trained
+          ? _strain(store, day, load, nSets + acts.length, forAi: forAi)
+          : (pendingWork ? null : 0.0);
 
   double? intake;
   double? protein;
@@ -106,17 +171,29 @@ DaySummary _summaryFor(AppStore store, String day) {
     fat = foods.fold<double>(0, (a, s) => a + (s.fatG ?? 0));
   }
 
-  final weight = store.weightOnOrBefore(day);
+  WeightEntry? bestWeight;
+  for (final w in store.weights) {
+    if (w.day.compareTo(day) <= 0 &&
+        (!forAi || store.isAiEligible(w.journalEntryId))) {
+      if (bestWeight == null || w.day.compareTo(bestWeight.day) >= 0) {
+        bestWeight = w;
+      }
+    }
+  }
+  final weight = bestWeight?.kg;
+
   final confirmedActivityKcal = acts.fold<double>(0, (a, s) => a + s.kcal);
   final gymLogged = acts.any((a) => a.disciplineId == 'gym');
   final liftHours = nSets * 2.5 / 60.0;
-  final liftKcal = (weight == null || nSets == 0 || gymLogged)
-      ? 0.0
-      : 6.0 * weight * liftHours;
+  final liftKcal =
+      (weight == null || nSets == 0 || gymLogged)
+          ? 0.0
+          : 6.0 * weight * liftHours;
   final movementKcal = confirmedActivityKcal + liftKcal;
-  final expenditure = weight == null
-      ? (movementKcal <= 0 ? null : movementKcal)
-      : 22.0 * weight + movementKcal;
+  final expenditure =
+      weight == null
+          ? (movementKcal <= 0 ? null : movementKcal)
+          : 22.0 * weight + movementKcal;
 
   double? best1rm;
   for (final s in sets) {
@@ -143,10 +220,9 @@ DaySummary _summaryFor(AppStore store, String day) {
     }
   }
 
-  final energy = _energy(store, day, intake, expenditure);
-  final todayDelta = intake != null && expenditure != null
-      ? intake - expenditure
-      : null;
+  final energy = _energy(store, day, intake, expenditure, forAi: forAi);
+  final todayDelta =
+      intake != null && expenditure != null ? intake - expenditure : null;
   final prev = store.summaryOn(day);
   final built = DaySummary(
     day: day,
@@ -168,6 +244,7 @@ DaySummary _summaryFor(AppStore store, String day) {
     distanceKm: distanceKm,
     runSpeedKmh: runSpeed,
   );
+  if (forAi) return built;
   final keepAi = prev?.digestSource == 'ai' && (prev?.digest ?? '').isNotEmpty;
   if (keepAi) {
     return built.copyWith(digest: prev!.digest, digestSource: 'ai');
@@ -183,8 +260,9 @@ double? _sleepScore(
   AppStore store,
   String day,
   List<SleepEntry> sleeps,
-  double? hours,
-) {
+  double? hours, {
+  bool forAi = false,
+}) {
   if (hours == null) return null;
   final windowStart = dayKeyDate(day).subtract(const Duration(days: 30));
   final recent =
@@ -193,7 +271,8 @@ double? _sleepScore(
             (e) =>
                 e.isComplete &&
                 e.day.compareTo(dayKey(windowStart)) >= 0 &&
-                e.day.compareTo(day) <= 0,
+                e.day.compareTo(day) <= 0 &&
+                (!forAi || store.isSleepAiEligible(e)),
           )
           .map((e) => e.durationHours)
           .toList()
@@ -208,7 +287,8 @@ double? _sleepScore(
               (e) =>
                   e.isComplete &&
                   e.day.compareTo(dayKey(windowStart)) >= 0 &&
-                  e.day.compareTo(day) <= 0,
+                  e.day.compareTo(day) <= 0 &&
+                  (!forAi || store.isSleepAiEligible(e)),
             )
             .map((e) => e.startHours)
             .toList()
@@ -231,17 +311,27 @@ double? _sleepScore(
   return score;
 }
 
-double? _strain(AppStore store, String day, double load, int loggedWork) {
+double? _strain(
+  AppStore store,
+  String day,
+  double load,
+  int loggedWork, {
+  bool forAi = false,
+}) {
   if (loggedWork == 0 && load == 0) {
     return 0;
   }
   final start = dayKeyDate(day).subtract(const Duration(days: 28));
   final loads = <double>[];
-  for (final s in store.summaries) {
-    if (s.day.compareTo(dayKey(start)) >= 0 && s.day.compareTo(day) < 0) {
-      final v = (s.volumeKg ?? 0) / 1000.0;
-      loads.add(v);
+  var cursor = start;
+  final dayDate = dayKeyDate(day);
+  while (cursor.isBefore(dayDate)) {
+    final k = dayKey(cursor);
+    final pastLoad = dailyLoad(store, k, forAi: forAi);
+    if (pastLoad > 0) {
+      loads.add(pastLoad);
     }
+    cursor = cursor.add(const Duration(days: 1));
   }
   loads.add(load);
   if (loads.where((l) => l > 0).isEmpty) {
@@ -256,14 +346,18 @@ double? _strain(AppStore store, String day, double load, int loggedWork) {
   AppStore store,
   String day,
   double? intakeToday,
-  double? expenditureToday,
-) {
+  double? expenditureToday, {
+  bool forAi = false,
+}) {
   final start = dayKeyDate(day).subtract(const Duration(days: 6));
   var missingIntake = 0;
   final deltas = <double>[];
   for (var i = 0; i < 7; i++) {
     final d = dayKey(start.add(Duration(days: i)));
-    final s = d == day ? null : store.summaryOn(d);
+    final s =
+        d == day
+            ? null
+            : (forAi ? summaryForAi(store, d) : store.summaryOn(d));
     final intake = d == day ? intakeToday : s?.intakeKcal;
     final exp = d == day ? expenditureToday : s?.expenditureKcal;
     if (intake == null) {

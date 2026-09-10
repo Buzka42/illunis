@@ -1,0 +1,68 @@
+Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  code_assets 1.2.1 (2.0.0 available)
+  hooks 2.0.2 (2.2.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  objective_c 9.5.0 (9.6.0 available)
+  record_use 0.6.0 (1.1.1 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.11 (0.7.14 available)
+  vector_math 2.2.0 (2.4.2 available)
+Got dependencies!
+11 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/Arawn/Documents/illunis/app/test/sky/architecture_test.dart
+00:00 +0: C:/Users/Arawn/Documents/illunis/app/test/sky/architecture_test.dart: core/sky imports nothing above its station
+00:00 +1: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris epoch days match J2000 and a known JD
+00:00 +2: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris the Sun crosses the equator at the March equinox
+00:00 +3: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris inner planets keep to their maximum elongation
+00:00 +4: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris planets resolve to unit directions and sensible magnitudes
+00:00 +5: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris a planet below the horizon or in daylight is not visible
+00:00 +6: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun is at the zenith at noon on the equinox at the equator
+00:00 +7: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun is below the horizon at midnight in the temperate zone
+00:00 +8: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun rises in the east and sets in the west
+00:00 +9: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun summer day is long, winter day is short at 52°N
+00:00 +10: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun never sets at 80°N in June
+00:00 +11: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: moon is full opposite the sun
+00:00 +12: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: moon new moon travels with the sun
+00:00 +13: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: moon phase from date is in range and advances
+00:00 +14: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars sidereal time advances with the clock
+00:00 +15: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars Sirius is the brightest catalog star
+00:00 +16: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars Polaris sits on the north celestial pole
+00:00 +17: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars Orion's belt is up on a January evening at 52°N, not in June
+00:00 +18: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars catalog stars above the horizon project into the sky half
+00:00 +19: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera project and unproject round-trip
+00:00 +20: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera horizon is a straight line at the principal point
+00:00 +21: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera noon at 52°N still faces the sun
+00:00 +22: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera a new-moon night looks south so Orion is in the window
+00:00 +23: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera a risen full moon takes the night camera
+00:00 +24: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: state lerp takes the short way round midnight
+00:00 +25: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: state a null vital snaps instead of fading through a number
+00:00 +26: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: state absent vitals leave the atmosphere neutral
+00:00 +27: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: timeline follows the lunar orbit unless phase is explicitly scrubbed
+00:00 +28: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-03-20 agrees with JPL Horizons
+EPHEMERIS 2026-03-20: sunMax=0.0525deg moonMax=0.0428deg illuminationMax=0.0271pp sunriseError=0.632min sunsetError=0.369min sunrise=05:38 sunset=17:49
+00:01 +29: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-06-21 agrees with JPL Horizons
+EPHEMERIS 2026-06-21: sunMax=0.0274deg moonMax=0.0714deg illuminationMax=0.1577pp sunriseError=0.077min sunsetError=0.059min sunrise=04:14 sunset=21:01
+00:01 +30: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-09-09 agrees with JPL Horizons
+EPHEMERIS 2026-09-09: sunMax=0.0518deg moonMax=0.0695deg illuminationMax=0.0090pp sunriseError=0.395min sunsetError=0.695min sunrise=06:01 sunset=19:06
+00:01 +31: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-09-23 agrees with JPL Horizons
+EPHEMERIS 2026-09-23: sunMax=0.0567deg moonMax=0.0508deg illuminationMax=0.0562pp sunriseError=0.358min sunsetError=0.647min sunrise=06:24 sunset=18:33
+00:01 +32: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-12-21 agrees with JPL Horizons
+EPHEMERIS 2026-12-21: sunMax=0.1210deg moonMax=0.0616deg illuminationMax=0.0665pp sunriseError=0.061min sunsetError=0.035min sunrise=07:43 sunset=15:25
+00:01 +33: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: civil clock preserves UTC and day number without DST duration arithmetic
+00:01 +34: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:01 +35: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:01 +36: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:01 +37: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:02 +38: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:02 +39: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:02 +40: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:02 +41: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: native shader weather occludes bodies and keeps fog at depth
+00:04 +42: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: native shader weather occludes bodies and keeps fog at depth
+00:04 +43: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: native shader weather occludes bodies and keeps fog at depth
+00:05 +44: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: weather eases, reduced motion freezes effects, lifecycle pauses sky
+00:05 +45: All tests passed!

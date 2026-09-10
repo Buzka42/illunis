@@ -2,6 +2,9 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/foundation.dart';
 
+import 'sky_weather.dart';
+export 'sky_weather.dart';
+
 /// Everything the sky is allowed to know.
 ///
 /// This is the seam between the 3D layer and the rest of the product. The
@@ -24,6 +27,7 @@ class SkyState {
     this.recovery,
     this.strain,
     this.energyBalance,
+    this.weather,
   });
 
   /// Fraction of the local civil day, `0` = midnight, `0.5` = noon.
@@ -60,6 +64,10 @@ class SkyState {
   /// `-1..1`, deficit to surplus over the rolling window. Null when unknown.
   final double? energyBalance;
 
+  /// Null is an absent observation and renders without weather. A future
+  /// source supplies normalised components here, without renderer changes.
+  final SkyWeather? weather;
+
   bool get hasVitals =>
       sleepScore != null ||
       recovery != null ||
@@ -77,6 +85,7 @@ class SkyState {
     Object? recovery = _unset,
     Object? strain = _unset,
     Object? energyBalance = _unset,
+    Object? weather = _unset,
   }) {
     // Moving the day of year moves the epoch with it unless told otherwise.
     final newDay = dayOfYear ?? this.dayOfYear;
@@ -89,12 +98,15 @@ class SkyState {
       solarNoon: solarNoon ?? this.solarNoon,
       sleepScore: sleepScore == _unset
           ? this.sleepScore
-          : sleepScore as double?,
-      recovery: recovery == _unset ? this.recovery : recovery as double?,
-      strain: strain == _unset ? this.strain : strain as double?,
+          : (sleepScore as num?)?.toDouble(),
+      recovery: recovery == _unset
+          ? this.recovery
+          : (recovery as num?)?.toDouble(),
+      strain: strain == _unset ? this.strain : (strain as num?)?.toDouble(),
       energyBalance: energyBalance == _unset
           ? this.energyBalance
-          : energyBalance as double?,
+          : (energyBalance as num?)?.toDouble(),
+      weather: weather == _unset ? this.weather : weather as SkyWeather?,
     );
   }
 
@@ -114,6 +126,7 @@ class SkyState {
       recovery: _lerpNullable(a.recovery, b.recovery, t),
       strain: _lerpNullable(a.strain, b.strain, t),
       energyBalance: _lerpNullable(a.energyBalance, b.energyBalance, t),
+      weather: SkyWeather.lerp(a.weather, b.weather, t),
     );
   }
 
@@ -126,7 +139,7 @@ class SkyState {
   }
 
   static double? _lerpNullable(double? a, double? b, double t) {
-    if (a == null || b == null) return t < 1 ? a : b;
+    if (a == null || b == null) return t <= 0 ? a : b;
     return lerpDouble(a, b, t);
   }
 
@@ -142,7 +155,8 @@ class SkyState {
       other.sleepScore == sleepScore &&
       other.recovery == recovery &&
       other.strain == strain &&
-      other.energyBalance == energyBalance;
+      other.energyBalance == energyBalance &&
+      other.weather == weather;
 
   @override
   int get hashCode => Object.hash(
@@ -156,13 +170,15 @@ class SkyState {
     recovery,
     strain,
     energyBalance,
+    weather,
   );
 
   @override
   String toString() =>
       'SkyState(t=${timeOfDay.toStringAsFixed(4)} d=${dayOfYear.round()} '
       'lat=${latitudeDeg.toStringAsFixed(1)} moon=${moonPhase.toStringAsFixed(3)} '
-      'sleep=$sleepScore rec=$recovery strain=$strain energy=$energyBalance)';
+      'sleep=$sleepScore rec=$recovery strain=$strain energy=$energyBalance '
+      'weather=$weather)';
 }
 
 const _unset = Object();

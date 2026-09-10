@@ -95,9 +95,13 @@ class JournalPending extends ConsumerWidget {
 
   static const double confirmAllBand = 28;
 
+  /// Maximum height the pending dock may occupy so it never squashes the ground pager.
+  static const double maxPendingHeight = 148;
+
   static double heightFor(int pending) {
     if (pending <= 0) return 0;
-    return pending * rowBand + (pending > 1 ? confirmAllBand : 0);
+    final unbounded = pending * rowBand + (pending > 1 ? confirmAllBand : 0);
+    return unbounded > maxPendingHeight ? maxPendingHeight : unbounded;
   }
 
   @override
@@ -105,26 +109,27 @@ class JournalPending extends ConsumerWidget {
     final figures = ref.watch(journalFiguresProvider);
     final pending = figures.unconfirmed.length + figures.unconfirmedActs.length;
     if (pending == 0) return const SizedBox.shrink();
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         for (final f in figures.unconfirmed) _UnconfirmedFood(food: f),
         for (final a in figures.unconfirmedActs) _UnconfirmedAct(act: a),
         if (pending > 1)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () async {
-                final days = <String>{
-                  for (final f in figures.unconfirmed) f.day,
-                  for (final a in figures.unconfirmedActs) a.day,
-                };
-                final repo = ref.read(journalRepositoryProvider);
-                for (final day in days) {
-                  await repo.confirmAll(day);
-                }
-              },
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () async {
+              final days = <String>{
+                for (final f in figures.unconfirmed) f.day,
+                for (final a in figures.unconfirmedActs) a.day,
+              };
+              final repo = ref.read(journalRepositoryProvider);
+              for (final day in days) {
+                await repo.confirmAll(day);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: Text(
                 S.confirmAll,
                 style: Type.label.copyWith(color: Inks.strong),
@@ -132,6 +137,15 @@ class JournalPending extends ConsumerWidget {
             ),
           ),
       ],
+    );
+    final unbounded = pending * rowBand + (pending > 1 ? confirmAllBand : 0);
+    if (unbounded <= maxPendingHeight) return content;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: maxPendingHeight),
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: content,
+      ),
     );
   }
 }
@@ -193,6 +207,7 @@ class _EntryTile extends ConsumerWidget {
             JournalDraft(
               draftFromStamp(at: entry.at, text: entry.text),
               keepLocal: entry.excludedFromAi,
+              replacesEntryId: entry.id,
             ),
           ),
       onLongPress: () => ref.read(journalRepositoryProvider).revert(entry.id),
@@ -419,7 +434,9 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
   final _dictation = JournalDictation();
   var _keepLocal = false;
   var _listening = false;
+  String? _replacesEntryId;
   String _spokenBase = '';
+  String? _submitError;
 
   @override
   void dispose() {
@@ -447,14 +464,23 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
             now.second,
           );
     try {
+      if (_replacesEntryId != null) {
+        final replaceId = _replacesEntryId!;
+        _replacesEntryId = null;
+        await ref.read(journalRepositoryProvider).revert(replaceId);
+      }
       final entry = await ref
           .read(journalRepositoryProvider)
           .log(text, excludedFromAi: _keepLocal, at: at);
       if (!mounted) return;
       _controller.clear();
+      setState(() => _submitError = null);
       if (_keepLocal) setState(() => _keepLocal = false);
       ref.read(journalDayProvider.notifier).go(entry.at);
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitError = e.toString());
+    }
   }
 
   Future<void> _toggleMic() async {
@@ -488,19 +514,51 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(storeRevisionProvider);
+    final persistError = ref.watch(storeProvider).lastPersistenceError;
+    final saveError = _submitError ?? persistError;
     ref.listen<JournalDraft?>(journalDraftProvider, (prev, next) {
       if (next == null) return;
-      _controller.value = TextEditingValue(
-        text: next.text,
-        selection: TextSelection.collapsed(offset: next.text.length),
-      );
-      _keepLocal = next.keepLocal;
+      setState(() {
+        _controller.value = TextEditingValue(
+          text: next.text,
+          selection: TextSelection.collapsed(offset: next.text.length),
+        );
+        _keepLocal = next.keepLocal;
+        _replacesEntryId = next.replacesEntryId;
+      });
       _focus.requestFocus();
       ref.read(journalDraftProvider.notifier).clear();
     });
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_replacesEntryId != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Row(
+              children: [
+                Text(
+                  'EDITING',
+                  style: Type.micro.copyWith(color: Inks.muted),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    setState(() {
+                      _replacesEntryId = null;
+                      _controller.clear();
+                    });
+                  },
+                  child: Text(
+                    S.drop,
+                    style: Type.micro.copyWith(color: Inks.faint),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Row(
           children: [
             Expanded(
@@ -516,7 +574,7 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
                   border: InputBorder.none,
                   hintText: S.journalHint,
                   hintStyle: Type.body.copyWith(color: Inks.muted),
-                  contentPadding: EdgeInsets.zero,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
             ),
@@ -524,13 +582,16 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => setState(() => _keepLocal = !_keepLocal),
-              child: Text(
-                S.keepLocal,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.fade,
-                style: Type.label.copyWith(
-                  color: _keepLocal ? Inks.strong : Inks.faint,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                child: Text(
+                  _keepLocal ? '[ LOCAL ]' : S.keepLocal,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.fade,
+                  style: Type.label.copyWith(
+                    color: _keepLocal ? Inks.warm : Inks.faint,
+                  ),
                 ),
               ),
             ),
@@ -554,6 +615,16 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
           height: Space.hairline,
           color: Inks.full.withValues(alpha: 0.4),
         ),
+        if (saveError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'NOT SAVED — $saveError',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Type.micro.copyWith(color: Inks.negative),
+            ),
+          ),
       ],
     );
   }

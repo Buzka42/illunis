@@ -29,17 +29,19 @@ class DreamShell extends ConsumerStatefulWidget {
 }
 
 class _DreamShellState extends ConsumerState<DreamShell>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final _scene = ValueNotifier<ResolvedScene?>(null);
   final _boundary = GlobalKey();
   late final AnimationController _drift;
 
-  static const _driftSeconds = 180.0;
   static const _driftPx = 3.0;
+  bool _reducedMotion = false;
+  bool _foreground = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _drift = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 180),
@@ -52,7 +54,31 @@ class _DreamShellState extends ConsumerState<DreamShell>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reducedMotion = MediaQuery.disableAnimationsOf(context);
+    _syncDrift();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground =
+        state == AppLifecycleState.resumed ||
+        state == AppLifecycleState.inactive;
+    _syncDrift();
+  }
+
+  void _syncDrift() {
+    if (_foreground && !_reducedMotion) {
+      if (!_drift.isAnimating) _drift.repeat();
+    } else {
+      _drift.stop();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _drift.dispose();
     _scene.dispose();
     super.dispose();
@@ -72,52 +98,57 @@ class _DreamShellState extends ConsumerState<DreamShell>
     final mq = MediaQuery.of(context);
     final horizonY = mq.size.height * kHorizonFraction;
 
-    return AnimatedBuilder(
-      animation: _drift,
-      builder: (context, child) {
-        final t = _drift.value * 2 * math.pi;
-        return Transform.translate(
-          offset: Offset(
-            _driftPx * math.sin(t),
-            _driftPx * 0.7 * math.sin(t * (_driftSeconds / 247) + 1.1),
-          ),
-          child: child,
-        );
-      },
-      child: RepaintBoundary(
-        key: _boundary,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            SkyView(state: state, onScene: (s) => _scene.value = s),
-            Positioned(
-              left: 0,
-              right: 0,
-              top: horizonY + kCompassBandHeight,
-              child: TimelineBar(scene: _scene),
-            ),
-            Positioned.fill(
-              top: horizonY + kCompassBandHeight + TimelineBar.height,
-              child: _NightstandGround(scene: _scene),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              top: mq.padding.top,
-              child: ShellHeader(
-                scene: _scene,
-                onWordmarkLongPress: kDebugMode
-                    ? () => showSkyDebugSheet(context)
-                    : null,
+    return Scaffold(
+      backgroundColor: const Color(0xFF07090D),
+      body: AnimatedBuilder(
+        animation: _drift,
+        builder: (context, child) {
+          final t = _drift.value * 2 * math.pi;
+          return Transform.translate(
+            offset: _reducedMotion
+                ? Offset.zero
+                : Offset(
+                    _driftPx * math.sin(t),
+                    _driftPx * 0.7 * math.sin(2 * t + 1.1),
+                  ),
+            child: child,
+          );
+        },
+        child: RepaintBoundary(
+          key: _boundary,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              SkyView(state: state, onScene: (s) => _scene.value = s),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: horizonY + kCompassBandHeight,
+                child: TimelineBar(scene: _scene),
               ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: mq.padding.bottom + 10,
-              child: _DreamFooter(onClose: _close),
-            ),
-          ],
+              Positioned.fill(
+                top: horizonY + kCompassBandHeight + TimelineBar.height,
+                child: _NightstandGround(scene: _scene),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: mq.padding.top,
+                child: ShellHeader(
+                  scene: _scene,
+                  onWordmarkLongPress: kDebugMode
+                      ? () => showSkyDebugSheet(context)
+                      : null,
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: mq.padding.bottom + 10,
+                child: _DreamFooter(onClose: _close),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -132,6 +163,7 @@ class _NightstandGround extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sleep = ref.watch(sleepRecordProvider);
+    final preset = ref.watch(skyOverridesProvider.select((s) => s.preset));
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.margin, 10, Space.margin, 52),
       child: ValueListenableBuilder<ResolvedScene?>(
@@ -163,6 +195,10 @@ class _NightstandGround extends ConsumerWidget {
                       formatDuration(sleep.asleepHours / 24),
                       style: Type.figure,
                     ),
+                    if (preset != SkyPreset.live) ...[
+                      const SizedBox(width: 12),
+                      Flexible(child: Text(S.mockData, style: Type.micro)),
+                    ],
                   ],
                 ),
               ],

@@ -118,13 +118,14 @@ void main() {
   group('moon', () {
     test('is full opposite the sun', () {
       final s = CelestialScene.resolve(_state(t: 0.0, lat: 52, moon: 0.5));
-      expect(s.moonIllumination, closeTo(1, 1e-9));
+      // Orbital latitude and topocentric parallax prevent exact opposition.
+      expect(s.moonIllumination, greaterThan(0.995));
       expect(s.sunDir.dot(s.moonDir), lessThan(-0.7));
     });
 
     test('new moon travels with the sun', () {
       final s = CelestialScene.resolve(_state(t: 0.5, lat: 52, moon: 0.0));
-      expect(s.moonIllumination, closeTo(0, 1e-9));
+      expect(s.moonIllumination, lessThan(0.005));
       expect(s.sunDir.dot(s.moonDir), greaterThan(0.95));
     });
 
@@ -132,7 +133,9 @@ void main() {
       final a = moonPhaseFor(DateTime.utc(2026, 9, 6));
       final b = moonPhaseFor(DateTime.utc(2026, 9, 13));
       expect(a, inInclusiveRange(0, 1));
-      expect(((b - a) % 1.0), closeTo(7 / synodicMonthDays, 0.01));
+      // Eccentricity makes the weekly advance nonuniform; accuracy is
+      // checked independently in ephemeris_reference_test.dart.
+      expect(((b - a) % 1.0), inInclusiveRange(0.20, 0.28));
     });
   });
 
@@ -297,7 +300,8 @@ void main() {
     test('a null vital snaps instead of fading through a number', () {
       final a = _state().copyWith(recovery: null);
       final b = _state().copyWith(recovery: 0.8);
-      expect(SkyState.lerp(a, b, 0.5).recovery, isNull);
+      expect(SkyState.lerp(a, b, 0.5).recovery, 0.8);
+      expect(SkyState.lerp(b, a, 0.5).recovery, isNull);
       expect(SkyState.lerp(a, b, 1.0).recovery, 0.8);
     });
 

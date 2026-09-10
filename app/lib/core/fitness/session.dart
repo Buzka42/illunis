@@ -60,7 +60,7 @@ ActivityEntry? parseSessionChunk(
     return null;
   }
   if (RegExp(
-    r'\b(ate|had|eaten|eating|drank|drink|drunk|grabbed|ordered|snacked|kcal|calories?|protein|zjadlem|zjadlam|jadlem|jadlam|wypilem|wypilam|pilem|pilam|zamowilem|zamowilam|przekasilem|przekasilam)\b',
+    r'\b(ate|had|eaten|eating|drank|drink|drunk|grabbed|ordered|snacked|protein|zjadlem|zjadlam|jadlem|jadlam|wypilem|wypilam|pilem|pilam|zamowilem|zamowilam|przekasilem|przekasilam)\b',
     caseSensitive: false,
   ).hasMatch(chunk)) {
     return null;
@@ -130,7 +130,8 @@ ActivityEntry? parseSessionChunk(
       if (n >= 10 && n <= 180) minutes = n;
     }
   }
-  if (minutes == null && km == null) return null;
+  final explicit = _kcal.firstMatch(chunk);
+  if (minutes == null && km == null && explicit == null) return null;
   if (minutes != null && (minutes <= 0 || minutes > 16 * 60)) return null;
 
   final derivedPace =
@@ -139,7 +140,6 @@ ActivityEntry? parseSessionChunk(
           ? paceSecPerKm(km: km, minutes: minutes)
           : null);
 
-  final explicit = _kcal.firstMatch(chunk);
   final hours = (minutes ?? 0) / 60.0;
   final kcal = explicit != null
       ? double.parse(explicit.group(1)!)

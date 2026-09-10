@@ -35,8 +35,9 @@ class DashboardPage extends ConsumerWidget {
     final units = ref.watch(storeProvider).profile.units;
     final preset = ref.watch(skyOverridesProvider.select((o) => o.preset));
     final s = figures.summary;
-    final right = preset != SkyPreset.live
-        ? S.mockData
+    final simulated = today && preset != SkyPreset.live;
+    final right = simulated
+        ? (preset == SkyPreset.noData ? S.noData : S.mockData)
         : (_hasLocalRecord(figures, s) || (today && state.hasVitals)
               ? S.local
               : S.noData);
@@ -50,7 +51,7 @@ class DashboardPage extends ConsumerWidget {
     final energyBal = today ? state.energyBalance : s?.energyBalance;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.margin, 6, Space.margin, 12),
+      padding: const EdgeInsets.fromLTRB(Space.margin, 6, Space.margin, 28),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -76,11 +77,11 @@ class DashboardPage extends ConsumerWidget {
                 ],
               ),
             ),
-            if (_weekLine(figures, units) != null) ...[
+            if (!simulated && _weekLine(figures, units) != null) ...[
               const SizedBox(height: 8),
               Text(_weekLine(figures, units)!, style: Type.micro),
             ],
-            if (s?.digest != null && s!.digest!.isNotEmpty) ...[
+            if (!simulated && s?.digest != null && s!.digest!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(s.digest!, style: Type.caption),
             ],
@@ -90,7 +91,10 @@ class DashboardPage extends ConsumerWidget {
               value: sleepHours == null
                   ? S.emptyDash
                   : formatDuration(sleepHours / 24),
-              unit: _sleepUnit(sleepScore, figures.sleep?.quality),
+              unit: _sleepUnit(
+                sleepScore,
+                simulated ? null : figures.sleep?.quality,
+              ),
             ),
             if (recovery != null)
               _Row(
@@ -105,6 +109,21 @@ class DashboardPage extends ConsumerWidget {
               unit: strain == null ? null : 'LOAD',
               tint: _tintFor(strain, lowIsBad: false),
             ),
+            if (simulated && energyBal != null)
+              _Row(
+                label: S.energy,
+                value: _energy(null, energyBal),
+                unit: 'KCAL · 7D',
+              ),
+            if (simulated && _hasLocalRecord(figures, s)) ...[
+              const SizedBox(height: 10),
+              const _Eyebrow(left: S.record, right: S.local),
+              const SizedBox(height: 6),
+              if (_weekLine(figures, units) != null)
+                Text(_weekLine(figures, units)!, style: Type.micro),
+              if (s?.digest != null && s!.digest!.isNotEmpty)
+                Text(s.digest!, style: Type.caption),
+            ],
             if (s?.intakeKcal != null)
               _Row(
                 label: S.intake,
@@ -128,11 +147,16 @@ class DashboardPage extends ConsumerWidget {
                     small: true,
                   ),
             ],
-            if (s?.energyKcal != null || energyBal != null)
+            if (s?.energyKcal != null || (!simulated && energyBal != null))
               _Row(
                 label: S.energy,
-                value: _energy(s?.energyKcal, energyBal),
-                unit: energyBal == null ? 'KCAL' : 'KCAL · 7D',
+                value: _energy(
+                  s?.energyKcal,
+                  simulated ? s?.energyBalance : energyBal,
+                ),
+                unit: (simulated ? s?.energyBalance : energyBal) == null
+                    ? 'KCAL'
+                    : 'KCAL · 7D',
               ),
             if (figures.weightKg != null)
               _Row(
@@ -171,6 +195,7 @@ class DashboardPage extends ConsumerWidget {
                           ? null
                           : formatDuration(sc.dayLength!).toUpperCase(),
                       small: true,
+                      unitBelow: true,
                     ),
                     _Row(
                       label: 'MOON',
@@ -293,7 +318,13 @@ class DashboardPage extends ConsumerWidget {
   }
 
   static bool _hasLocalRecord(TodayFigures figures, DaySummary? s) {
-    if (figures.entryCount > 0) return true;
+    if (figures.entryCount > 0 ||
+        figures.weightKg != null ||
+        figures.sleep != null ||
+        figures.sessions.isNotEmpty ||
+        figures.lifts.isNotEmpty) {
+      return true;
+    }
     if (figures.unconfirmed.isNotEmpty || figures.unconfirmedActs.isNotEmpty) {
       return true;
     }
@@ -400,8 +431,10 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final figure = (small ? Type.figure.copyWith(fontSize: 14.5) : Type.figure)
-        .copyWith(color: tint ?? Inks.strong);
+    final figure = (small ? Type.figureSmall : Type.figure).copyWith(
+      color: tint ?? Inks.strong,
+    );
+    final below = unitBelow || (unit != null && unit!.length > 18);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
@@ -426,7 +459,7 @@ class _Row extends StatelessWidget {
                         maxLines: 1,
                       ),
                     ),
-                    if (unit != null && !unitBelow) ...[
+                    if (unit != null && !below) ...[
                       const SizedBox(width: 8),
                       Text(unit!, style: Type.micro),
                     ],
@@ -435,7 +468,7 @@ class _Row extends StatelessWidget {
               ),
             ],
           ),
-          if (unit != null && unitBelow)
+          if (unit != null && below)
             Padding(
               padding: const EdgeInsets.only(left: 84, top: 2),
               child: Text(unit!, style: Type.micro, textAlign: TextAlign.right),

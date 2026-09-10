@@ -58,53 +58,63 @@ class JournalRepository {
       );
       parsed = parseJournal(entry, bodyKg: _bodyKg, units: store.profile.units);
     }
-    await store.addJournal(entry);
-    await store.addDerived(
-      newSets: parsed.sets,
-      newNutrition: parsed.nutrition,
-      newActivities: parsed.activities,
-      newSleeps: parsed.sleeps,
-      newWeights: parsed.weights,
-    );
-    final days = <String>{entry.day};
-    if (parsed.sleeps.isEmpty) {
-      final wake = sleepWakeHoursOf(entry.text);
-      if (wake != null) {
-        days.addAll(await store.completeSleep(day: entry.day, endHours: wake));
+    await store.transaction(() async {
+      await store.addJournal(entry);
+      await store.addDerived(
+        newSets: parsed.sets,
+        newNutrition: parsed.nutrition,
+        newActivities: parsed.activities,
+        newSleeps: parsed.sleeps,
+        newWeights: parsed.weights,
+      );
+      final days = <String>{entry.day};
+      if (parsed.sleeps.isEmpty) {
+        final wake = sleepWakeHoursOf(entry.text);
+        if (wake != null) {
+          days.addAll(
+            await store.completeSleep(
+              day: entry.day,
+              endHours: wake,
+              wakeJournalEntryId: entry.id,
+            ),
+          );
+        }
+        final q = sleepQualityOf(entry.text);
+        if (q != null) {
+          final patched = await store.attachSleepQuality(
+            day: entry.day,
+            quality: q,
+            qualityJournalEntryId: entry.id,
+          );
+          if (patched != null) days.add(patched);
+        }
       }
-      final q = sleepQualityOf(entry.text);
-      if (q != null) {
-        final patched = await store.attachSleepQuality(
-          day: entry.day,
-          quality: q,
-        );
-        if (patched != null) days.add(patched);
+      await recomputeSummaries(store, days: days);
+    });
+    if (!excludedFromAi) {
+      unawaited(_maybeInsights());
+      if (transport.configured &&
+          store.profile.hasAiConsent &&
+          store.profile.ageAtLeast16) {
+        unawaited(_enrich(entry, parsed));
+        unawaited(_maybeDigest(entry.day));
       }
-    }
-    await recomputeSummaries(store, days: days);
-    unawaited(_maybeInsights());
-    if (transport.configured &&
-        store.profile.hasAiConsent &&
-        store.profile.ageAtLeast16 &&
-        !excludedFromAi) {
-      unawaited(_enrich(entry, parsed));
-      unawaited(_maybeDigest(entry.day));
     }
     return entry;
   }
 
   Future<JournalEntry?> revert(String id) async {
     JournalEntry? hit;
-    String? day;
     for (final e in store.journal) {
       if (e.id == id) {
         hit = e;
-        day = e.day;
         break;
       }
     }
-    await store.revertJournalEntry(id);
-    if (day != null) await recomputeSummaries(store, days: {day});
+    final affectedDays = await store.revertJournalEntry(id);
+    if (affectedDays.isNotEmpty) {
+      await recomputeSummaries(store, days: affectedDays);
+    }
     unawaited(_maybeInsights());
     return hit;
   }
@@ -177,27 +187,37 @@ class JournalRepository {
       entry: entry,
     );
     if (!result.ok) return;
+    if (!store.profile.hasAiConsent || !store.profile.ageAtLeast16) return;
+    final current = store.journal.where((e) => e.id == entry.id).firstOrNull;
+    if (current == null || current.excludedFromAi) return;
+
     final json = decodeRawJson(result.raw!);
     if (json == null) return;
     final extra = _fromAi(entry, json, local);
     if (extra.isEmpty) return;
-    await store.addDerived(
-      newSets: extra.sets,
-      newNutrition: extra.nutrition,
-      newActivities: extra.activities,
-      newSleeps: extra.sleeps,
-      newWeights: extra.weights,
-    );
-    if (extra.sleeps.isEmpty && local.sleeps.isEmpty && json['sleep'] is Map) {
-      final q = ((json['sleep'] as Map)['quality'] as num?)?.toDouble();
-      if (q != null) {
-        await store.attachSleepQuality(
-          day: entry.day,
-          quality: q.clamp(0.0, 1.0).toDouble(),
-        );
+
+    if (!store.journal.any((e) => e.id == entry.id && !e.excludedFromAi)) return;
+
+    await store.transaction(() async {
+      await store.addDerived(
+        newSets: extra.sets,
+        newNutrition: extra.nutrition,
+        newActivities: extra.activities,
+        newSleeps: extra.sleeps,
+        newWeights: extra.weights,
+      );
+      if (extra.sleeps.isEmpty && local.sleeps.isEmpty && json['sleep'] is Map) {
+        final q = ((json['sleep'] as Map)['quality'] as num?)?.toDouble();
+        if (q != null) {
+          await store.attachSleepQuality(
+            day: entry.day,
+            quality: q.clamp(0.0, 1.0).toDouble(),
+            qualityJournalEntryId: entry.id,
+          );
+        }
       }
-    }
-    await recomputeSummaries(store, days: {entry.day});
+      await recomputeSummaries(store, days: {entry.day});
+    });
     unawaited(_maybeInsights());
   }
 
@@ -206,8 +226,7 @@ class JournalRepository {
     if (existing?.digestSource == 'ai' && (existing?.digest ?? '').isNotEmpty) {
       return;
     }
-    final s = existing;
-    if (s == null) return;
+    final s = summaryForAi(store, day);
     final user =
         'day $day sleepHours=${s.sleepHours} strain=${s.strain} '
         'intake=${s.intakeKcal} volumeKg=${s.volumeKg} sets=${s.sets} '
@@ -218,6 +237,7 @@ class JournalRepository {
       user: user,
     );
     if (!result.ok) return;
+    if (!store.profile.hasAiConsent || !store.profile.ageAtLeast16) return;
     final json = decodeRawJson(result.raw!);
     final sentence = json?['sentence'] as String?;
     if (sentence == null || sentence.trim().isEmpty || sentence.length > 180) {
@@ -233,7 +253,10 @@ class JournalRepository {
   Future<void> _maybeInsights() async {
     if (!transport.configured) return;
     if (!store.profile.hasAiConsent || !store.profile.ageAtLeast16) return;
-    final board = insightBoard(store.summaries);
+    final aiSummaries = [
+      for (final s in store.summaries) summaryForAi(store, s.day),
+    ];
+    final board = insightBoard(aiSummaries);
     if (board.findings.isEmpty) {
       if (store.insightNote != null) {
         await store.putInsight();
@@ -263,9 +286,21 @@ class JournalRepository {
       user: buf.toString(),
     );
     if (!result.ok) return;
+    if (!store.profile.hasAiConsent || !store.profile.ageAtLeast16) return;
+    final currentBoard = insightBoard([
+      for (final s in store.summaries) summaryForAi(store, s.day),
+    ]);
+    final currentKey = currentBoard.findings
+        .map(
+          (f) =>
+              '${f.id}:${f.correlation.n}:${f.correlation.r.toStringAsFixed(2)}',
+        )
+        .join('|');
+    if (currentKey != key) return;
+
     final json = decodeRawJson(result.raw!);
     final sentence = json?['sentence'] as String?;
-    if (sentence == null || sentence.trim().isEmpty || sentence.length > 280) {
+    if (sentence == null || sentence.trim().isEmpty || sentence.length > 240) {
       return;
     }
     await store.putInsight(note: sentence.trim(), key: key);
@@ -289,8 +324,9 @@ class JournalRepository {
         final name = m['exercise'] as String? ?? '';
         final w = (m['weightKg'] as num?)?.toDouble();
         final reps = (m['reps'] as num?)?.toInt();
+        final nSets = (m['sets'] as num?)?.toInt() ?? 1;
         if (name.isEmpty || w == null || reps == null) continue;
-        if (w <= 0 || w > 500 || reps < 1 || reps > 40) continue;
+        if (!w.isFinite || w <= 0 || w > 500 || reps < 1 || reps > 40 || nSets < 1 || nSets > 50) continue;
         final resolved = resolveExercise(name);
         sets.add(
           StrengthSet(
@@ -301,7 +337,7 @@ class JournalRepository {
             exerciseName: resolved.name,
             weightKg: w,
             reps: reps,
-            sets: (m['sets'] as num?)?.toInt() ?? 1,
+            sets: nSets,
             epley1rm: epley1rm(w, reps),
             brzycki1rm: brzycki1rm(w, reps),
             rpe: (m['rpe'] as num?)?.toDouble(),
@@ -316,13 +352,22 @@ class JournalRepository {
         final m = raw.cast<String, Object?>();
         final label = m['label'] as String? ?? '';
         final kcal = (m['kcal'] as num?)?.toDouble();
-        if (label.isEmpty || kcal == null || kcal <= 0 || kcal > 4000) continue;
+        if (label.isEmpty || kcal == null || !kcal.isFinite || kcal <= 0 || kcal > 4000) continue;
         final already = local.nutrition.any(
           (e) => e.label.toLowerCase() == label.toLowerCase(),
         );
         if (already) continue;
         final estimate = m['estimate'] as bool? ?? true;
         final known = lookupFood(label);
+        double? cleanMacro(num? val) {
+          if (val == null) return null;
+          final d = val.toDouble();
+          return (d.isFinite && d >= 0 && d <= 1000) ? d : null;
+        }
+        final prot = cleanMacro(m['proteinG'] as num?) ?? known?.proteinG;
+        final carbs = cleanMacro(m['carbsG'] as num?) ?? known?.carbsG;
+        final fat = cleanMacro(m['fatG'] as num?) ?? known?.fatG;
+        final isConfirmed = !estimate && known != null;
         nutrition.add(
           NutritionEntry(
             id: newId(),
@@ -330,11 +375,11 @@ class JournalRepository {
             day: entry.day,
             label: known?.label ?? label,
             kcal: kcal,
-            proteinG: (m['proteinG'] as num?)?.toDouble() ?? known?.proteinG,
-            carbsG: (m['carbsG'] as num?)?.toDouble() ?? known?.carbsG,
-            fatG: (m['fatG'] as num?)?.toDouble() ?? known?.fatG,
-            confirmed: !estimate,
-            source: estimate ? 'ai-estimate' : 'ai',
+            proteinG: prot,
+            carbsG: carbs,
+            fatG: fat,
+            confirmed: isConfirmed,
+            source: isConfirmed ? 'ai' : 'ai-estimate',
           ),
         );
       }
@@ -373,11 +418,12 @@ class JournalRepository {
           minutes = null;
         }
         var kcal = (m['kcal'] as num?)?.toDouble();
+        final wasSynthesized = (m['kcal'] == null) || (m['minutes'] == null && (km != null || pace != null));
         if (kcal == null && minutes != null && disc != null) {
           kcal = disc.met * _bodyKg * (minutes / 60);
         }
-        if (kcal == null || kcal <= 0 || kcal > 4000) continue;
-        final estimate = m['estimate'] as bool? ?? true;
+        if (kcal == null || !kcal.isFinite || kcal <= 0 || kcal > 4000) continue;
+        final estimate = (m['estimate'] as bool? ?? true) || wasSynthesized;
         final rpe = (m['rpe'] as num?)?.toDouble();
         final hr = (m['hr'] as num?)?.toDouble();
         activities.add(
@@ -410,7 +456,12 @@ class JournalRepository {
       final m = (json['sleep'] as Map).cast<String, Object?>();
       final start = (m['startHours'] as num?)?.toDouble();
       final end = (m['endHours'] as num?)?.toDouble();
-      if (start != null && end != null && end - start > 0 && end - start < 16) {
+      if (start != null &&
+          end != null &&
+          start.isFinite &&
+          end.isFinite &&
+          end - start >= 0.08 &&
+          end - start <= 16) {
         final q = (m['quality'] as num?)?.toDouble();
         sleeps.add(
           SleepEntry(
@@ -427,7 +478,7 @@ class JournalRepository {
 
     if (local.weights.isEmpty && json['weightKg'] is num) {
       final kg = (json['weightKg'] as num).toDouble();
-      if (kg >= 30 && kg <= 250) {
+      if (kg.isFinite && kg >= 25 && kg <= 350) {
         weights.add(
           WeightEntry(
             id: newId(),

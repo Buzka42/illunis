@@ -83,9 +83,14 @@ class JournalDayNotifier extends Notifier<DateTime> {
 
 /// Prose parked on the writing line after REVERT, so a correction is not a retype.
 class JournalDraft {
-  const JournalDraft(this.text, {this.keepLocal = false});
+  const JournalDraft(
+    this.text, {
+    this.keepLocal = false,
+    this.replacesEntryId,
+  });
   final String text;
   final bool keepLocal;
+  final String? replacesEntryId;
 }
 
 final journalDraftProvider =
@@ -162,8 +167,13 @@ TodayFigures _figures(AppStore store, String day) {
     if (!s.isComplete && s.day == day) incompleteBed = s;
   }
   final today = day == dayKey(DateTime.now());
-  if (today) sleep ??= store.lastSleep();
   final yesterday = dayKey(dayKeyDate(day).subtract(const Duration(days: 1)));
+  if (today && sleep == null) {
+    final latest = store.lastSleep();
+    if (latest != null && (latest.day == day || latest.day == yesterday)) {
+      sleep = latest;
+    }
+  }
   if (today && incompleteBed == null) {
     for (var i = store.sleeps.length - 1; i >= 0; i--) {
       if (!store.sleeps[i].isComplete && store.sleeps[i].day == yesterday) {

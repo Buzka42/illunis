@@ -1,0 +1,7 @@
+2026-09-10 — final normal app restoration
+adb -s 20240920122 install -r app/build/app/outputs/flutter-apk/app-debug.apk
+Performing Streamed Install
+Success
+adb -s 20240920122 shell am start -n com.illunis.illunis/.MainActivity
+Starting: Intent { cmp=com.illunis.illunis/.MainActivity }
+Window inspection confirmed com.illunis.illunis/.MainActivity focused, mDreamingLockscreen=false.

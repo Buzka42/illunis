@@ -43,6 +43,7 @@ void _boot(Widget home, {AppStore? store}) {
     ),
   );
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final root = const bool.fromEnvironment('ILLUNIS_DREAM')
       ? const DreamShell()
       : home;

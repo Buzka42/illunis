@@ -101,3 +101,12 @@ Spec: `docs/SKY_CATALOG.md`.
 Long-press JOURNAL / DASHBOARD. The sheet scrolls, capped at 72% of
 height, so the Blade's system nav does not clip DELETE. Import is **JSON
 from the clipboard**; CSV is export-only.
+
+## Backup (decided 2026-09-10, sideload channel)
+
+`AndroidManifest.xml` stays silent on `allowBackup`: Google auto-backup
+of the full `illunis.json` is the only automatic durability story, and a
+no-account journal needs one. Accepted consequence: `aiConsentAt` and
+`ageAtLeast16` migrate with the file on device transfer, while clipboard
+import deliberately excludes them. Revisit with a per-file split before
+any Play release.

@@ -1,26 +1,29 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import 'celestial_scene.dart';
 import 'sky_camera.dart';
 
 /// Loads `shaders/sky.frag` once and knows the order of its uniforms.
 class SkyShader {
-  SkyShader._(this._program);
+  SkyShader._(this._program, this._weatherProgram, this._cloudTextures);
 
   final ui.FragmentProgram _program;
+  final ui.FragmentProgram _weatherProgram;
+  final List<ui.Image> _cloudTextures;
+  ui.FragmentShader? _skyInstance;
+  ui.FragmentShader? _weatherInstance;
 
   static Future<SkyShader>? _loading;
 
   /// Resolves once per process; a failure is remembered as null so the
   /// painter falls back instead of retrying every frame.
   static Future<SkyShader?> load() {
-    _loading ??= ui.FragmentProgram.fromAsset(
-      'shaders/sky.frag',
-    ).then(SkyShader._);
+    _loading ??= _loadResources();
     return _loading!.then<SkyShader?>(
-      (s) => s,
+      (s) => SkyShader._(s._program, s._weatherProgram, s._cloudTextures),
       onError: (Object e, StackTrace st) {
         debugPrint('sky shader unavailable: $e');
         return null;
@@ -28,12 +31,75 @@ class SkyShader {
     );
   }
 
-  ui.FragmentShader newShader() => _program.fragmentShader();
+  static Future<SkyShader> _loadResources() async {
+    final programs = await Future.wait([
+      ui.FragmentProgram.fromAsset('shaders/sky.frag'),
+      ui.FragmentProgram.fromAsset('shaders/weather.frag'),
+    ]);
+    final textures = await Future.wait([
+      for (final name in ['stratus', 'cumulus', 'cirrus']) _loadTexture(name),
+    ]);
+    return SkyShader._(programs[0], programs[1], textures);
+  }
+
+  static Future<ui.Image> _loadTexture(String name) async {
+    final data = await rootBundle.load('assets/sky/clouds/$name.png');
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    try {
+      return (await codec.getNextFrame()).image;
+    } finally {
+      codec.dispose();
+    }
+  }
+
+  ui.FragmentShader newShader() => _skyInstance ??= _program.fragmentShader();
+
+  void dispose() {
+    _skyInstance?.dispose();
+    _weatherInstance?.dispose();
+  }
+
+  /// Weather is composited after the catalog so a cloud occludes every
+  /// celestial body, including points drawn by Canvas. Clear pays no pass.
+  ui.FragmentShader weatherShader({
+    required ResolvedScene scene,
+    required SkyCamera camera,
+    required double time,
+    required double pixelScale,
+  }) {
+    final shader = _weatherInstance ??= _weatherProgram.fragmentShader();
+    final weather = scene.state.weather!;
+    var i = 0;
+    void f(double value) => shader.setFloat(i++, value);
+    f(camera.size.width);
+    f(camera.size.height);
+    f(camera.principal.dx);
+    f(camera.principal.dy);
+    f(camera.focal);
+    f(camera.azimuthRad);
+    f(scene.sunDir.x);
+    f(scene.sunDir.y);
+    f(scene.sunDir.z);
+    f(scene.dayness);
+    f(scene.moonIllumination * scene.moonDir.y.clamp(0.0, 1.0));
+    f(time);
+    f(pixelScale);
+    f(weather.cloudCoverage);
+    f(weather.cumulus);
+    f(weather.rain);
+    f(weather.fog);
+    f(weather.snow);
+    f(weather.cirrus);
+    for (var index = 0; index < _cloudTextures.length; index++) {
+      shader.setImageSampler(index, _cloudTextures[index]);
+    }
+    return shader;
+  }
 
   /// Angular radii, radians. The sun is drawn near true size; the moon is
   /// enlarged about 3× so its surface reads on a phone — the one stylisation.
-  static const double sunAngularRadius = 0.0095;
-  static const double moonAngularRadius = 0.026;
+  static const double sunAngularRadius = 0.00465;
+  static const double moonAngularRadius = 0.014;
 
   static void write(
     ui.FragmentShader shader, {

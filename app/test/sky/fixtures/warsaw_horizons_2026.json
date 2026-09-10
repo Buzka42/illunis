@@ -1,0 +1,614 @@
+{
+  "source": "NASA/JPL Horizons DE441 observer ephemerides",
+  "documentation": "https://ssd.jpl.nasa.gov/horizons/manual.html",
+  "observer": {
+    "latitudeDeg": 52.23,
+    "longitudeDeg": 21.01,
+    "elevationKm": 0
+  },
+  "apparent": "AIRLESS",
+  "riseSetCentreAltitudeDeg": -0.833,
+  "fetchedAtUtc": "2026-09-09T17:06:43.684606+00:00",
+  "days": [
+    {
+      "date": "2026-03-20",
+      "utcOffsetHours": 1,
+      "sun": [
+        {
+          "utc": "2026-Mar-19 23:00",
+          "azimuthDeg": 5.214278632,
+          "altitudeDeg": -37.91706317,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Mar-20 02:00",
+          "azimuthDeg": 55.734990061,
+          "altitudeDeg": -23.815388049,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Mar-20 05:00",
+          "azimuthDeg": 93.365078774,
+          "altitudeDeg": 2.39841915,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Mar-20 08:00",
+          "azimuthDeg": 132.478017233,
+          "altitudeDeg": 27.494052073,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Mar-20 11:00",
+          "azimuthDeg": 185.23780311,
+          "altitudeDeg": 37.589989074,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Mar-20 14:00",
+          "azimuthDeg": 235.646442387,
+          "altitudeDeg": 23.600169408,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Mar-20 17:00",
+          "azimuthDeg": 273.318376206,
+          "altitudeDeg": -2.523877135,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Mar-20 20:00",
+          "azimuthDeg": 312.502372121,
+          "altitudeDeg": -27.537435897,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Mar-20 23:00",
+          "azimuthDeg": 5.279121212,
+          "altitudeDeg": -37.518141995,
+          "illuminatedPercent": 100.0
+        }
+      ],
+      "moon": [
+        {
+          "utc": "2026-Mar-19 23:00",
+          "azimuthDeg": 353.512562153,
+          "altitudeDeg": -31.432638462,
+          "illuminatedPercent": 1.02538
+        },
+        {
+          "utc": "2026-Mar-20 02:00",
+          "azimuthDeg": 40.963373775,
+          "altitudeDeg": -22.714666373,
+          "illuminatedPercent": 1.4118
+        },
+        {
+          "utc": "2026-Mar-20 05:00",
+          "azimuthDeg": 77.970253069,
+          "altitudeDeg": 0.630440513,
+          "illuminatedPercent": 1.82626
+        },
+        {
+          "utc": "2026-Mar-20 08:00",
+          "azimuthDeg": 113.175211878,
+          "altitudeDeg": 27.52219537,
+          "illuminatedPercent": 2.22317
+        },
+        {
+          "utc": "2026-Mar-20 11:00",
+          "azimuthDeg": 163.204153713,
+          "altitudeDeg": 46.290145991,
+          "illuminatedPercent": 2.58863
+        },
+        {
+          "utc": "2026-Mar-20 14:00",
+          "azimuthDeg": 223.81223333,
+          "altitudeDeg": 40.665635931,
+          "illuminatedPercent": 2.95571
+        },
+        {
+          "utc": "2026-Mar-20 17:00",
+          "azimuthDeg": 265.818397398,
+          "altitudeDeg": 17.293713642,
+          "illuminatedPercent": 3.38685
+        },
+        {
+          "utc": "2026-Mar-20 20:00",
+          "azimuthDeg": 300.651015446,
+          "altitudeDeg": -7.652128795,
+          "illuminatedPercent": 3.93829
+        },
+        {
+          "utc": "2026-Mar-20 23:00",
+          "azimuthDeg": 341.353449999,
+          "altitudeDeg": -23.541468436,
+          "illuminatedPercent": 4.62813
+        }
+      ],
+      "eventsLocalMinutes": {
+        "sunrise": 338.9208888571944,
+        "sunset": 1068.934988271217
+      }
+    },
+    {
+      "date": "2026-06-21",
+      "utcOffsetHours": 2,
+      "sun": [
+        {
+          "utc": "2026-Jun-20 22:00",
+          "azimuthDeg": 351.108714882,
+          "altitudeDeg": -13.888072899,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Jun-21 01:00",
+          "azimuthDeg": 32.640112422,
+          "altitudeDeg": -8.202194464,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Jun-21 04:00",
+          "azimuthDeg": 68.179167839,
+          "altitudeDeg": 12.846607157,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Jun-21 07:00",
+          "azimuthDeg": 103.43121169,
+          "altitudeDeg": 39.885688341,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Jun-21 10:00",
+          "azimuthDeg": 162.310824694,
+          "altitudeDeg": 60.314110807,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Jun-21 13:00",
+          "azimuthDeg": 237.00190492,
+          "altitudeDeg": 50.496970325,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Jun-21 16:00",
+          "azimuthDeg": 277.83276595,
+          "altitudeDeg": 23.996085241,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Jun-21 19:00",
+          "azimuthDeg": 311.700577351,
+          "altitudeDeg": -0.703932306,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Jun-21 22:00",
+          "azimuthDeg": 351.057340635,
+          "altitudeDeg": -13.883376346,
+          "illuminatedPercent": 100.0
+        }
+      ],
+      "moon": [
+        {
+          "utc": "2026-Jun-20 22:00",
+          "azimuthDeg": 273.869482374,
+          "altitudeDeg": 0.643636787,
+          "illuminatedPercent": 39.53549
+        },
+        {
+          "utc": "2026-Jun-21 01:00",
+          "azimuthDeg": 310.535324753,
+          "altitudeDeg": -24.362172182,
+          "illuminatedPercent": 40.98856
+        },
+        {
+          "utc": "2026-Jun-21 04:00",
+          "azimuthDeg": 359.277959238,
+          "altitudeDeg": -36.439199858,
+          "illuminatedPercent": 42.61128
+        },
+        {
+          "utc": "2026-Jun-21 07:00",
+          "azimuthDeg": 49.114655316,
+          "altitudeDeg": -26.247718406,
+          "illuminatedPercent": 44.23452
+        },
+        {
+          "utc": "2026-Jun-21 10:00",
+          "azimuthDeg": 87.10518262,
+          "altitudeDeg": -2.478265739,
+          "illuminatedPercent": 45.68751
+        },
+        {
+          "utc": "2026-Jun-21 13:00",
+          "azimuthDeg": 124.102179795,
+          "altitudeDeg": 22.373153797,
+          "illuminatedPercent": 46.88592
+        },
+        {
+          "utc": "2026-Jun-21 16:00",
+          "azimuthDeg": 172.72193616,
+          "altitudeDeg": 35.816148972,
+          "illuminatedPercent": 47.88302
+        },
+        {
+          "utc": "2026-Jun-21 19:00",
+          "azimuthDeg": 223.691718052,
+          "altitudeDeg": 26.521497184,
+          "illuminatedPercent": 48.84653
+        },
+        {
+          "utc": "2026-Jun-21 22:00",
+          "azimuthDeg": 261.810629208,
+          "altitudeDeg": 2.252144199,
+          "illuminatedPercent": 49.96141
+        }
+      ],
+      "eventsLocalMinutes": {
+        "sunrise": 254.39283380747048,
+        "sunset": 1261.1312490641405
+      }
+    },
+    {
+      "date": "2026-09-09",
+      "utcOffsetHours": 2,
+      "sun": [
+        {
+          "utc": "2026-Sep-08 22:00",
+          "azimuthDeg": 350.16654572,
+          "altitudeDeg": -31.913854291,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-09 01:00",
+          "azimuthDeg": 40.777547696,
+          "altitudeDeg": -24.542183995,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-09 04:00",
+          "azimuthDeg": 80.143847209,
+          "altitudeDeg": -0.875302608,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-09 07:00",
+          "azimuthDeg": 117.37525628,
+          "altitudeDeg": 25.900179215,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-09 10:00",
+          "azimuthDeg": 168.715565849,
+          "altitudeDeg": 42.49579707,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-09 13:00",
+          "azimuthDeg": 225.923923126,
+          "altitudeDeg": 34.095292729,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-09 16:00",
+          "azimuthDeg": 266.577121262,
+          "altitudeDeg": 9.140931171,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-09 19:00",
+          "azimuthDeg": 303.315742672,
+          "altitudeDeg": -17.130869243,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-09 22:00",
+          "azimuthDeg": 350.22109478,
+          "altitudeDeg": -32.298631099,
+          "illuminatedPercent": 100.0
+        }
+      ],
+      "moon": [
+        {
+          "utc": "2026-Sep-08 22:00",
+          "azimuthDeg": 19.129725712,
+          "altitudeDeg": -20.03896117,
+          "illuminatedPercent": 6.0831
+        },
+        {
+          "utc": "2026-Sep-09 01:00",
+          "azimuthDeg": 58.442723165,
+          "altitudeDeg": -4.159662698,
+          "illuminatedPercent": 5.29239
+        },
+        {
+          "utc": "2026-Sep-09 04:00",
+          "azimuthDeg": 92.751923304,
+          "altitudeDeg": 20.728766501,
+          "illuminatedPercent": 4.6599
+        },
+        {
+          "utc": "2026-Sep-09 07:00",
+          "azimuthDeg": 135.365873825,
+          "altitudeDeg": 44.386317556,
+          "illuminatedPercent": 4.16923
+        },
+        {
+          "utc": "2026-Sep-09 10:00",
+          "azimuthDeg": 199.416839182,
+          "altitudeDeg": 49.693446497,
+          "illuminatedPercent": 3.7524
+        },
+        {
+          "utc": "2026-Sep-09 13:00",
+          "azimuthDeg": 250.246102754,
+          "altitudeDeg": 29.957175748,
+          "illuminatedPercent": 3.32847
+        },
+        {
+          "utc": "2026-Sep-09 16:00",
+          "azimuthDeg": 285.096238292,
+          "altitudeDeg": 3.01652939,
+          "illuminatedPercent": 2.85021
+        },
+        {
+          "utc": "2026-Sep-09 19:00",
+          "azimuthDeg": 321.599947415,
+          "altitudeDeg": -19.62471655,
+          "illuminatedPercent": 2.32956
+        },
+        {
+          "utc": "2026-Sep-09 22:00",
+          "azimuthDeg": 7.249405899,
+          "altitudeDeg": -27.545029612,
+          "illuminatedPercent": 1.82249
+        }
+      ],
+      "eventsLocalMinutes": {
+        "sunrise": 360.2806405808156,
+        "sunset": 1145.2601085378008
+      }
+    },
+    {
+      "date": "2026-09-23",
+      "utcOffsetHours": 2,
+      "sun": [
+        {
+          "utc": "2026-Sep-22 22:00",
+          "azimuthDeg": 351.006578129,
+          "altitudeDeg": -37.395333616,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-23 01:00",
+          "azimuthDeg": 44.545178564,
+          "altitudeDeg": -28.927197886,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-23 04:00",
+          "azimuthDeg": 84.405861791,
+          "altitudeDeg": -4.401920699,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-23 07:00",
+          "azimuthDeg": 121.668690068,
+          "altitudeDeg": 22.002761236,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-23 10:00",
+          "azimuthDeg": 171.076796613,
+          "altitudeDeg": 37.269367419,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-23 13:00",
+          "azimuthDeg": 224.480616138,
+          "altitudeDeg": 28.701650036,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-23 16:00",
+          "azimuthDeg": 264.244383365,
+          "altitudeDeg": 4.115452545,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-23 19:00",
+          "azimuthDeg": 301.473276263,
+          "altitudeDeg": -22.387401826,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Sep-23 22:00",
+          "azimuthDeg": 351.07023064,
+          "altitudeDeg": -37.791049449,
+          "illuminatedPercent": 100.0
+        }
+      ],
+      "moon": [
+        {
+          "utc": "2026-Sep-22 22:00",
+          "azimuthDeg": 214.463609628,
+          "altitudeDeg": 12.729760166,
+          "illuminatedPercent": 84.88217
+        },
+        {
+          "utc": "2026-Sep-23 01:00",
+          "azimuthDeg": 250.82225734,
+          "altitudeDeg": -7.811633333,
+          "illuminatedPercent": 85.65086
+        },
+        {
+          "utc": "2026-Sep-23 04:00",
+          "azimuthDeg": 286.071630702,
+          "altitudeDeg": -33.488537266,
+          "illuminatedPercent": 86.58144
+        },
+        {
+          "utc": "2026-Sep-23 07:00",
+          "azimuthDeg": 337.984208138,
+          "altitudeDeg": -52.620912472,
+          "illuminatedPercent": 87.61818
+        },
+        {
+          "utc": "2026-Sep-23 10:00",
+          "azimuthDeg": 43.741043908,
+          "altitudeDeg": -46.799614557,
+          "illuminatedPercent": 88.6425
+        },
+        {
+          "utc": "2026-Sep-23 13:00",
+          "azimuthDeg": 86.078959324,
+          "altitudeDeg": -22.526380811,
+          "illuminatedPercent": 89.541
+        },
+        {
+          "utc": "2026-Sep-23 16:00",
+          "azimuthDeg": 119.898167608,
+          "altitudeDeg": 3.599172247,
+          "illuminatedPercent": 90.26148
+        },
+        {
+          "utc": "2026-Sep-23 19:00",
+          "azimuthDeg": 159.642489915,
+          "altitudeDeg": 21.469321359,
+          "illuminatedPercent": 90.83567
+        },
+        {
+          "utc": "2026-Sep-23 22:00",
+          "azimuthDeg": 205.659779084,
+          "altitudeDeg": 20.912590709,
+          "illuminatedPercent": 91.36073
+        }
+      ],
+      "eventsLocalMinutes": {
+        "sunrise": 383.37901522695495,
+        "sunset": 1112.3126172128007
+      }
+    },
+    {
+      "date": "2026-12-21",
+      "utcOffsetHours": 1,
+      "sun": [
+        {
+          "utc": "2026-Dec-20 23:00",
+          "azimuthDeg": 12.396915553,
+          "altitudeDeg": -60.770607493,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Dec-21 02:00",
+          "azimuthDeg": 73.89541799,
+          "altitudeDeg": -41.597120167,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Dec-21 05:00",
+          "azimuthDeg": 109.683026734,
+          "altitudeDeg": -14.508301461,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Dec-21 08:00",
+          "azimuthDeg": 144.863370898,
+          "altitudeDeg": 7.206631104,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Dec-21 11:00",
+          "azimuthDeg": 186.147125211,
+          "altitudeDeg": 14.117383156,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Dec-21 14:00",
+          "azimuthDeg": 225.916773304,
+          "altitudeDeg": 2.034820564,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Dec-21 17:00",
+          "azimuthDeg": 259.928845127,
+          "altitudeDeg": -22.194361316,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Dec-21 20:00",
+          "azimuthDeg": 299.509248269,
+          "altitudeDeg": -48.932196031,
+          "illuminatedPercent": 100.0
+        },
+        {
+          "utc": "2026-Dec-21 23:00",
+          "azimuthDeg": 12.167520929,
+          "altitudeDeg": -60.789903774,
+          "illuminatedPercent": 100.0
+        }
+      ],
+      "moon": [
+        {
+          "utc": "2026-Dec-20 23:00",
+          "azimuthDeg": 254.411930638,
+          "altitudeDeg": 37.822587077,
+          "illuminatedPercent": 85.86423
+        },
+        {
+          "utc": "2026-Dec-21 02:00",
+          "azimuthDeg": 289.215152635,
+          "altitudeDeg": 11.964922814,
+          "illuminatedPercent": 86.78261
+        },
+        {
+          "utc": "2026-Dec-21 05:00",
+          "azimuthDeg": 323.576663865,
+          "altitudeDeg": -8.721739708,
+          "illuminatedPercent": 87.86705
+        },
+        {
+          "utc": "2026-Dec-21 08:00",
+          "azimuthDeg": 3.512891411,
+          "altitudeDeg": -15.701615423,
+          "illuminatedPercent": 89.03884
+        },
+        {
+          "utc": "2026-Dec-21 11:00",
+          "azimuthDeg": 42.180818008,
+          "altitudeDeg": -4.978483339,
+          "illuminatedPercent": 90.1646
+        },
+        {
+          "utc": "2026-Dec-21 14:00",
+          "azimuthDeg": 74.870694988,
+          "altitudeDeg": 17.782942363,
+          "illuminatedPercent": 91.12919
+        },
+        {
+          "utc": "2026-Dec-21 17:00",
+          "azimuthDeg": 109.955894107,
+          "altitudeDeg": 44.380391127,
+          "illuminatedPercent": 91.89155
+        },
+        {
+          "utc": "2026-Dec-21 20:00",
+          "azimuthDeg": 172.940043767,
+          "altitudeDeg": 61.930515782,
+          "illuminatedPercent": 92.50286
+        },
+        {
+          "utc": "2026-Dec-21 23:00",
+          "azimuthDeg": 243.172614597,
+          "altitudeDeg": 49.126796628,
+          "illuminatedPercent": 93.07693
+        }
+      ],
+      "eventsLocalMinutes": {
+        "sunrise": 462.927708190759,
+        "sunset": 925.0549011510132
+      }
+    }
+  ]
+}

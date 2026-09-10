@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/platform/host.dart';
 import '../../core/sky/celestial_math.dart';
+import '../../core/sky/sky_state.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
@@ -12,13 +14,19 @@ import 'frame_budget.dart';
 /// Debug builds only: scrub the day, the year, the observer and the moon;
 /// switch vitals presets. Long-press the wordmark to open.
 Future<void> showSkyDebugSheet(BuildContext context) {
+  if (!kDebugMode) return Future<void>.value();
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: const Color(0xF20B0E14),
-    barrierColor: Colors.transparent,
+    backgroundColor: const Color(0xFF07090D),
+    barrierColor: const Color(0x99000000),
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(),
-    builder: (_) => const _SkyDebugSheet(),
+    builder: (_) => ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+      ),
+      child: const SingleChildScrollView(child: _SkyDebugSheet()),
+    ),
   );
 }
 
@@ -104,6 +112,58 @@ class _SkyDebugSheet extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 14),
+          Container(height: 1, color: Inks.hairline),
+          const SizedBox(height: 12),
+          Text('WEATHER · SIMULATED', style: Type.label),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 18,
+            runSpacing: 12,
+            children: [
+              for (final p in WeatherPreset.values)
+                _TextButton(
+                  label: p.label.toUpperCase(),
+                  active: o.weatherPreset == p,
+                  onTap: () =>
+                      n.set(o.copyWith(weatherPreset: p, weather: null)),
+                ),
+            ],
+          ),
+          if (o.weatherPreset != WeatherPreset.source) ...[
+            const SizedBox(height: 8),
+            for (final field in [
+              'CLOUD',
+              'CUMULUS',
+              'CIRRUS',
+              'RAIN',
+              'FOG',
+              'SNOW',
+            ])
+              _Slider(
+                label: field,
+                display:
+                    '${(_weatherAmount(live.weather, field) * 100).round()}%',
+                value: _weatherAmount(live.weather, field),
+                min: 0,
+                max: 1,
+                onChanged: (v) {
+                  final w = live.weather ?? const SkyWeather.clear();
+                  n.set(
+                    o.copyWith(
+                      weather: switch (field) {
+                        'CLOUD' => w.copyWith(cloudCoverage: v),
+                        'CUMULUS' => w.copyWith(cumulus: v),
+                        'CIRRUS' => w.copyWith(cirrus: v),
+                        'RAIN' => w.copyWith(rain: v),
+                        'FOG' => w.copyWith(fog: v),
+                        _ => w.copyWith(snow: v),
+                      },
+                    ),
+                  );
+                },
+              ),
+          ],
+          const SizedBox(height: 14),
           _HostRow(
             onPreview: () {
               final nav = Navigator.of(context);
@@ -126,20 +186,30 @@ class _SkyDebugSheet extends ConsumerWidget {
   }
 }
 
+double _weatherAmount(SkyWeather? weather, String field) => switch (field) {
+  'CLOUD' => weather?.cloudCoverage ?? 0,
+  'CUMULUS' => weather?.cumulus ?? 0.5,
+  'CIRRUS' => weather?.cirrus ?? 0,
+  'RAIN' => weather?.rain ?? 0,
+  'FOG' => weather?.fog ?? 0,
+  _ => weather?.snow ?? 0,
+};
+
 class _HostRow extends StatelessWidget {
   const _HostRow({required this.onPreview});
   final VoidCallback onPreview;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Wrap(
+      spacing: 24,
+      runSpacing: 12,
       children: [
         _TextButton(
           label: 'PREVIEW NIGHTSTAND',
           active: false,
           onTap: onPreview,
         ),
-        const Spacer(),
         if (Host.isAndroid)
           _TextButton(
             label: 'SET SCREEN SAVER',
@@ -186,7 +256,7 @@ class _Slider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SizedBox(width: 44, child: Text(label, style: Type.label)),
+        SizedBox(width: 68, child: Text(label, style: Type.label)),
         Expanded(
           child: SliderTheme(
             data: SliderThemeData(

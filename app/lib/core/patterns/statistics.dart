@@ -105,11 +105,11 @@ List<Candidate<T>> survivingFindings<T>(
   int minimumPairs = 21,
   double minimumAbsR = 0.35,
 }) {
+  // Benjamini–Hochberg must test against the full hypothesis family
+  // meeting the sample size requirement, before applying presentation thresholds.
   final eligible = [
     for (final candidate in candidates)
-      if (candidate.correlation.n >= minimumPairs &&
-          candidate.correlation.r.abs() >= minimumAbsR)
-        candidate,
+      if (candidate.correlation.n >= minimumPairs) candidate,
   ]..sort((a, b) => a.correlation.p.compareTo(b.correlation.p));
   if (eligible.isEmpty) return const [];
   final m = eligible.length;
@@ -120,5 +120,8 @@ List<Candidate<T>> survivingFindings<T>(
     }
   }
   if (cutoff < 0) return const [];
-  return eligible.take(cutoff + 1).toList();
+  return [
+    for (final candidate in eligible.take(cutoff + 1))
+      if (candidate.correlation.r.abs() >= minimumAbsR) candidate,
+  ];
 }

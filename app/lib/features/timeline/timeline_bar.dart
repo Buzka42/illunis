@@ -48,32 +48,37 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
     final sleep = ref.watch(sleepRecordProvider);
     final marks = ref.watch(timelineMarksProvider);
     final textScale = MediaQuery.textScalerOf(context).scale(10) / 10;
+    final canScrub = !kReleaseMode;
+    final timelineView = ValueListenableBuilder<ResolvedScene?>(
+      valueListenable: widget.scene,
+      builder: (context, scene, _) => CustomPaint(
+        painter: _TimelinePainter(
+          scene: scene,
+          sleep: sleep,
+          marks: marks,
+          scrub: scrub,
+          textScale: textScale,
+        ),
+      ),
+    );
     return SizedBox(
       height: TimelineBar.height,
       child: LayoutBuilder(
         builder: (context, c) => Stack(
           fit: StackFit.expand,
           children: [
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (d) => _scrubTo(d.localPosition.dx, c.maxWidth),
-              onHorizontalDragStart: (d) =>
-                  _scrubTo(d.localPosition.dx, c.maxWidth),
-              onHorizontalDragUpdate: (d) =>
-                  _scrubTo(d.localPosition.dx, c.maxWidth),
-              child: ValueListenableBuilder<ResolvedScene?>(
-                valueListenable: widget.scene,
-                builder: (context, scene, _) => CustomPaint(
-                  painter: _TimelinePainter(
-                    scene: scene,
-                    sleep: sleep,
-                    marks: marks,
-                    scrub: scrub,
-                    textScale: textScale,
-                  ),
-                ),
-              ),
-            ),
+            if (canScrub)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (d) => _scrubTo(d.localPosition.dx, c.maxWidth),
+                onHorizontalDragStart: (d) =>
+                    _scrubTo(d.localPosition.dx, c.maxWidth),
+                onHorizontalDragUpdate: (d) =>
+                    _scrubTo(d.localPosition.dx, c.maxWidth),
+                child: timelineView,
+              )
+            else
+              timelineView,
             // LIVE sits at whichever end the playhead's label is not.
             if (scrub != null)
               Positioned(
@@ -361,13 +366,7 @@ class _TimelinePainter extends CustomPainter {
       () => TextPainter(
         text: TextSpan(
           text: s,
-          style: TextStyle(
-            fontFamily: Type.mono,
-            fontSize: size * textScale,
-            fontVariations: [ui.FontVariation('wght', weight.toDouble())],
-            letterSpacing: 0.4,
-            height: 1.0,
-          ),
+          style: Type.track(size: size * textScale, weight: weight),
         ),
         textDirection: TextDirection.ltr,
       )..layout(),
@@ -392,14 +391,10 @@ class _TimelinePainter extends CustomPainter {
       () => TextPainter(
         text: TextSpan(
           text: s,
-          style: TextStyle(
-            fontFamily: Type.mono,
-            fontSize: size * textScale,
-            fontVariations: [ui.FontVariation('wght', weight.toDouble())],
-            color: color.withValues(alpha: alpha),
-            letterSpacing: 0.4,
-            height: 1.0,
-          ),
+          style: Type.track(
+            size: size * textScale,
+            weight: weight,
+          ).copyWith(color: color.withValues(alpha: alpha)),
         ),
         textDirection: TextDirection.ltr,
       )..layout(),

@@ -34,11 +34,6 @@ class SkyView extends StatefulWidget {
   /// Reports the eased, resolved scene each frame for chrome that wants it.
   final ValueChanged<ResolvedScene>? onScene;
 
-  /// Device pixels the shader is allowed to shade per frame. A 1080×2400
-  /// phone lands at ~0.96×; anything smaller renders 1:1. The one number to
-  /// lower if a device cannot hold the frame.
-  static const double shadePixelBudget = 2.4e6;
-
   @override
   State<SkyView> createState() => _SkyViewState();
 }
@@ -54,6 +49,8 @@ class _SkyViewState extends State<SkyView>
   Duration _last = Duration.zero;
   SkyShader? _shader;
   bool _shaderRequested = false;
+  bool _reducedMotion = false;
+  double _paintDebt = 0;
 
   // Time constants, seconds. The clock is followed closely; a vital eases
   // like weather; the camera turns like a head, not a servo.
@@ -78,7 +75,11 @@ class _SkyViewState extends State<SkyView>
     if (_shaderRequested) return;
     _shaderRequested = true;
     SkyShader.load().then((s) {
-      if (mounted) setState(() => _shader = s);
+      if (mounted) {
+        setState(() => _shader = s);
+      } else {
+        s?.dispose();
+      }
     });
   }
 
@@ -120,8 +121,11 @@ class _SkyViewState extends State<SkyView>
       recovery: vitalPart.recovery,
       strain: vitalPart.strain,
       energyBalance: vitalPart.energyBalance,
+      weather: vitalPart.weather,
     );
-    _scene = CelestialScene.resolve(_display);
+    // Decorative time does not change geometry. Reusing an unchanged scene
+    // also avoids notifying/rebuilding every surface figure for twinkle.
+    if (_scene.state != _display) _scene = CelestialScene.resolve(_display);
 
     final kCam = 1 - math.exp(-dt / _tauCamera);
     _azimuth = _easeAngle(_azimuth, _scene.trackAzimuthRad, kCam);
@@ -129,6 +133,14 @@ class _SkyViewState extends State<SkyView>
     _yaw += (widget.yawOffsetRad - _yaw) * kYaw;
 
     widget.onScene?.call(_scene);
+    // Reduced motion: the procession is content and keeps easing, but
+    // repainting 60 decorative frames a second is not. ~10 fps is enough
+    // for a 1.4 s ease to read as weather rather than a cut.
+    if (_reducedMotion) {
+      _paintDebt += dt;
+      if (_paintDebt < 0.1) return;
+      _paintDebt = 0;
+    }
     setState(() {});
   }
 
@@ -147,21 +159,15 @@ class _SkyViewState extends State<SkyView>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _ticker.dispose();
+    _shader?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
+    _reducedMotion = mq.disableAnimations;
     final az = wrapAngle(_azimuth + _yaw);
-    final px =
-        mq.size.width *
-        mq.size.height *
-        mq.devicePixelRatio *
-        mq.devicePixelRatio;
-    final scale = (math.sqrt(
-      SkyView.shadePixelBudget / math.max(px, 1),
-    )).clamp(0.6, 1.0);
     return RepaintBoundary(
       child: CustomPaint(
         painter: SkyPainter(
@@ -170,7 +176,6 @@ class _SkyViewState extends State<SkyView>
           shader: _shader,
           time: mq.disableAnimations ? 0 : _time,
           devicePixelRatio: mq.devicePixelRatio,
-          scale: scale,
         ),
         foregroundPainter: SkyOverlayPainter(
           scene: _scene,

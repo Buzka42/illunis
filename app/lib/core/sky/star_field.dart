@@ -1,10 +1,10 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'celestial_math.dart';
 import 'celestial_scene.dart';
 import 'sky_camera.dart';
+import 'sky_shader.dart';
 import 'star_catalog.dart';
 
 /// One row of [kStarPack].
@@ -56,8 +56,41 @@ Vec3 catalogStarDirection(CatalogStar star, double siderealRad, double latRad) {
 double catalogStarVisibility(double sunAltDeg) =>
     smoothstep(-5, -15, sunAltDeg);
 
-final Float32List _coolPts = Float32List(kStarCount * 2);
-final Float32List _warmPts = Float32List(kStarCount * 2);
+// Logarithmic alpha bins retain faint-star magnitude, air mass, glare and
+// twinkle while bounding the faint field to 48 Canvas calls.
+const _bins = 24;
+final _points = List.generate(_bins * 2, (_) => <Offset>[]);
+// Catalog-only work is fixed for the lifetime of the bundled J2000 table.
+final _equatorial = List<Vec3>.generate(kStarCount, (i) {
+  final ra = kStarPack[i * 4], dec = kStarPack[i * 4 + 1];
+  final c = math.cos(dec);
+  return Vec3(c * math.cos(ra), math.sin(dec), c * math.sin(ra));
+}, growable: false);
+final _intensities = List<double>.generate(
+  kStarCount,
+  (i) => starIntensity(kStarPack[i * 4 + 2]),
+  growable: false,
+);
+
+/// Exposure-adapted V magnitude. The flux follows Pogson's law before a
+/// logarithmic eye response; no common brightness floor for faint stars.
+double starIntensity(double magnitude) {
+  final flux = math.pow(10, -0.4 * magnitude).toDouble();
+  return (math.log(1 + 40 * flux) / math.log(1 + 40 * math.pow(10, 0.576)))
+      .clamp(0.0, 1.0);
+}
+
+double starExtinction(double altitudeRad, double turbidity) {
+  if (altitudeRad <= 0) return 0;
+  final degrees = altitudeRad * radToDeg;
+  final airMass =
+      1 /
+      (math.sin(altitudeRad) + 0.50572 * math.pow(degrees + 6.07995, -1.6364));
+  final coefficient = 0.12 + 0.025 * turbidity;
+  return math.pow(10, -0.4 * coefficient * (airMass - 1)).toDouble();
+}
+
+double _binAlpha(int bin) => 0.004 * math.pow(250, bin / (_bins - 1));
 
 void paintCatalogStars(
   Canvas canvas, {
@@ -71,28 +104,42 @@ void paintCatalogStars(
   final pack = kStarPack;
   final lat = scene.latitudeRad;
   final sidereal = scene.siderealRad;
+  final sinLat = math.sin(lat), cosLat = math.cos(lat);
+  final sinSidereal = math.sin(sidereal), cosSidereal = math.cos(sidereal);
+  final forward = camera.forward, right = camera.right;
   final moonDir = scene.moonDir;
   final moonUp = smoothstep(-0.05, 0.12, moonDir.y);
   final moonGlare = 0.75 * scene.moonIllumination * moonUp;
   final twinkleAmp = (1.2 - scene.stillness).clamp(0.15, 1.2);
   final horizonY = camera.principal.dy;
-  var coolN = 0;
-  var warmN = 0;
+  for (final points in _points) {
+    points.clear();
+  }
 
   for (var i = 0; i < kStarCount; i++) {
     final o = i * 4;
-    final ra = pack[o];
-    final dec = pack[o + 1];
     final mag = pack[o + 2];
     final bv = pack[o + 3];
-    final dir = horizontalDirection(dec, wrapAngle(sidereal - ra), lat);
+    final eq = _equatorial[i];
+    final q = cosSidereal * eq.x + sinSidereal * eq.z;
+    final dir = Vec3(
+      cosSidereal * eq.z - sinSidereal * eq.x,
+      sinLat * eq.y + cosLat * q,
+      sinLat * q - cosLat * eq.y,
+    );
     if (dir.y < 0) continue;
-    if (dir.dot(moonDir) > 0.9996) continue;
-    final p = camera.project(dir);
-    if (p == null || !camera.contains(p)) continue;
+    if (dir.dot(moonDir) > math.cos(SkyShader.moonAngularRadius)) continue;
+    final denom = 1 + dir.dot(forward);
+    if (denom < 0.08) continue;
+    final k = 2 * camera.focal / denom;
+    final p = Offset(
+      camera.principal.dx + dir.dot(right) * k,
+      camera.principal.dy - dir.y * k,
+    );
+    if (!camera.contains(p)) continue;
     if (p.dy > horizonY + 0.5) continue;
 
-    final up = smoothstep(-0.5, 4.0, dir.altitude * radToDeg);
+    final up = starExtinction(dir.altitude, scene.turbidity);
     var glare = 1.0;
     if (moonGlare > 0) {
       final m = dir.dot(moonDir).clamp(0.0, 1.0);
@@ -101,13 +148,8 @@ void paintCatalogStars(
     final twk =
         0.88 +
         0.12 * math.sin(time * (1.8 + (i % 7) * 0.35) * twinkleAmp + i * 0.17);
-    final flux = math.pow(10, -0.4 * (mag + 1.44)).toDouble();
-    final alpha =
-        (vis * up * glare * twk * (0.16 + 0.84 * flux.clamp(0.0, 1.0))).clamp(
-          0.0,
-          1.0,
-        );
-    if (alpha < 0.02) continue;
+    final alpha = (vis * up * glare * twk * _intensities[i]).clamp(0.0, 1.0);
+    if (alpha < 0.004) continue;
 
     if (mag <= 1.9) {
       final size = (0.7 + 1.6 * math.pow(10, -0.15 * (mag + 1.44))).clamp(
@@ -121,34 +163,20 @@ void paintCatalogStars(
       );
       continue;
     }
-    if (bv < 0.55) {
-      _coolPts[coolN * 2] = p.dx;
-      _coolPts[coolN * 2 + 1] = p.dy;
-      coolN++;
-    } else {
-      _warmPts[warmN * 2] = p.dx;
-      _warmPts[warmN * 2 + 1] = p.dy;
-      warmN++;
-    }
+    final bin = (math.log(alpha / 0.004) / math.log(250) * (_bins - 1))
+        .round()
+        .clamp(0, _bins - 1);
+    _points[bin + (bv < 0.55 ? 0 : _bins)].add(p);
   }
 
-  final faintA = (vis * 0.42).clamp(0.04, 0.55);
-  if (coolN > 0) {
-    canvas.drawRawPoints(
+  for (var i = 0; i < _points.length; i++) {
+    if (_points[i].isEmpty) continue;
+    final tint = i < _bins ? const Color(0xFFC5D4FF) : const Color(0xFFFFD4B4);
+    canvas.drawPoints(
       PointMode.points,
-      Float32List.sublistView(_coolPts, 0, coolN * 2),
+      _points[i],
       Paint()
-        ..color = const Color(0xFFC5D4FF).withValues(alpha: faintA)
-        ..strokeWidth = 1.05
-        ..strokeCap = StrokeCap.round,
-    );
-  }
-  if (warmN > 0) {
-    canvas.drawRawPoints(
-      PointMode.points,
-      Float32List.sublistView(_warmPts, 0, warmN * 2),
-      Paint()
-        ..color = const Color(0xFFFFD4B4).withValues(alpha: faintA)
+        ..color = tint.withValues(alpha: _binAlpha(i % _bins))
         ..strokeWidth = 1.05
         ..strokeCap = StrokeCap.round,
     );

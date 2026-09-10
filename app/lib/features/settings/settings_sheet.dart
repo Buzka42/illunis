@@ -18,8 +18,8 @@ import '../../core/units/mass.dart';
 Future<void> showSettingsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: const Color(0xF20B0E14),
-    barrierColor: Colors.transparent,
+    backgroundColor: const Color(0xFF07090D),
+    barrierColor: const Color(0x99000000),
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(),
     builder: (_) => const _SettingsSheet(),
@@ -48,8 +48,10 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
           : 'illunis-export.json';
       final file = File(p.join(dir.path, name));
       await file.writeAsString(payload);
+      if (!mounted) return;
       setState(() => _note = file.path);
     } catch (_) {
+      if (!mounted) return;
       setState(() => _note = S.copied);
     }
   }
@@ -99,6 +101,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                   label: S.importJson,
                   onTap: () async {
                     final data = await Clipboard.getData(Clipboard.kTextPlain);
+                    if (!mounted) return;
                     final text = data?.text;
                     if (text == null || text.trim().isEmpty) {
                       setState(() => _note = S.importFailed);
@@ -107,8 +110,10 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                     try {
                       await _store.importJson(text);
                       await recomputeSummaries(_store);
+                      if (!mounted) return;
                       setState(() => _note = S.imported);
                     } catch (_) {
+                      if (!mounted) return;
                       setState(() => _note = S.importFailed);
                     }
                   },
@@ -142,6 +147,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                   label: profile.hasAiConsent
                       ? '${S.aiConsent} · ON'
                       : S.aiConsent,
+                  sub: S.aiConsentNote,
                   onTap: () async {
                     await _store.putProfile(
                       profile.copyWith(
@@ -188,9 +194,10 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
 }
 
 class _Line extends StatelessWidget {
-  const _Line({required this.label, required this.onTap});
+  const _Line({required this.label, required this.onTap, this.sub});
   final String label;
   final VoidCallback onTap;
+  final String? sub;
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +206,20 @@ class _Line extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Text(label, style: Type.label.copyWith(color: Inks.strong)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(label, style: Type.label.copyWith(color: Inks.strong)),
+            if (sub != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  sub!,
+                  style: Type.micro.copyWith(color: Inks.muted),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

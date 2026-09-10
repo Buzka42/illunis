@@ -89,3 +89,24 @@ override the debug sheet uses. `LIVE` returns to the clock.
 The Android screensaver is the sky without the pager. Close finishes the
 dream. Preview from the debug sheet on any platform. Set as screensaver
 from the same sheet on Android (`Settings.ACTION_DREAM_SETTINGS`).
+
+## Astra A–C refinements (2026-09-09)
+
+Weather is a nullable observation on SkyState. Null is unobserved/clear-looking;
+explicit clear remains distinguishable in data. Clouds and precipitation sit
+behind the instrument, with full overcast hiding celestial bodies and fog
+concentrated at the horizon. Weather eases at the vitals rate and freezes
+decorative motion under reduced motion.
+
+Header and instrument use the same scene paper→slate ink blend. Ground remains
+paper ink. `Type.figureSmall` (14.5) and `Type.track` centralize secondary table
+figures and timeline text. Sun duration and long unit annotations sit below
+figures. Mock previews label simulated figures and separate local record
+aggregates; past-day records stay LOCAL. SLEEP and STRAIN remain visible for
+zero and absent values.
+
+Nightstand drift is continuous, bounded ±3 px over 180 s, and stops while
+hidden/paused or under reduced motion. Mock sleep is labelled. The Material
+text environment prevents fallback error underlines. Horizon 0.56, compass
+band 22 px and timeline 48 px are unchanged. See ASTRA_HANDOFF.md for evidence
+and outstanding hardware validation.

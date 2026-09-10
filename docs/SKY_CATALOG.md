@@ -1,130 +1,83 @@
 # Illunis — True night sky
 
-The person should be able to look from the phone to the window and see the
-same stars, at the same brightness. This file is the spec for what shipped
-and what is still deferred.
+Current through Astra A–C, 2026-09-09. See [ASTRA_HANDOFF.md](ASTRA_HANDOFF.md)
+for independent reference results and [PERF.md](PERF.md) for measured cost.
 
-## What is true today
+## Geometry and appearance
 
-- **Sun and naked-eye planets** use an ephemeris (Schlyter mean elements)
-  from `SkyState.epochDays`. Accuracy ~1°.
-- **Moon** is still phase-driven on the ecliptic. A real lunar theory is a
-  separate later item (`docs/VISUAL_PASS_2.md` §3).
-- **Stars** are the HYG v3 catalog, `V ≤ 6.0` (~5,070), drawn as Canvas
-  points from J2000 RA/Dec at catalog V. Sidereal rotation is the same
-  angle the planets use. The hashed field in `sky.frag` is gone.
-- **Milky Way** is a procedural band around a real galactic pole vector, not
-  a photograph.
-- **Observer.** Home latitude and longitude on the profile. No GPS.
-- **Night look.** By day the camera still follows the sun. At night it
-  follows a risen, lit moon; otherwise it faces south so the catalog is
-  in the window, not the azimuth of a sun that has already set.
+The Sun and five naked-eye planets use epoch-based orbital geometry. Planets
+retain low-precision elements and approximate magnitudes. The Moon now uses
+an inclined eccentric orbit with principal perturbations and topocentric
+parallax; phase/terminator is resolved against the Sun direction. An explicit
+phase override remains available for debug review. Warsaw Sun/Moon alt/az
+errors at sampled times on five 2026 dates are below 0.13°, and solar rise/set
+errors below one minute against JPL Horizons. This does not certify all dates
+or independently validate planet and bright-star residuals.
 
-## Goal
+Stars use the bundled HYG v3 catalog, V ≤ 6.0 (5,070 entries), J2000 RA/Dec,
+visual magnitude and B−V tint. No shader hash field doubles the catalog.
+Sidereal orientation shares the Sun/planet frame, with transit-anchored solar
+RA and sidereal rotation rate. The observer remains Settings home; no GPS.
+At night the camera follows a risen, lit Moon or otherwise faces south.
 
-At the current civil time, from the chosen home, the night sky shows the
-stars that are actually above the horizon, each drawn from its catalog
-visual magnitude. Orion in January at 21:00 in Warsaw is Orion. Sirius is
-the brightest star. Polaris sits on the pole.
+The Milky Way is procedural around the real galactic pole. Exposure, grain,
+twinkle and the roughly 3× lunar disk are intentional stylizations; lunar
+texture is procedural; clouds now sample generated stratus/cumulus/cirrus density assets. Weather is implemented as state-driven
+simulation, not a current observation or a light-pollution map.
 
-Stylisation that stays: exposure adaptation, a ~3× moon, grain, a little
-twinkle. Stylisation that goes: invented star positions and invented
-brightness.
+## Catalog generation and rendering
 
-## Catalog
+`tool/stars/generate.py` writes `app/lib/core/sky/star_catalog.dart`: immutable
+numeric data, no runtime fetch or decoding imports in the renderer. Regeneration
+preserves the source float32 values and 20 name indices. The HYG fallback RA
+column is in hours, while rarad is already radians. Attribution/source details
+are included with the generator and generated data.
 
-- **Source.** Yale Bright Star Catalog (BSC5) or the HYG subset of Hipparcos
-  + Yale. Public domain / attribution as the chosen file requires. Bundled
-  in the app; never fetched at runtime.
-- **Epoch.** J2000.0 right ascension and declination. Visual magnitude `V`.
-  Optional B−V for tint (blue-white → orange).
-- **Limit.** Draw every star with `V ≤ 6.0` (~5,000, naked-eye). Keep the
-  rest of the file for a later fainter pass if the budget allows, but do not
-  draw below 6.0 in v1 — that is binocular sky, and it fights the instrument.
-- **Generate, do not hand-type.** A small script (`tool/stars/` or similar)
-  reads the source and writes a compact Dart or binary table
-  (`app/lib/core/sky/star_catalog.g.dart`). The table is RA, Dec, V, B−V.
-  Named stars (Sirius, Polaris, …) may carry a Bayer/proper name for tests
-  and a later label pass; v1 does **not** draw names. The sky is a window,
-  not a chart.
-- **Precession.** ~0.4° from J2000 to 2026. Ship J2000 first. If a
-  Stellarium check at the home city is off by more than half a degree on
-  a bright star, apply IAU 1976 precession from `epochDays`. Aberration and
-  refraction are out of v1 except the horizon extinction already used for
-  planets.
+Magnitude starts from Pogson flux, 10^(-0.4 ΔV), with a perceptual display
+response. Faint stars use 24 logarithmic opacity bins × two tints via Canvas
+`drawPoints`; bright stars have separate cores. Altitude/turbidity air-mass
+extinction, twilight, lunar glare and bounded twinkle modify visibility.
+Catalog-only trigonometry and intensity are cached; each frame rotates their equatorial bases directly. All points are native resolution and render after the atmosphere shader.
+Weather then occludes them before the instrument is painted. No half-resolution
+composite is used. See PERF for total frame costs; an isolated ≤1 ms catalog
+budget on the Blade has not been measured for this revision.
 
-## Rendering
-
-Stars return to **points**, as `PLAN.md` §4 originally budgeted, instead of
-a per-pixel hash.
-
-- Resolve equatorial → horizontal with the existing sidereal angle and
-  latitude in `CelestialScene` (same frame as the planets).
-- Project with `SkyCamera`. Drop anything below the horizon and anything
-  extinguished by twilight (same ramp as today's `starVis`).
-- Size and flux from Pogson: `flux ∝ 10^(-0.4 (V - V0))`. A mag-0 star is
-  a small core; mag 6 is almost a grain. Horizon extinction matches planets.
-- Paint with `drawRawPoints` (field) and a slightly larger core for the
-  brightest ~40. Twinkle is a per-frame alpha table, not per-star `Paint`
-  objects. Budget: **≤ 1 ms**, same as §4.
-- **Remove** (or dim to dust fainter than the catalog cutoff) the hash
-  `stars()` in `sky.frag`. Two fields on top of each other would double
-  Sirius and invent neighbours. The procedural galaxy band may stay, aligned
-  to the same galactic pole, until a texture is justified.
-- `core/sky/` stays dumb: the catalog is data, the math is RA/Dec →
-  direction, the painter draws points. No `DateTime`, no Riverpod, no
-  health words.
+The sky seam only imports dart:math, dart:ui, Flutter, its own files and theme
+tokens. Catalog data, geometry and drawing know nothing about providers,
+health records or network sources.
 
 ## Observer and clock
 
-Already in place:
+`timeOfDay` is a civil clock fraction. `epochDays` supplies its UTC-consistent
+midnight basis, and `solarNoon` encodes longitude/zone/equation of time. The
+source uses the offset at the represented instant to preserve UTC across DST.
+The equation-of-time sign is corrected. Scrubbing moves orbital phase and
+solar noon together unless an explicit phase override is selected.
 
-- `timeOfDay` is the civil clock.
-- `latitudeDeg` from the home place.
-- `solarNoon` already carries longitude / zone / equation of time, and
-  sidereal time is derived from the solar hour angle plus the sun's RA.
+## Verification
 
-The catalog pass must **not** invent a second clock. If Stellarium and the
-app disagree on hour angle, fix `civilSolarNoon` / sidereal once; both the
-planets and the stars will move together.
+Geometry tests cover Sirius, Polaris, seasonal Orion visibility, horizon
+projection and sidereal rotation. Additional tests pin magnitude response,
+air-mass extinction and immutable catalog data. Independent offline JPL
+fixtures check Sun/Moon geometry, illumination and solar events. Production
+shader pixel tests exercise weather occlusion/fog; three golden galleries
+cover clear/twilight, weather and Moon/overcast. The recursive architecture
+test enforces the seam. Full A–C suite: 142 passing tests.
 
-## Tests (no goldens)
+The J2000 catalog is not precessed. Its ~0.4° epoch difference in 2026 remains
+a known approximation; a bright-star Stellarium/window comparison at home is
+still outstanding. No >0.5° bright-star residual was established in this pass,
+so precession was not added. Aberration and positional atmospheric refraction
+remain deferred; solar event times use the conventional horizon allowance.
 
-Pin the scene model, not pixels:
+## Still deferred
 
-- Sirius (α CMa) is the brightest catalog star drawn.
-- Polaris declination is within 1° of the north celestial pole.
-- A winter evening at 52°N (e.g. 6 Jan 21:00, Warsaw) has Orion's belt
-  above the southern horizon; a June evening at the same place does not.
-- No catalog star is projected below the horizon.
-- Sidereal rotation still matches the existing `celestial_scene_test`
-  (solar vs sidereal day).
-- Architecture test still forbids `DateTime.now` and health imports in
-  `core/sky/`.
+- Real meteorological source and freshness policy; light-pollution data.
+- Satellites, ISS and aircraft.
+- Optional constellation/name overlays.
+- Photometric colour beyond B−V tint and the display response.
+- Bright-star window comparison and device-driven precession decision.
+- Physical-panel banding judgment, interactive stress and battery endurance. Final fixed-scene Blade Vulkan p95 fits 16.7 ms; see PERF.md.
 
-Manual: one night, home city, face south, compare to Stellarium (or the
-window) at the same time. The bright pattern must be the same. That check
-is the gate, not a screenshot of a hashed field.
-
-## What 1:1 does not mean (v1)
-
-- Cloud, weather, or a light-pollution map.
-- Satellites, ISS, aircraft.
-- Star names and constellation lines on the instrument (a later optional
-  overlay, off by default).
-- A real lunar theory (already deferred).
-- Photometric colour beyond a B−V tint.
-- GPS. Home city is the observer.
-
-## Order of work
-
-1. [x] Pick the catalog file and write the generator; commit the generated table.
-2. [x] Resolve + project + tests for Sirius / Polaris / Orion season.
-3. [x] Canvas point field; kill or demote shader hash stars.
-4. [x] Magnitude curve and twilight/horizon extinction on device.
-5. [ ] Stellarium/window check at the default home; precession only if needed.
-6. [ ] Frame timings into `docs/PERF.md`. If p95 misses, drop the faint cutoff
-   from 6.0 to 5.5 before shrinking cores.
-
-Do not restyle the instrument layer while doing this. The sky gets true
-stars; the hairlines stay as they are.
+The existing instrument geometry and hairline voice remain. This pass improves
+sky fidelity and occlusion while preserving the shared surface layout.

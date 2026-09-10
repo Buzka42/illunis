@@ -721,7 +721,7 @@ FoodEstimate? lookupFood(String raw) {
     if (word.endsWith('em') && word.length > 4) {
       candidates.add(word.substring(0, word.length - 2));
     }
-    if (word.endsWith('u') && word.length > 4) {
+    if (word.endsWith('u') && word.length >= 4) {
       candidates.add(word.substring(0, word.length - 1));
     }
     for (final cand in candidates) {

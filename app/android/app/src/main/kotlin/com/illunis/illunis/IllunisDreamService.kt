@@ -4,7 +4,7 @@ import android.graphics.Color
 import android.service.dreams.DreamService
 import android.view.WindowManager
 import io.flutter.FlutterInjector
-import io.flutter.embedding.android.FlutterTextureView
+import io.flutter.embedding.android.FlutterSurfaceView
 import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.dart.DartExecutor
@@ -54,7 +54,7 @@ class IllunisDreamService : DreamService() {
             }
 
         val view =
-            FlutterView(this, FlutterTextureView(this)).also {
+            FlutterView(this, FlutterSurfaceView(this)).also {
                 it.attachToFlutterEngine(engine)
             }
         setContentView(view)

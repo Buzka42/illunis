@@ -33,7 +33,8 @@ class IllunisShell extends ConsumerStatefulWidget {
   ConsumerState<IllunisShell> createState() => _IllunisShellState();
 }
 
-class _IllunisShellState extends ConsumerState<IllunisShell> {
+class _IllunisShellState extends ConsumerState<IllunisShell>
+    with WidgetsBindingObserver {
   final _controller = PageController(initialPage: 1);
   final _scene = ValueNotifier<ResolvedScene?>(null);
   final _boundary = GlobalKey();
@@ -44,6 +45,7 @@ class _IllunisShellState extends ConsumerState<IllunisShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller.addListener(() {
       final p = _controller.hasClients && _controller.position.haveDimensions
           ? _controller.page ?? _page
@@ -58,7 +60,21 @@ class _IllunisShellState extends ConsumerState<IllunisShell> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Hidden/paused pays for nothing: the 1 Hz source timer stops. The sky
+    // view already freezes its own frames; this stops the emissions too.
+    final suspended = switch (state) {
+      AppLifecycleState.resumed || AppLifecycleState.inactive => false,
+      _ => true,
+    };
+    try {
+      ref.read(skyStateSourceProvider).setSuspended(suspended);
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     _scene.dispose();
     super.dispose();
@@ -203,10 +219,24 @@ class _SurfaceSwitch extends StatelessWidget {
         child: Row(
           children: [
             _word('JOURNAL', 0),
-            const SizedBox(width: 26),
+            const SizedBox(width: 16),
             _word('DASHBOARD', 1),
             const Spacer(),
-            Text(S.version, style: Type.micro.copyWith(color: Inks.faint)),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => showSettingsSheet(context),
+              child: Semantics(
+                button: true,
+                label: 'Settings',
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    S.version,
+                    style: Type.micro.copyWith(color: Inks.faint),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

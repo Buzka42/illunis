@@ -115,25 +115,30 @@ vec3 totalMie(float T) {
 // Radiance of the air along `dir` lit by `light` with strength `E`.
 vec3 scatter(vec3 dir, vec3 light, float E, vec3 betaR, vec3 betaM) {
   float zenith = acos(max(0.0, dir.y));
-  float inv = 1.0 / (cos(zenith) + 0.15 * pow(93.885 - degrees(zenith), -1.253));
+  float inv = 1.0 / (max(0.0, dir.y) + 0.15 * pow(93.885 - degrees(zenith), -1.253));
   vec3 Fex = exp(-(betaR * RAYLEIGH_ZENITH * inv + betaM * MIE_ZENITH * inv));
 
   float cosT = dot(dir, light);
-  float rPhase = 0.05968310365946075 * (1.0 + pow(cosT * 0.5 + 0.5, 2.0));
+  float rPhase = 0.05968310365946075 * (1.0 + cosT * cosT);
   float g2 = MIE_G * MIE_G;
-  float mPhase = 0.07957747154594767 * ((1.0 - g2) / pow(1.0 - 2.0 * MIE_G * cosT + g2, 1.5));
+  float phaseBase = 1.0 - 2.0 * MIE_G * cosT + g2;
+  float mPhase = 0.07957747154594767 * ((1.0 - g2) / (phaseBase * sqrt(phaseBase)));
   vec3 betaTheta = betaR * rPhase + betaM * mPhase;
 
-  vec3 Lin = pow(E * (betaTheta / (betaR + betaM)) * (1.0 - Fex), vec3(1.5));
+  vec3 lightTerm = E * (betaTheta / (betaR + betaM));
+  vec3 radiance = max(lightTerm * (1.0 - Fex), 0.0);
+  vec3 Lin = radiance * sqrt(radiance);
+  float horizon = 1.0 - light.y;
+  float horizon2 = horizon * horizon;
   Lin *= mix(vec3(1.0),
-             pow(E * (betaTheta / (betaR + betaM)) * Fex, vec3(0.5)),
-             clamp(pow(1.0 - light.y, 5.0), 0.0, 1.0));
+             sqrt(max(lightTerm * Fex, 0.0)),
+             clamp(horizon2 * horizon2 * horizon, 0.0, 1.0));
   return Lin;
 }
 
 vec3 extinction(vec3 dir, vec3 betaR, vec3 betaM) {
   float zenith = acos(max(0.0, dir.y));
-  float inv = 1.0 / (cos(zenith) + 0.15 * pow(93.885 - degrees(zenith), -1.253));
+  float inv = 1.0 / (max(0.0, dir.y) + 0.15 * pow(93.885 - degrees(zenith), -1.253));
   return exp(-(betaR * RAYLEIGH_ZENITH * inv + betaM * MIE_ZENITH * inv));
 }
 
@@ -155,7 +160,7 @@ vec3 toEquatorial(vec3 d) {
 
 // A planet is a steady point: no twinkle, its own tint, sized by brightness.
 vec3 planetPoint(vec3 d, vec4 p, vec3 tint, float pxAngle) {
-  if (p.w <= 0.0) return vec3(0.0);
+  if (p.w <= 0.0 || dot(d, p.xyz) <= 0.0) return vec3(0.0);
   float ang = length(cross(d, p.xyz));
   float radius = pxAngle * (0.9 + 0.9 * p.w);
   float core = exp(-(ang * ang) / (radius * radius * 0.5));
@@ -167,6 +172,9 @@ const vec3 GALACTIC_POLE = vec3(-0.198, 0.456, -0.868);
 vec3 galaxy(vec3 e) {
   float lat = asin(clamp(dot(e, GALACTIC_POLE), -1.0, 1.0));
   float band = exp(-(lat * lat) / (0.16 * 0.16));
+  // Outside the band its maximum contribution is far below one output code
+  // value. Do not evaluate six octaves of invisible galactic dust there.
+  if (band < 0.00001) return vec3(0.0);
   float clumps = fbm3(e * 5.5) * 0.8 + 0.2;
   float dust = smoothstep(0.35, 0.65, fbm3(e * 9.0 + 3.1));
   return vec3(0.62, 0.66, 0.78) * band * clumps * (1.0 - 0.55 * dust) * 0.055;
@@ -200,23 +208,25 @@ void main() {
   vec3 betaM = totalMie(uTurbidity) * 0.0014 * uMie;
 
   float E = sunIntensity(dot(sunFlat, UP)) * pow(twilight, 1.5);
-  vec3 sky = scatter(dSky, sunFlat, E, betaR, betaM);
+  vec3 sky = vec3(0.0);
+  if (E > 0.0) sky = scatter(dSky, sunFlat, E, betaR, betaM);
 
   // Moonlight: the same air, a far dimmer lamp, seen with an adapted eye.
   float moonUp = smoothstep(-0.05, 0.12, uMoonDir.y);
   float moonE = sunIntensity(dot(uMoonDir, UP)) * 0.0032 * (0.08 + 0.92 * uMoonIllum) * moonUp;
-  sky += scatter(dSky, uMoonDir, moonE, betaR, betaM * 0.6);
+  if (moonE > 0.0) sky += scatter(dSky, uMoonDir, moonE, betaR, betaM * 0.6);
 
   float night = 1.0 - uDayness;
 
   // Solar disc, extinguished by the air in front of it.
-  vec3 Fex = extinction(dSky, betaR, betaM);
-  float cosSun = dot(dSky, uSunDir);
-  float disc = smoothstep(cos(uSunRadius), cos(max(uSunRadius - 1.4 / (uFocal * uPixelScale), 0.0)), cosSun);
-  sky += sunIntensity(dot(uSunDir, UP)) * 19000.0 * Fex * disc * step(0.0, uSunDir.y + 0.004);
+  if (uSunDir.y >= -0.004) {
+    float cosSun = dot(dSky, uSunDir);
+    float disc = smoothstep(cos(uSunRadius), cos(max(uSunRadius - 1.4 / (uFocal * uPixelScale), 0.0)), cosSun);
+    if (disc > 0.0) sky += sunIntensity(dot(uSunDir, UP)) * 19000.0 * extinction(dSky, betaR, betaM) * disc;
+  }
 
   // Deep sky. Stars fade under twilight and behind the horizon's air.
-  float starVis = smoothstep(-5.0, -15.0, sunAltDeg) * smoothstep(-0.01, 0.10, dSky.y);
+  float starVis = (1.0 - smoothstep(-15.0, -5.0, sunAltDeg)) * smoothstep(-0.01, 0.10, dSky.y);
   vec3 deep = vec3(0.0);
   if (starVis > 0.002 && !ground) {
     vec3 e = toEquatorial(dSky);
@@ -235,9 +245,12 @@ void main() {
     deep += planetPoint(dSky, uPlanet4, vec3(0.98, 0.92, 0.72), pxAngle);
   }
 
-  // Tone: three.js-style compression, then filmic with adapted exposure.
-  vec3 col = pow(max(sky * 0.04, 0.0), vec3(1.0 / (1.2 + 1.2 * sunfade)));
-  col = aces(col * uExposure);
+  // One radiance compression followed by one output transfer. The old
+  // pre-tone power plus final gamma bleached the blue out of clear noon.
+  vec3 adapted = pow(max(sky * 0.04, 0.0), vec3(1.0 / (1.2 + 1.2 * sunfade)));
+  vec3 response = mix(adapted, max(sky, 0.0) * 0.012,
+      smoothstep(0.0, 18.0, sunAltDeg));
+  vec3 col = aces(response * uExposure);
   // Airglow floor, in display-linear units, so a moonless night is a deep
   // navy rather than black — and never a milky blue.
   col += vec3(0.0060, 0.0085, 0.0150) * (0.55 + 0.45 * dSky.y) * night;
@@ -257,7 +270,8 @@ void main() {
     vec3 n = normalize(oh * rho - uMoonDir * ce);
     float ci = max(dot(n, uSunDir), 0.0);
     float ls = (ci + ce > 1e-4) ? ci / (ci + ce) : 0.0;
-    vec3 t1 = normalize(cross(UP, uMoonDir));
+    vec3 reference = abs(uMoonDir.y) > 0.99 ? vec3(0.0, 0.0, 1.0) : UP;
+    vec3 t1 = normalize(cross(reference, uMoonDir));
     vec3 t2 = cross(uMoonDir, t1);
     vec3 local = vec3(dot(n, t1), dot(n, t2), ce);
     float maria = smoothstep(0.42, 0.62, fbm3(local * 2.6 + 7.3));
@@ -285,12 +299,15 @@ void main() {
     col = g;
   }
 
-  // Grain that breathes at night, and dither so no gradient bands.
-  float n = hash21(frag + fract(uTime * (1.35 - uStillness) * 3.0) * 1000.0);
-  float grain = 0.0075 * night * (1.25 - uStillness) + 0.003;
-  col += (n - 0.5) * grain;
-  col += (hash21(frag * 1.37 + 5.0) - 0.5) * (2.0 / 255.0);
-
+  // Dither in the output transfer space, at physical pixel frequency.
+  // Linear-space noise near black was amplified by gamma into grey speckle.
+  // Two independent hashes form triangular noise with one code-value peak;
+  // highp and bounded inputs survive mobile Vulkan without sine-hash stripes.
   col = pow(max(col, 0.0), vec3(1.0 / 2.2));
-  fragColor = vec4(col, 1.0);
+  vec2 pixel = floor(frag * uPixelScale);
+  float dither = hash21(pixel) + hash21(pixel + vec2(17.0, 59.0)) - 1.0;
+  float motion = floor(uTime * 12.0) * night;
+  float grain = hash21(pixel + mod(motion, 1024.0)) - 0.5;
+  col += dither / 255.0 + grain * night * (1.25 - uStillness) * 0.006;
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }

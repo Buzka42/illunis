@@ -56,7 +56,7 @@ final _bwCount = RegExp(
   caseSensitive: false,
 );
 final _nap = RegExp(
-  r'\b(?:napped|nap|drzemka|zdrzemn[ae]l[ae]m(?:\s+sie)?)\s+(?:for\s+)?(\d+(?:\.\d+)?)\s*(min|mins|minutes|minut(?:y|e)?|h|hr|hours?|godzin(?:y|e)?)?\b',
+  r'\b(?:napped|nap|drzemka|zdrzemn[ae]l[ae]m(?:\s+sie)?)\s+(?:for\s+)?(\d+(?:[.,]\d+)?)\s*(min|mins|minutes|minut(?:y|e)?|h|hr|hours?|godzin(?:y|e|a)?|godz)\b',
   caseSensitive: false,
 );
 final _sleepVerb = r'(?:slept?|spalem|spalam|pospalem|pospalam|przespalem|przespalam)';
@@ -161,14 +161,17 @@ ParsedJournal parseJournal(
     if (chunk.isEmpty) continue;
     final w = _weight.firstMatch(chunk) ?? _bareMass.firstMatch(chunk);
     if (w != null) {
-      weights.add(
-        WeightEntry(
-          id: newId(),
-          journalEntryId: entry.id,
-          day: entry.day,
-          kg: kgAssuming(double.parse(w.group(1)!), w.group(2), units),
-        ),
-      );
+      final kg = kgAssuming(double.parse(w.group(1)!), w.group(2), units);
+      if (kg.isFinite && kg >= 25 && kg <= 350) {
+        weights.add(
+          WeightEntry(
+            id: newId(),
+            journalEntryId: entry.id,
+            day: entry.day,
+            kg: kg,
+          ),
+        );
+      }
     }
 
     final sc = _sleepClock.firstMatch(chunk);
@@ -199,7 +202,9 @@ ParsedJournal parseJournal(
               : sh != null
               ? double.parse(sh.group(1)!)
               : wordH!;
-          _addSleep(sleeps, entry, 7.0 - hours, 7.0, quality);
+          if (hours.isFinite && hours >= 0.25 && hours <= 16) {
+            _addSleep(sleeps, entry, 7.0 - hours, 7.0, quality);
+          }
         } else {
           final smin = _sleepMin.firstMatch(chunk);
           if (smin != null) {
@@ -210,9 +215,12 @@ ParsedJournal parseJournal(
           } else {
             final nap = _nap.firstMatch(chunk);
             if (nap != null) {
-              final n = double.parse(nap.group(1)!);
+              final n = double.parse(nap.group(1)!.replaceAll(',', '.'));
               final unit = nap.group(2)?.toLowerCase() ?? '';
-              final hours = unit.startsWith('h') ? n : n / 60.0;
+              final hours =
+                  (unit.startsWith('h') || unit.startsWith('godz'))
+                      ? n
+                      : n / 60.0;
               if (hours >= 0.08 && hours <= 4) {
                 final start = entry.at.hour + entry.at.minute / 60.0;
                 _addSleep(sleeps, entry, start, start + hours, quality);
@@ -251,22 +259,32 @@ ParsedJournal parseJournal(
     }
 
     final kcalHit = _kcal.firstMatch(chunk);
-    if (kcalHit != null && !hadAct) {
-      final food = lookupFood(chunk);
-      nutrition.add(
-        NutritionEntry(
-          id: newId(),
-          journalEntryId: entry.id,
-          day: entry.day,
-          label: food?.label ?? chunk.replaceAll(_kcal, '').trim(),
-          kcal: double.parse(kcalHit.group(1)!),
-          proteinG: food?.proteinG,
-          carbsG: food?.carbsG,
-          fatG: food?.fatG,
-          confirmed: true,
-          source: 'parsed',
-        ),
-      );
+    if (kcalHit != null && !hadAct && !setHit) {
+      final isMovementContext = RegExp(
+        r'\b(ran|run|running|walk|walked|walking|ride|rode|bike|biking|cycling|swim|swam|swimming|gym|workout|bieg|bieglem|bieglam|biegac|silownia|trening|spacer|rower|plywanie)\b',
+        caseSensitive: false,
+      ).hasMatch(chunk);
+      if (!isMovementContext) {
+        final food = lookupFood(chunk);
+        final hasMealWord = _ate.hasMatch(chunk);
+        final rawKcal = double.parse(kcalHit.group(1)!);
+        if (rawKcal > 0 && rawKcal <= 5000) {
+          nutrition.add(
+            NutritionEntry(
+              id: newId(),
+              journalEntryId: entry.id,
+              day: entry.day,
+              label: food?.label ?? chunk.replaceAll(_kcal, '').trim(),
+              kcal: rawKcal,
+              proteinG: food?.proteinG,
+              carbsG: food?.carbsG,
+              fatG: food?.fatG,
+              confirmed: food != null || hasMealWord,
+              source: 'parsed',
+            ),
+          );
+        }
+      }
     } else if (!hadAct && !setHit) {
       final ate = _ate.firstMatch(chunk);
       final rawFoods = ate?.group(1) ?? chunk;
@@ -526,14 +544,14 @@ double? _sleepWordHours(String chunk) {
   return _wordQty[m.group(1)!.toLowerCase()]?.toDouble();
 }
 
-({int? qty, String rest}) _foodQty(String part) {
+({double? qty, String rest}) _foodQty(String part) {
   final t = part.trim();
   final numbered =
-      RegExp(r'^(\d+)\s*(?:x|×)\s*(.+)$', caseSensitive: false).firstMatch(t) ??
-      RegExp(r'^(\d+)\s+(.+)$').firstMatch(t);
+      RegExp(r'^(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*(.+)$', caseSensitive: false).firstMatch(t) ??
+      RegExp(r'^(\d+(?:[.,]\d+)?)\s+(.+)$').firstMatch(t);
   if (numbered != null) {
-    final q = int.parse(numbered.group(1)!);
-    if (q >= 1 && q <= 12) {
+    final q = double.tryParse(numbered.group(1)!.replaceAll(',', '.'));
+    if (q != null && q >= 0.25 && q <= 20) {
       return (qty: q, rest: numbered.group(2)!.trim());
     }
   }
@@ -544,7 +562,7 @@ double? _sleepWordHours(String chunk) {
   ).firstMatch(t);
   if (named != null) {
     return (
-      qty: _wordQty[named.group(1)!.toLowerCase()]!,
+      qty: _wordQty[named.group(1)!.toLowerCase()]?.toDouble(),
       rest: named.group(2)!.trim(),
     );
   }
@@ -564,10 +582,11 @@ class _ScaledFood {
   final double? proteinG, carbsG, fatG;
 }
 
-_ScaledFood _scaleFood(FoodEstimate food, int? qty) {
-  final n = (qty ?? food.unitCount).clamp(1, 12);
+_ScaledFood _scaleFood(FoodEstimate food, double? qty) {
+  final n = (qty ?? food.unitCount.toDouble()).clamp(0.25, 20.0);
   final factor = n / food.unitCount;
-  final label = n == food.unitCount ? food.label : '${food.label} ×$n';
+  final qtyStr = n == n.roundToDouble() ? n.toInt().toString() : n.toString();
+  final label = n == food.unitCount ? food.label : '${food.label} ×$qtyStr';
   double? m(double? v) => v == null ? null : v * factor;
   return _ScaledFood(
     label: label,
@@ -588,6 +607,9 @@ void _addSleep(
   var startH = start;
   var endH = end;
   if (endH < startH) startH -= 24;
+  final duration = endH - startH;
+  if (!duration.isFinite || duration < 0 || duration > 16) return;
+  if (duration > 0 && duration < 0.08) return;
   sleeps.add(
     SleepEntry(
       id: newId(),
@@ -647,6 +669,7 @@ bool _addSet(
     nSets = int.tryParse(m.group(5) ?? '') ?? 1;
   }
   if (reps < 1 || reps > 40) return false;
+  if (nSets < 1 || nSets > 50) return false;
   if (weight < 0 || weight > 400) return false;
   if (!bodyweight && weight == 0) return false;
   final rpe = rpeGroup == null ? null : double.tryParse(rpeGroup);

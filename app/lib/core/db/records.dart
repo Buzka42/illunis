@@ -358,6 +358,10 @@ class SleepEntry {
     required this.startHours,
     required this.endHours,
     this.quality,
+    this.wakeJournalEntryId,
+    this.qualityJournalEntryId,
+    this.originalDay,
+    this.originalStartHours,
   });
 
   final String id;
@@ -370,6 +374,11 @@ class SleepEntry {
 
   /// How the night felt, `0..1`, when they said so. Null means duration only.
   final double? quality;
+
+  final String? wakeJournalEntryId;
+  final String? qualityJournalEntryId;
+  final String? originalDay;
+  final double? originalStartHours;
 
   double get durationHours => endHours - startHours;
 
@@ -384,6 +393,11 @@ class SleepEntry {
     'startHours': startHours,
     'endHours': endHours,
     if (quality != null) 'quality': quality,
+    if (wakeJournalEntryId != null) 'wakeJournalEntryId': wakeJournalEntryId,
+    if (qualityJournalEntryId != null)
+      'qualityJournalEntryId': qualityJournalEntryId,
+    if (originalDay != null) 'originalDay': originalDay,
+    if (originalStartHours != null) 'originalStartHours': originalStartHours,
   };
 
   factory SleepEntry.fromJson(Map<String, Object?> j) => SleepEntry(
@@ -393,6 +407,10 @@ class SleepEntry {
     startHours: (j['startHours'] as num).toDouble(),
     endHours: (j['endHours'] as num).toDouble(),
     quality: (j['quality'] as num?)?.toDouble(),
+    wakeJournalEntryId: j['wakeJournalEntryId'] as String?,
+    qualityJournalEntryId: j['qualityJournalEntryId'] as String?,
+    originalDay: j['originalDay'] as String?,
+    originalStartHours: (j['originalStartHours'] as num?)?.toDouble(),
   );
 
   SleepEntry copyWith({
@@ -400,13 +418,32 @@ class SleepEntry {
     double? startHours,
     double? endHours,
     double? quality,
+    bool clearQuality = false,
+    String? wakeJournalEntryId,
+    bool clearWake = false,
+    String? qualityJournalEntryId,
+    bool clearQualityJournalEntryId = false,
+    String? originalDay,
+    bool clearOriginalDay = false,
+    double? originalStartHours,
+    bool clearOriginalStartHours = false,
   }) => SleepEntry(
     id: id,
     journalEntryId: journalEntryId,
     day: day ?? this.day,
     startHours: startHours ?? this.startHours,
     endHours: endHours ?? this.endHours,
-    quality: quality ?? this.quality,
+    quality: clearQuality ? null : (quality ?? this.quality),
+    wakeJournalEntryId: clearWake
+        ? null
+        : (wakeJournalEntryId ?? this.wakeJournalEntryId),
+    qualityJournalEntryId: clearQualityJournalEntryId
+        ? null
+        : (qualityJournalEntryId ?? this.qualityJournalEntryId),
+    originalDay: clearOriginalDay ? null : (originalDay ?? this.originalDay),
+    originalStartHours: clearOriginalStartHours
+        ? null
+        : (originalStartHours ?? this.originalStartHours),
   );
 }
 

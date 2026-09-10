@@ -31,11 +31,7 @@ class SkyOverlayPainter extends CustomPainter {
 
   /// Sky-band ink: light under a dark sky, deep slate once the sun is well up.
   /// The ground band always takes light ink.
-  late final Color _ink = Color.lerp(
-    _light,
-    _slate,
-    smoothstep(0.55, 0.85, scene.dayness),
-  )!;
+  late final Color _ink = Color.lerp(_light, _slate, scene.skyInkBlend)!;
   static const _mono = 'JetBrains Mono';
 
   static final Map<String, TextPainter> _textCache = {};
@@ -46,7 +42,7 @@ class SkyOverlayPainter extends CustomPainter {
     final cam = SkyCamera(size: size, azimuthRad: azimuthRad);
     final day = scene.dayness;
     // Type over a bright sky needs a shadow; over night, none.
-    final slateness = smoothstep(0.55, 0.85, day);
+    final slateness = scene.skyInkBlend;
     final shadow = day * 0.75 * (1 - slateness);
 
     _paintAltitudeCircles(canvas, cam, size);
@@ -78,6 +74,7 @@ class SkyOverlayPainter extends CustomPainter {
         avoidRadius: SkyShader.sunAngularRadius * cam.focal * 2.6 + 40,
       );
     }
+    final edgeIndicators = <_EdgeIndicator>[];
     _paintBody(
       canvas,
       cam,
@@ -91,7 +88,8 @@ class SkyOverlayPainter extends CustomPainter {
         _altAz(scene.moonDir),
       ],
       shadow: shadow,
-      dim: 0.8,
+      dim: scene.state.weather?.isClear == false ? 1.0 : 0.8,
+      edgeIndicators: edgeIndicators,
     );
     _paintBody(
       canvas,
@@ -104,8 +102,15 @@ class SkyOverlayPainter extends CustomPainter {
       lines: [scene.describeTwilight().toUpperCase(), _altAz(scene.sunDir)],
       shadow: shadow,
       dim: 1.0,
+      edgeIndicators: edgeIndicators,
     );
-    _paintPlanets(canvas, cam, size, shadow);
+    final occupiedYs = _paintEdgeIndicators(
+      canvas,
+      cam,
+      size,
+      edgeIndicators,
+    );
+    _paintPlanets(canvas, cam, size, shadow, occupiedYs: occupiedYs);
   }
 
   String _altAz(Vec3 d) {
@@ -246,6 +251,30 @@ class SkyOverlayPainter extends CustomPainter {
         if (i % 4 == 0) belowDots.add(p);
       }
     }
+    canvas.save();
+    final moonAt = cam.project(scene.moonDir);
+    if (moonAt != null && scene.moonDir.y > 0 && cam.contains(moonAt)) {
+      final side = moonAt.dx < size.width * 0.5 ? 1.0 : -1.0;
+      final radius = SkyShader.moonAngularRadius * cam.focal * 1.45;
+      final base =
+          moonAt +
+          Offset(
+            side * (radius * math.cos(0.5) + 38),
+            -radius * math.sin(0.5) - 14,
+          );
+      final block = Rect.fromLTRB(
+        base.dx - (side < 0 ? 165 * textScale : 2),
+        base.dy - 19 * textScale,
+        base.dx + (side > 0 ? 165 * textScale : 2),
+        base.dy + 3 + 25 * textScale,
+      );
+      canvas.clipPath(
+        Path()
+          ..fillType = PathFillType.evenOdd
+          ..addRect(Offset.zero & size)
+          ..addRect(block),
+      );
+    }
     canvas.drawPath(
       above,
       Paint()
@@ -253,6 +282,7 @@ class SkyOverlayPainter extends CustomPainter {
         ..strokeWidth = 0.75
         ..style = PaintingStyle.stroke,
     );
+    canvas.restore();
     if (belowDots.isNotEmpty) {
       canvas.drawPoints(
         ui.PointMode.points,
@@ -286,6 +316,16 @@ class SkyOverlayPainter extends CustomPainter {
               ..strokeWidth = 1)
           : tickPaint;
       if (avoid != null && (p - avoid).distance < avoidRadius) continue;
+      final moonAt = cam.project(scene.moonDir);
+      // A path's hour must not land in the lunar leader/readout block.
+      // The path is also clipped behind the readout above.
+      if (moonAt != null &&
+          scene.moonDir.y > 0 &&
+          (p.dx - moonAt.dx).abs() < 170 * textScale &&
+          p.dy > moonAt.dy - 65 * textScale &&
+          p.dy < moonAt.dy + 20 * textScale) {
+        continue;
+      }
       canvas.drawLine(p - n * len, p + n * len, paint);
       if (hourLabels && !below && h % 3 == 0) {
         _text(
@@ -314,11 +354,25 @@ class SkyOverlayPainter extends CustomPainter {
     required List<String> lines,
     required double shadow,
     required double dim,
+    List<_EdgeIndicator>? edgeIndicators,
   }) {
     final p = cam.project(dir);
     final visible = p != null && cam.contains(p) && dir.y > -0.05;
     if (!visible) {
-      _paintEdgeIndicator(canvas, cam, size, dir, label, shadow, dim);
+      if (edgeIndicators != null) {
+        edgeIndicators.add(
+          _EdgeIndicator(dir: dir, label: label, shadow: shadow, dim: dim),
+        );
+      } else {
+        _renderSingleEdgeIndicator(
+          canvas,
+          cam,
+          size,
+          _EdgeIndicator(dir: dir, label: label, shadow: shadow, dim: dim),
+          cam.principal.dy - 28.0,
+          true,
+        );
+      }
       return;
     }
     if (dir.y < 0) return;
@@ -400,7 +454,13 @@ class SkyOverlayPainter extends CustomPainter {
 
   // --- planets -------------------------------------------------------------
 
-  void _paintPlanets(Canvas canvas, SkyCamera cam, Size size, double shadow) {
+  void _paintPlanets(
+    Canvas canvas,
+    SkyCamera cam,
+    Size size,
+    double shadow, {
+    required ({List<double> left, List<double> right}) occupiedYs,
+  }) {
     // Off-screen planets go on a rail at each edge, highest first, so they
     // never land on the sun's or moon's edge readout.
     final railLeft = <PlanetPosition>[], railRight = <PlanetPosition>[];
@@ -464,9 +524,13 @@ class SkyOverlayPainter extends CustomPainter {
     for (final (rail, right) in [(railLeft, false), (railRight, true)]) {
       rail.sort((a, b) => b.dir.y.compareTo(a.dir.y));
       final x = right ? size.width - 15.0 : 15.0;
+      final occupied = right ? occupiedYs.right : occupiedYs.left;
+      var y = 96.0;
       for (var i = 0; i < rail.length; i++) {
         final pl = rail[i];
-        final y = 96.0 + i * 18;
+        while (occupied.any((oy) => (oy - y).abs() < 16.0)) {
+          y += 18.0;
+        }
         final paint = Paint()
           ..color = _ink.withValues(alpha: 0.5 * pl.visibility)
           ..strokeWidth = 0.8;
@@ -482,39 +546,100 @@ class SkyOverlayPainter extends CustomPainter {
             ..lineTo(ax, y + 2.5),
           paint..style = PaintingStyle.stroke,
         );
+        y += 18.0;
       }
     }
   }
 
-  void _paintEdgeIndicator(
+  ({List<double> left, List<double> right}) _paintEdgeIndicators(
     Canvas canvas,
     SkyCamera cam,
     Size size,
-    Vec3 dir,
-    String label,
-    double shadow,
-    double dim,
+    List<_EdgeIndicator> indicators,
   ) {
-    // Which side is it? Signed bearing relative to the camera.
-    var rel = dir.azimuth - azimuthRad;
-    while (rel > math.pi) {
-      rel -= 2 * math.pi;
-    }
-    while (rel < -math.pi) {
-      rel += 2 * math.pi;
-    }
-    final right = rel > 0;
-    final x = right ? size.width - 14.0 : 14.0;
-    final altDeg = dir.altitude * radToDeg;
-    // Sit the marker at the projected altitude where possible, else on the
-    // horizon; below-horizon bodies sit in the ground band.
-    // Always in the sky band: the ground belongs to the surfaces' figures.
-    final yGuess = cam.principal.dy - altDeg * degToRad * cam.focal * 0.9;
+    if (indicators.isEmpty) return (left: <double>[], right: <double>[]);
+    final left = <_PositionedIndicator>[];
+    final right = <_PositionedIndicator>[];
+
     final yLo = math.min(56.0, cam.principal.dy - 4.0);
     final yHi = math.max(yLo, cam.principal.dy - 28.0);
-    final y = yGuess.clamp(yLo, yHi);
+
+    for (final ind in indicators) {
+      var rel = ind.dir.azimuth - azimuthRad;
+      while (rel > math.pi) {
+        rel -= 2 * math.pi;
+      }
+      while (rel < -math.pi) {
+        rel += 2 * math.pi;
+      }
+      final isRight = rel > 0;
+      final altDeg = ind.dir.altitude * radToDeg;
+      final yGuess = cam.principal.dy - altDeg * degToRad * cam.focal * 0.9;
+      final clampedY = yGuess.clamp(yLo, yHi);
+      final item = _PositionedIndicator(ind, clampedY, isRight);
+      if (isRight) {
+        right.add(item);
+      } else {
+        left.add(item);
+      }
+    }
+
+    final occupiedLeft = <double>[];
+    final occupiedRight = <double>[];
+
+    for (final (rail, occupiedList) in [
+      (left, occupiedLeft),
+      (right, occupiedRight),
+    ]) {
+      if (rail.isEmpty) continue;
+      rail.sort((a, b) => a.y.compareTo(b.y));
+      const spacing = 20.0;
+      for (var i = 1; i < rail.length; i++) {
+        if (rail[i].y < rail[i - 1].y + spacing) {
+          rail[i].y = rail[i - 1].y + spacing;
+        }
+      }
+      if (rail.last.y > yHi) {
+        final overflow = rail.last.y - yHi;
+        for (var i = rail.length - 1; i >= 0; i--) {
+          rail[i].y -= overflow;
+        }
+      }
+      if (rail.first.y < yLo) {
+        final underflow = yLo - rail.first.y;
+        for (var i = 0; i < rail.length; i++) {
+          rail[i].y = (rail[i].y + underflow).clamp(yLo, yHi);
+        }
+      }
+
+      for (final item in rail) {
+        _renderSingleEdgeIndicator(
+          canvas,
+          cam,
+          size,
+          item.indicator,
+          item.y,
+          item.right,
+        );
+        occupiedList.add(item.y);
+      }
+    }
+
+    return (left: occupiedLeft, right: occupiedRight);
+  }
+
+  void _renderSingleEdgeIndicator(
+    Canvas canvas,
+    SkyCamera cam,
+    Size size,
+    _EdgeIndicator ind,
+    double y,
+    bool right,
+  ) {
+    final x = right ? size.width - 14.0 : 14.0;
+    final altDeg = ind.dir.altitude * radToDeg;
     final paint = Paint()
-      ..color = _ink.withValues(alpha: 0.6 * dim)
+      ..color = _ink.withValues(alpha: 0.6 * ind.dim)
       ..strokeWidth = 1;
     final tip = Offset(x + (right ? 4 : -4), y);
     canvas.drawPath(
@@ -526,16 +651,16 @@ class SkyOverlayPainter extends CustomPainter {
       paint..style = PaintingStyle.stroke,
     );
     final text =
-        '$label ${(dir.azimuth * radToDeg).round().toString().padLeft(3, '0')}°  '
+        '${ind.label} ${(ind.dir.azimuth * radToDeg).round().toString().padLeft(3, '0')}°  '
         '${altDeg >= 0 ? '+' : '−'}${altDeg.abs().toStringAsFixed(0)}°';
     _text(
       canvas,
       text,
       Offset(x + (right ? -10 : 10), y),
       size: 8.5,
-      alpha: 0.7 * dim,
+      alpha: 0.7 * ind.dim,
       anchor: right ? Alignment.centerRight : Alignment.centerLeft,
-      shadow: shadow,
+      shadow: ind.shadow,
     );
   }
 
@@ -630,3 +755,26 @@ class SkyOverlayPainter extends CustomPainter {
   @override
   bool shouldRepaint(SkyOverlayPainter old) => true;
 }
+
+class _EdgeIndicator {
+  const _EdgeIndicator({
+    required this.dir,
+    required this.label,
+    required this.shadow,
+    required this.dim,
+  });
+
+  final Vec3 dir;
+  final String label;
+  final double shadow;
+  final double dim;
+}
+
+class _PositionedIndicator {
+  _PositionedIndicator(this.indicator, this.y, this.right);
+
+  final _EdgeIndicator indicator;
+  double y;
+  final bool right;
+}
+

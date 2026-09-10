@@ -21,9 +21,9 @@ class S {
   static const local = 'LOCAL';
   static const keepLocal = 'KEEP LOCAL';
   static const emptyDash = '—';
-  static const journalHint = 'Log an activity, a meal, a workout…';
-  static const journalEmpty =
-      'Nothing logged yet. A run, a meal, a session, a night — write it as it happened.';
+  static const journalHint = 'Write a line…';
+  static const journalEmpty = 'Nothing logged today.';
+  static const record = 'RECORD';
   static const patternsEmpty =
       'Nothing can be said yet. Insights need 21 paired days.';
   static const settings = 'SETTINGS';
@@ -31,7 +31,9 @@ class S {
   static const exportCsv = 'EXPORT CSV';
   static const deleteAll = 'DELETE ALL DATA';
   static const confirmDelete = 'CONFIRM DELETE';
-  static const aiConsent = 'ALLOW INTERPRETATION';
+  static const aiConsent = 'ALLOW CLOUD INTERPRETATION';
+  static const aiConsentNote =
+      'Sends journal prose off-device for interpretation. Logging stays local.';
   static const ageGate = 'I AM 16 OR OLDER';
   static const copied = 'Copied to the clipboard.';
   static const confirm = 'CONFIRM';
