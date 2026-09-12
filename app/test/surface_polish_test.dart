@@ -29,7 +29,10 @@ void main() {
     final day = dayKey(DateTime.now());
     final container = ProviderContainer(
       overrides: [
-        storeProvider.overrideWith((ref) => AppStore.memory()),
+        storeProvider.overrideWith(
+          (ref) => AppStore.memory()
+            ..summaries.add(DaySummary(day: day, intakeKcal: 550, strain: 0)),
+        ),
         journalFiguresProvider.overrideWithValue(
           TodayFigures(
             day: day,
@@ -66,8 +69,7 @@ void main() {
         .set(const SkyOverrides(preset: SkyPreset.restedMorning));
     await tester.pump();
     expect(find.text(S.mockData), findsOneWidget);
-    expect(find.text(S.record), findsOneWidget);
-    expect(find.text(S.local), findsOneWidget);
+    expect(find.text('JNL KCAL'), findsNWidgets(2));
     expect(find.text('550'), findsOneWidget);
     container.read(journalDayProvider.notifier).prev();
     await tester.pump();
@@ -79,7 +81,7 @@ void main() {
         .set(const SkyOverrides(preset: SkyPreset.noData));
     await tester.pump();
     expect(find.text(S.noData), findsOneWidget);
-    expect(find.text(S.emptyDash), findsNWidgets(2));
+    expect(find.text(S.emptyDash), findsWidgets);
     expect(find.text('550'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     container.dispose();

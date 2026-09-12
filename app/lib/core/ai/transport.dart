@@ -124,6 +124,19 @@ class AiTransport {
       responseSchema: kPatternInsightSchema,
     );
   }
+
+  Future<AiResult> restedness({
+    required Profile profile,
+    required String user,
+  }) {
+    return call(
+      name: 'restedness',
+      profile: profile,
+      system: kRestednessSystem,
+      user: user,
+      responseSchema: kRestednessSchema,
+    );
+  }
 }
 
 Map<String, Object?>? decodeRawJson(String raw) {

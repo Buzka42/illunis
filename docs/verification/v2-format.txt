@@ -1,0 +1,18 @@
+Formatted lib\core\fitness\performance\performance_models.dart
+Formatted lib\core\fitness\performance\performance_rollups.dart
+Formatted lib\core\health\rollups.dart
+Formatted lib\core\journal\parser.dart
+Formatted lib\core\journal\repository.dart
+Formatted lib\core\nutrition\foods.dart
+Formatted lib\core\sky\sky_overlay_painter.dart
+Formatted lib\core\sky\sky_painter.dart
+Formatted lib\core\sky\sky_shader.dart
+Formatted lib\core\sky\star_catalog.dart
+Formatted lib\core\wearables\health_bridge.dart
+Formatted lib\core\wearables\health_bridge_io.dart
+Formatted lib\core\wearables\health_bridge_stub.dart
+Formatted lib\core\wearables\wearable_data.dart
+Formatted lib\features\shell\illunis_shell.dart
+Formatted lib\main.dart
+Formatted test/first_run_guide_test.dart
+Formatted 75 files (17 changed) in 7.47 seconds.

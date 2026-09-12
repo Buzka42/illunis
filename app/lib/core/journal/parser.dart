@@ -15,6 +15,7 @@ class ParsedJournal {
     this.activities = const [],
     this.sleeps = const [],
     this.weights = const [],
+    this.steps = const [],
   });
 
   final List<StrengthSet> sets;
@@ -22,13 +23,15 @@ class ParsedJournal {
   final List<ActivityEntry> activities;
   final List<SleepEntry> sleeps;
   final List<WeightEntry> weights;
+  final List<StepEntry> steps;
 
   bool get isEmpty =>
       sets.isEmpty &&
       nutrition.isEmpty &&
       activities.isEmpty &&
       sleeps.isEmpty &&
-      weights.isEmpty;
+      weights.isEmpty &&
+      steps.isEmpty;
 }
 
 final _setX = RegExp(
@@ -59,7 +62,8 @@ final _nap = RegExp(
   r'\b(?:napped|nap|drzemka|zdrzemn[ae]l[ae]m(?:\s+sie)?)\s+(?:for\s+)?(\d+(?:[.,]\d+)?)\s*(min|mins|minutes|minut(?:y|e)?|h|hr|hours?|godzin(?:y|e|a)?|godz)\b',
   caseSensitive: false,
 );
-final _sleepVerb = r'(?:slept?|spalem|spalam|pospalem|pospalam|przespalem|przespalam)';
+final _sleepVerb =
+    r'(?:slept?|spalem|spalam|pospalem|pospalam|przespalem|przespalam)';
 final _sleepClock = RegExp(
   '$_sleepVerb\\s+(\\d{1,2})[:.](\\d{2})\\s*[-–to]+\\s*(\\d{1,2})[:.](\\d{2})',
   caseSensitive: false,
@@ -143,6 +147,7 @@ ParsedJournal parseJournal(
   final activities = <ActivityEntry>[];
   final sleeps = <SleepEntry>[];
   final weights = <WeightEntry>[];
+  final steps = <StepEntry>[];
 
   final chunks = foldDecimal(entry.text)
       .split(
@@ -159,6 +164,18 @@ ParsedJournal parseJournal(
   for (final raw in chunks) {
     final chunk = _stripLeadIn(foldSpoken(raw));
     if (chunk.isEmpty) continue;
+
+    final stepCount = _parseStepCount(chunk);
+    if (stepCount != null && stepCount >= 50 && stepCount <= 150000) {
+      steps.add(
+        StepEntry(
+          id: newId(),
+          journalEntryId: entry.id,
+          day: entry.day,
+          steps: stepCount,
+        ),
+      );
+    }
     final w = _weight.firstMatch(chunk) ?? _bareMass.firstMatch(chunk);
     if (w != null) {
       final kg = kgAssuming(double.parse(w.group(1)!), w.group(2), units);
@@ -217,10 +234,9 @@ ParsedJournal parseJournal(
             if (nap != null) {
               final n = double.parse(nap.group(1)!.replaceAll(',', '.'));
               final unit = nap.group(2)?.toLowerCase() ?? '';
-              final hours =
-                  (unit.startsWith('h') || unit.startsWith('godz'))
-                      ? n
-                      : n / 60.0;
+              final hours = (unit.startsWith('h') || unit.startsWith('godz'))
+                  ? n
+                  : n / 60.0;
               if (hours >= 0.08 && hours <= 4) {
                 final start = entry.at.hour + entry.at.minute / 60.0;
                 _addSleep(sleeps, entry, start, start + hours, quality);
@@ -374,6 +390,7 @@ ParsedJournal parseJournal(
     activities: activities,
     sleeps: sleeps,
     weights: weights,
+    steps: steps,
   );
 }
 
@@ -401,9 +418,7 @@ double? sleepQualityOf(String text) {
       ).hasMatch(t)) {
     return 0.32;
   }
-  if (RegExp(
-        r'\b(dobrze|swietnie|gleboko|twardo)\b',
-      ).hasMatch(t) &&
+  if (RegExp(r'\b(dobrze|swietnie|gleboko|twardo)\b').hasMatch(t) &&
       RegExp(
         r'\b(spalem|spalam|pospalem|pospalam|slept?|sleep|sen|nocy)\b',
       ).hasMatch(t)) {
@@ -547,7 +562,10 @@ double? _sleepWordHours(String chunk) {
 ({double? qty, String rest}) _foodQty(String part) {
   final t = part.trim();
   final numbered =
-      RegExp(r'^(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*(.+)$', caseSensitive: false).firstMatch(t) ??
+      RegExp(
+        r'^(\d+(?:[.,]\d+)?)\s*(?:x|×)\s*(.+)$',
+        caseSensitive: false,
+      ).firstMatch(t) ??
       RegExp(r'^(\d+(?:[.,]\d+)?)\s+(.+)$').firstMatch(t);
   if (numbered != null) {
     final q = double.tryParse(numbered.group(1)!.replaceAll(',', '.'));
@@ -754,4 +772,154 @@ bool _addBodyCount(List<StrengthSet> sets, JournalEntry entry, String chunk) {
     ),
   );
   return true;
+}
+
+final _stepK = RegExp(
+  r'\b(?:walked|did|hit|took|logged|przeszedl[ae]m|przeszlam|zrobil[ae]m|zrobione)?\s*(\d+(?:\.\d+)?)\s*k\s*(?:steps?|krok\w*)\b',
+  caseSensitive: false,
+);
+
+final _stepDigits = RegExp(
+  r'\b(?:walked|did|hit|took|logged|przeszedl[ae]m|przeszlam|zrobil[ae]m|zrobione)?\s*(\d{1,3}(?:[ \t]\d{3})+|\d+)\s*(?:steps?|krok\w*)\b',
+  caseSensitive: false,
+);
+
+const _wordNumMap = <String, int>{
+  'a': 1,
+  'an': 1,
+  'one': 1,
+  'two': 2,
+  'three': 3,
+  'four': 4,
+  'five': 5,
+  'six': 6,
+  'seven': 7,
+  'eight': 8,
+  'nine': 9,
+  'ten': 10,
+  'eleven': 11,
+  'twelve': 12,
+  'thirteen': 13,
+  'fourteen': 14,
+  'fifteen': 15,
+  'sixteen': 16,
+  'seventeen': 17,
+  'eighteen': 18,
+  'nineteen': 19,
+  'twenty': 20,
+  'thirty': 30,
+  'forty': 40,
+  'fifty': 50,
+  'sixty': 60,
+  'seventy': 70,
+  'eighty': 80,
+  'ninety': 90,
+  'jeden': 1,
+  'jedno': 1,
+  'jedna': 1,
+  'dwa': 2,
+  'dwie': 2,
+  'trzy': 3,
+  'cztery': 4,
+  'piec': 5,
+  'szesc': 6,
+  'siedem': 7,
+  'osiem': 8,
+  'dziewiec': 9,
+  'dziesiec': 10,
+  'jedenascie': 11,
+  'dwanascie': 12,
+  'trzynascie': 13,
+  'czternascie': 14,
+  'pietnascie': 15,
+  'szesnascie': 16,
+  'siedemnascie': 17,
+  'osiemnascie': 18,
+  'dziewietnascie': 19,
+  'dwadziescia': 20,
+  'trzydziesci': 30,
+  'czterdziesci': 40,
+  'piecdziesiat': 50,
+  'szescdziesiat': 60,
+  'siedemdziesiat': 70,
+  'osiemdziesiat': 80,
+  'dziewiecdziesiat': 90,
+  'sto': 100,
+  'dwiescie': 200,
+  'trzysta': 300,
+  'czterysta': 400,
+  'piecset': 500,
+  'szescset': 600,
+  'siedemset': 700,
+  'osiemset': 800,
+  'dziewiecset': 900,
+};
+
+int? _parseStepCount(String chunk) {
+  if (RegExp(r'\bstep[- ]?ups?\b', caseSensitive: false).hasMatch(chunk)) {
+    return null;
+  }
+  final mk = _stepK.firstMatch(chunk);
+  if (mk != null) {
+    final val = double.tryParse(mk.group(1)!);
+    if (val != null && val > 0) return (val * 1000).round();
+  }
+
+  final md = _stepDigits.firstMatch(chunk);
+  if (md != null) {
+    final clean = md.group(1)!.replaceAll(RegExp(r'[ \t]'), '');
+    final val = int.tryParse(clean);
+    if (val != null) return val;
+  }
+
+  final mw = RegExp(
+    r'\b(?:walked|did|hit|took|logged|przeszedl[ae]m|przeszlam|zrobil[ae]m|zrobione)?\s*(.+?)\s*(?:steps?|krok\w*)\b',
+    caseSensitive: false,
+  ).firstMatch(chunk);
+  if (mw != null) {
+    final phrase = mw.group(1)!.trim().toLowerCase();
+    final tokens = phrase
+        .split(RegExp(r'\s+|-'))
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (tokens.isNotEmpty) {
+      var current = 0;
+      var total = 0;
+      var matchedAny = false;
+      var valid = true;
+      for (final token in tokens) {
+        if (token == 'thousand' ||
+            token == 'thousands' ||
+            token == 'tysiac' ||
+            token == 'tysiace' ||
+            token == 'tysiecy') {
+          matchedAny = true;
+          if (current == 0) current = 1;
+          total += current * 1000;
+          current = 0;
+        } else if (token == 'hundred' || token == 'hundreds') {
+          matchedAny = true;
+          if (current == 0) current = 1;
+          current *= 100;
+        } else if (token == 'k') {
+          matchedAny = true;
+          if (current == 0) current = 1;
+          total += current * 1000;
+          current = 0;
+        } else if (_wordNumMap.containsKey(token)) {
+          matchedAny = true;
+          current += _wordNumMap[token]!;
+        } else if (RegExp(r'^\d+$').hasMatch(token)) {
+          matchedAny = true;
+          current += int.parse(token);
+        } else {
+          valid = false;
+          break;
+        }
+      }
+      total += current;
+      if (valid && matchedAny && total > 0) return total;
+    }
+  }
+  return null;
 }

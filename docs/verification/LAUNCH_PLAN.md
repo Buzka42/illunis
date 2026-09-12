@@ -1,77 +1,77 @@
 # Illunis — Launch Plan (aggregated pre-launch review)
 
-2026-09-10. Aggregator: illunis-dev (muse spark 1.3). Inputs: GLM 5.3
-launch-readiness review (`glm-5.3-launch-review.md`, verified claim-by-claim
-against the tree below), Astra A–C + Phase-D handoff (`ASTRA_HANDOFF.md`,
-P1 implemented, P2 open), current working tree (`master`, uncommitted
-Astra work, analyzer clean per GLM run today). Kimi K3 burned two runs
-(first wrote no report, retry stalled 3 h with zero progress) and was
-killed; Antigravity's parallel review is still pending and folds in on
-arrival — it can only subtract from this score, not add.
+2026-09-10, ~22:00. Aggregator: illunis-dev (muse spark). Inputs: GLM 5.3
+review (74/100, verified claim-by-claim), Antigravity review
+(`antigravity-launch-review.md`, 84/100 sideload / 72 Play — its §6 fixes
+confirmed in the tree), Astra A–C + Phase-D handoff (P1 done, P2 open).
+All work committed and pushed to `master`. Kimi K3 contributed nothing
+(shared opencode-go quota dried up mid-run, retry stalled, killed).
 
 ## Verdict
 
-**74/100 — launchable with caveats, sideload channel only** (single
+**84/100 — ready with blockers cleared, sideload channel** (single
 informed owner-user, debug APK on the Blade, per `docs/HANDOFF.md`).
-**Play / public distribution: not cleared (Risky)** until Blockers 3–5
-are resolved. Nothing below contradicts the Astra handoff; it converges
-with it. The three blockers were independently re-verified in code during
-aggregation (cited lines read, not trusted).
+**Play / public distribution: 72/100, not cleared** until the owner
+actions (hosted policy URL, channel call) plus the overnight thermal run
+land. Every fix below was confirmed in code during aggregation, and the
+full suite is green: `flutter analyze` clean, 151 `flutter test` green,
+12 audit probes green, 4/4 worker checks green (incl. prompt-pinning).
 
-## Blockers (in order, each independently verifiable)
+## Blockers — all cleared
 
-1. **Boot recompute does D full-store writes before first frame.**
-   `app/lib/main.dart:27-33` awaits `recomputeSummaries(store)` before
-   `runApp` (both `main` and `dreamMain`); `rollups.dart:29-33` loops
-   `putSummary` per history day outside any transaction; `store.dart:387-392`
-   `_persist()`s per call. Fix: wrap boot/import recompute in the existing
-   `store.transaction(...)` (`store.dart:36-50`) and/or recompute only today
-   + dirty days. Verify: cold-start trace + `flutter test`.
-2. **Persistence failure is silent; the journal can become memory-only
-   without telling the user.** `lastPersistenceError` is written
-   (`store.dart:31,72,91,125,127`) and read nowhere; `_submit` swallows
-   (`journal_page.dart:449-457`, `catch (_) {}`). Fix: one hairline
-   error line on the journal surface in the existing voice + stop
-   swallowing in `_submit`. Verify: failure-injection test, 2× text.
-3. **AI consent copy does not disclose health prose leaving the device.**
-   `strings.dart:34` (`ALLOW INTERPRETATION`) reads as the local parser
-   switch; it actually gates journal prose → worker → OpenAI. Mechanism
-   is sound (off by default, consent+age re-checked after network
-   returns, KEEP LOCAL end-to-end). Fix: honest label + one disclosure
-   line under the toggle. Verify: copy review on the Blade.
-4. **No overnight DreamService thermal/battery measurement exists.**
-   `isScreenBright + isInteractive` runs the native-res shader all night
-   while charging; steady-state p95 (11 ms) is not an endurance result.
-   Fix: one full-night run, then decide (drop `isScreenBright`, cap dream
-   fps, or freeze decorative time). Nobody else's phone gets the
-   screensaver before this.
-5. **Play artifacts missing** (only if Play is the channel): Data Safety
-   form, health-apps declaration, `RECORD_AUDIO` rationale, privacy
-   policy URL, APK-shipped worker-token risk call. Plus decide backup
-   semantics: manifest omits `allowBackup`, so Google auto-backup of the
-   full health JSON (including consent/age stamps) is silently on while
-   clipboard import deliberately excludes them — write
-   `allowBackup` + `dataExtractionRules` either way.
+1. **Boot recompute did D full-store writes before first frame** (GLM).
+   `recomputeSummaries` now wraps the day loop in `store.transaction`
+   (`rollups.dart:30`) — one write per boot/import.
+2. **Persistence failure was silent** (GLM). `_submit` no longer swallows
+   (`journal_page.dart:486-492`); store + submit failures surface as a
+   `NOT SAVED` hairline line under the writing line (`:528, :639`).
+3. **Consent copy hid cloud transmission** (GLM + Antigravity, converged).
+   Landed stronger: `ALLOW CLOUD INTERPRETATION` + disclosure subline
+   (`strings.dart:34-36`, `settings_sheet.dart:145`).
+4. **Pending dock overflowed the pager on 8–11 item meals** (Antigravity).
+   `JournalPending` clamped to 148 dp max + scrolls
+   (`journal_page.dart:99-145`). Covered by `launch_blockers_test.dart`.
+5. **Tap-to-edit silently duplicated records** (Antigravity).
+   `replacesEntryId` + `EDITING` chip with `DROP`; submit atomically
+   reverts-then-replaces (`app_providers.dart:89-93`,
+   `journal_page.dart:219,446-477`). Covered by `launch_blockers_test.dart`.
+6. **Stale sleep leaked into today** (Antigravity). `todaySummaryProvider`
+   gates `lastSleep()` to today/yesterday only; older stays null (`—`).
+   Covered by `launch_blockers_test.dart`.
 
-## High-value fixes (after blockers, in order)
+## High-value fixes — landed
 
-1. Worker prompt-trust: pin the three system prompts server-side per
-   `x-illunis-call` (`server/worker.js:91-97` forwards client-supplied
-   prompts; token is APK-extractable, IDs client-minted). Lower
-   `MAX_GLOBAL` consideration; note KV/mutex cap is approximate.
-2. Sky/weather resource split: `sky_shader.dart:34-43` all-or-nothing
-   load makes clear-sky startup wait for weather assets; any weather
-   failure kills the native sky. Load independently; degrade gracefully.
-3. Lifecycle-gate the source timer (`local_sky_source.dart:16-24`) and
-   skip per-frame `setState` under reduced motion (`sky_view.dart:99-135`).
-4. TalkBack/keyboard pass: only one `Semantics` node exists app-wide;
-   mic, KEEP LOCAL, PREV/NEXT, CONFIRM/DROP/REVERT invisible. Plus
-   `mounted` guards on settings-sheet async paths.
-5. Cap + scroll the pending dock (`journal_page.dart:90-137`); DST-safe
-   civil-day source (P2-14); CSV/share already fixed — confirm on Blade.
-6. Astra P2 remainder as sequenced there (unknowns/freshness P2-10,
-   Polish Corpus P2-11 against the ~40 real dictated meals, stats
-   validation P2-13, release scrub gate P2-15, settings lifecycle P2-17).
+- HV-1 worker prompt-trust: three system prompts pinned server-side per
+  call (`server/worker.js`, commit `2bd130e`); client `system`/`user` no
+  longer forwarded blindly. `MAX_GLOBAL` still at 4000/day; KV/mutex cap
+  remains approximate across isolates — accepted, noted.
+- HV-2 sky/weather resource split: clear-sky program compiles
+  independently; weather-asset failure falls back to canvas weather
+  instead of killing the native sky (`sky_shader.dart`, `sky_painter.dart`,
+  commit `03f9ae2`).
+- HV-3 lifecycle + reduced motion: `SkyStateSource.setSuspended` with real
+  suspend in both sources; shell drives it from app lifecycle; `SkyView`
+  repaints ~10 fps under `disableAnimations` while easing continues.
+- HV-4 TalkBack + `mounted`: `Semantics(button,label)` on mic, KEEP LOCAL,
+  PREV/NEXT, CONFIRM/DROP/REVERT, settings rows; async `setState` guarded
+  in the settings sheet.
+- HV-5 DST: `timeOfDayFraction` now civil hour/minute/second arithmetic —
+  no 23/25-hour drift (`marks.dart`).
+
+## Still open (not code)
+
+- **Overnight DreamService thermal run.** Logging loop active
+  (`thermal-night.csv`, 5-min samples); phone keeps dropping off USB
+  (known transport flakiness). Needs: Blade on charger + Illunis
+  screensaver + stable USB for one night. Then decide: drop
+  `isScreenBright`, cap dream fps, or freeze decorative time.
+- **Play owner actions** (`PLAY_CHECKLIST.md`): host `PRIVACY_POLICY_DRAFT.md`,
+  add URL to listing + Settings, channel call, per-file backup split if
+  review demands it. Backup decision recorded (`DECISIONS.md` → Backup):
+  auto-backup stays on as the only durability story for sideload.
+- **Astra P2 remainder** (post-launch sequencing): unknowns/freshness P2-10,
+  Polish corpus vs 40 real meals P2-11, stats validation P2-13, release
+  scrub gate P2-15.
 
 ## Explicitly not launch work
 
@@ -79,38 +79,10 @@ Drift migration, `health`-package/Health Connect, food DB (OFF vs USDA
 before the 40-meal corpus), star precession, constellation lines, GPS —
 all still closed per `docs/DECISIONS.md`. No seeding of history.
 
-## Status (illunis-dev build pass, 2026-09-10)
-
-Implemented + verified (`flutter analyze` clean, 142 tests green):
-
-- Blocker 1: `recomputeSummaries` now wraps the day loop in
-  `store.transaction` (`rollups.dart:30-36`) — one write per boot/import.
-- Blocker 2: `_submit` no longer swallows (`journal_page.dart:457-462`);
-  store + submit failures surface as a `NOT SAVED` hairline line under
-  the writing line (`:496-498, :568-577`).
-- Blocker 3: consent toggle carries `S.aiConsentNote`
-  (`strings.dart:35-36`, `settings_sheet.dart:145,191-219`).
-- HV-3 (lifecycle/reduced motion): `SkyStateSource.setSuspended` added
-  with real suspend in `LiveMockSource`/`LocalSkyStateSource`
-  (no-op in the debug capture harness); `IllunisShell` drives it from
-  app lifecycle; `SkyView` throttles repaints to ~10 fps under
-  `disableAnimations` while easing continues.
-
-- Blocker 1 (Dock overflow): `JournalPending` clamped at 148 dp and scrollable (`journal_page.dart`).
-- Blocker 2 (Entry tap duplicate): `replacesEntryId` and `EDITING` chip added (`journal_page.dart`, `app_providers.dart`).
-- Blocker 3 (Stale sleep leakage): `todaySummaryProvider` strictly gates fallback to today/yesterday (`app_providers.dart`).
-- Blocker 4 (AI consent): `S.aiConsent` updated to `ALLOW CLOUD INTERPRETATION` (`strings.dart`).
-- HV-1 (Prompt trust): authoritative system prompts pinned server-side (`server/worker.js`, commit `2bd130e`).
-- HV-2 (Sky/weather split): clear sky shader loads independently from cloud textures (`sky_shader.dart`, `sky_painter.dart`, commit `03f9ae2`).
-- HV-4 (TalkBack pass): `Semantics` button/label nodes added to all journal and settings actions (`journal_page.dart`, `settings_sheet.dart`).
-- Verification: 151 tests green (`flutter test`), 12 audit tests green (`tool/astra_phase_d_audit_test.dart`), 4/4 worker tests green (`astra-phase-d-worker.mjs`), analyze clean. All committed and pushed to `master`.
-
-Still open: Blocker 4 (overnight DreamService thermal run on physical ZTE Blade), Blocker 5 owner actions (host policy URL).
-
 ## Verify per change
 
 `cd app && flutter analyze && flutter test` after each item; debug APK
-reinstall via the HANDOFF `adb` sequence (never `flutter install`);
-one Blade walkthrough of the Blockers 1–3 fixes before anything else
-ships. Baseline quoted from GLM's today run: analyze clean (4.1 s),
-142 + 12 green, worker 3/3 offline.
+reinstall via the HANDOFF `adb` sequence (never `flutter install`).
+Current baseline (2026-09-10 ~22:00): analyze clean, 151 + 12 green,
+worker 4/4 offline. Fresh `app-debug.apk` with all fixes is installed on
+the Blade; data preserved.

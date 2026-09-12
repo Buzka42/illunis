@@ -24,7 +24,7 @@ void main() {
     expect(find.text(S.mockData), findsNothing);
     expect(find.text(S.mass), findsNothing);
     expect(find.text(S.recovery), findsNothing);
-    expect(find.text(S.intake), findsNothing);
+    expect(find.text(S.intake), findsOneWidget);
     expect(find.text(S.training), findsNothing);
     expect(find.text(S.energy), findsNothing);
   });
@@ -38,7 +38,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), 'bench 80x5x3');
@@ -63,7 +63,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.byKey(const ValueKey('journal-mic')));
@@ -116,8 +116,8 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 50));
     expect(tester.takeException(), isNull);
-    expect(find.textContaining('% · '), findsOneWidget);
-    await tester.tap(find.text(S.journal).last);
+    expect(find.text('MOON'), findsOneWidget);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(TextField), findsOneWidget);
@@ -143,7 +143,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), 'ran 5k');
@@ -181,7 +181,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), 'bench 80x5x3');
@@ -235,7 +235,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), '7:30 ran 5k');
@@ -265,7 +265,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), 'ate oatmeal');
@@ -275,13 +275,12 @@ void main() {
     await tester.tap(find.text(S.confirm));
     await tester.pump();
     expect(store.nutrition.single.confirmed, isTrue);
-    await tester.tap(find.text(S.dashboard).last);
+    await tester.drag(find.byType(PageView).first, const Offset(-600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('320'), findsOneWidget);
-    expect(find.textContaining('P 12'), findsOneWidget);
-    expect(find.textContaining('INTAKE 320'), findsOneWidget);
-    expect(find.textContaining('Intake 320 kcal'), findsOneWidget);
+    expect(store.nutrition.single.proteinG, 12);
+    expect(find.text(S.intake), findsOneWidget);
   });
 
   testWidgets('sleep and mass reach the dashboard without a confirm', (
@@ -299,7 +298,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), 'slept 7h poorly');
@@ -310,13 +309,12 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.text(S.dashboard).last);
+    await tester.drag(find.byType(PageView).first, const Offset(-600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('7h 00m'), findsOneWidget);
-    expect(find.textContaining('POORLY'), findsOneWidget);
-    expect(find.textContaining('Sleep 7h 00m, poorly'), findsOneWidget);
-    expect(find.text('82.4'), findsOneWidget);
+    expect(find.text('7.0h'), findsOneWidget);
+    expect(store.sleeps.single.quality, lessThan(0.5));
+    expect(store.lastWeight()!.kg, 82.4);
   });
 
   testWidgets('an unconfirmed run is not a dashboard session', (tester) async {
@@ -332,29 +330,40 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), 'ran 5k');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.text(S.dashboard).last);
+    await tester.drag(find.byType(PageView).first, const Offset(-600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('RUN'), findsNothing);
     expect(find.text(S.training), findsNothing);
     expect(find.text(S.local), findsOneWidget);
     expect(find.text(S.noData), findsNothing);
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.text(S.confirm));
     await tester.pump();
-    await tester.tap(find.text(S.dashboard).last);
+    await tester.drag(find.byType(PageView).first, const Offset(-600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('RUN'), findsOneWidget);
+    expect(store.activities.single.confirmed, isTrue);
+    expect(find.text('ACTIVE'), findsOneWidget);
+    expect(
+      find.text(
+        store
+            .summaryOn(dayKey(DateTime.now()))!
+            .moveMinutes!
+            .round()
+            .toString(),
+      ),
+      findsWidgets,
+    );
   });
 
   testWidgets('coffee is intake without a confirm', (tester) async {
@@ -370,7 +379,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), 'drank coffee');
@@ -379,7 +388,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text(S.confirm), findsNothing);
     expect(store.nutrition.single.confirmed, isTrue);
-    await tester.tap(find.text(S.dashboard).last);
+    await tester.drag(find.byType(PageView).first, const Offset(-600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('5'), findsOneWidget);
@@ -398,7 +407,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.enterText(find.byType(TextField), 'yesterday ran 5k');
@@ -439,7 +448,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text(S.journal).last);
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.text(S.prev).last);
@@ -473,7 +482,7 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.longPress(find.text(S.journal).last);
+    await tester.longPress(find.text(S.dashboard).last);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text(S.settings), findsOneWidget);

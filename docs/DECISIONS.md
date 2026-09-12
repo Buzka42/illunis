@@ -110,3 +110,27 @@ no-account journal needs one. Accepted consequence: `aiConsentAt` and
 `ageAtLeast16` migrate with the file on device transfer, while clipboard
 import deliberately excludes them. Revisit with a per-file split before
 any Play release.
+
+## V2 reopened scope (2026-09-12)
+
+The owner-approved `PLAN_V2.md` supersedes v1 deferrals for weather, wearable
+integration and cloud design. Runtime weather fetches now use the selected
+Settings home and explicit source/refresh controls. OFF and source/home changes
+invalidate cached observations; the cache is in memory, with a three-hour
+freshness limit. GPS remains unimplemented. The bundled star catalog still has
+no runtime fetch. See `WEATHER_V2.md`.
+
+Dashboard now retains fixed stat positions with `—` for absent values and labels
+for journal, wearable, rule, AI and mock provenance. Journal entries paginate;
+short windows and enlarged text can scroll. Bottom navigation is removed;
+swiping and title long-press remain the navigation contract.
+
+Daily summaries render as sky letters from day one. Learned findings require
+21 paired days. A second tap dismisses a letter, persisted for its civil day.
+The first-run guide is skippable, versioned locally and available in Settings.
+
+The wearable UI consumes the native bridge and exposes source priorities; sleep
+stays journal-first. Physical-device permission verification remains outstanding.
+Cloud persistence, the new three-tier consents, remote deletion and Gemini
+transport remain design/integration work, not enabled behavior. Existing consent
+and local deletion rules remain in force; see `AI_SYSTEM_DESIGN.md`.

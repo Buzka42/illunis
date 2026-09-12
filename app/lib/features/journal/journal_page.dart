@@ -13,6 +13,7 @@ import '../../core/state/app_providers.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/units/mass.dart';
+import '../shell/surface_title.dart';
 
 /// The input surface. The writing line is the capture; the list is the record.
 class JournalPage extends ConsumerWidget {
@@ -29,28 +30,16 @@ class JournalPage extends ConsumerWidget {
     final date = formatLongDate(selected);
     final n = entries.length;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.margin, 6, Space.margin, 12),
-      child: ListView(
-        padding: EdgeInsets.zero,
+      padding: const EdgeInsets.fromLTRB(Space.margin, 0, Space.margin, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Text(S.journal, style: Type.label),
+              const SurfaceTitle(S.journal),
               const Spacer(),
-              Text(
-                n == 1 ? '1 ENTRY' : '$n ENTRIES',
-                style: Type.label.copyWith(color: Inks.faint),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Container(height: Space.hairline, color: Inks.hairline),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Expanded(child: Text(date, style: Type.title)),
+              Text(n == 1 ? '1 ENTRY' : '$n ENTRIES', style: Type.micro),
+              const SizedBox(width: 14),
               _NavWord(
                 label: S.prev,
                 onTap: () => ref.read(journalDayProvider.notifier).prev(),
@@ -65,30 +54,98 @@ class JournalPage extends ConsumerWidget {
               ),
             ],
           ),
-          if (figures.incompleteBed != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              'BED  ${_EntryExtract.clock(figures.incompleteBed!.startHours)}',
-              style: Type.micro.copyWith(color: Inks.muted),
-            ),
-          ],
-          const SizedBox(height: 8),
-          if (entries.isEmpty)
-            Text(
-              today ? S.journalEmpty : S.journalEmptyDay,
-              style: Type.caption,
-            )
-          else
-            for (final e in entries.reversed) _EntryTile(entry: e),
+          Container(height: 1, color: Inks.hairline),
+          Text(
+            '$date${figures.incompleteBed == null ? '' : ' · BED ${_EntryExtract.clock(figures.incompleteBed!.startHours)}'}',
+            style: Type.micro,
+            maxLines: 1,
+          ),
+          Expanded(
+            child: entries.isEmpty
+                ? Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(
+                      today ? S.journalEmpty : S.journalEmptyDay,
+                      style: Type.caption,
+                    ),
+                  )
+                : _EntryPages(
+                    key: ValueKey(selected),
+                    entries: entries.reversed.toList(),
+                  ),
+          ),
         ],
       ),
     );
   }
 }
 
+class _EntryPages extends StatefulWidget {
+  const _EntryPages({super.key, required this.entries});
+  final List<JournalEntry> entries;
+  @override
+  State<_EntryPages> createState() => _EntryPagesState();
+}
+
+class _EntryPagesState extends State<_EntryPages> {
+  int _page = 0;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, c) {
+      final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
+      final rowHeight = 52.0 * scale;
+      final count = ((c.maxHeight - 22 * scale) / rowHeight).floor().clamp(
+        1,
+        100,
+      );
+      final pages = (widget.entries.length / count).ceil();
+      final page = _page.clamp(0, pages - 1);
+      final rows = widget.entries.skip(page * count).take(count);
+      final content = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final entry in rows)
+            SizedBox(
+              height: rowHeight,
+              child: _EntryTile(entry: entry, compact: true),
+            ),
+          if (pages > 1)
+            Row(
+              children: [
+                _NavWord(
+                  label: 'NEWER',
+                  active: page > 0,
+                  onTap: page > 0
+                      ? () => setState(() => _page = page - 1)
+                      : null,
+                ),
+                const Spacer(),
+                Text('${page + 1}/$pages', style: Type.micro),
+                const Spacer(),
+                _NavWord(
+                  label: 'OLDER',
+                  active: page + 1 < pages,
+                  onTap: page + 1 < pages
+                      ? () => setState(() => _page = page + 1)
+                      : null,
+                ),
+              ],
+            ),
+        ],
+      );
+      if (c.maxHeight < rowHeight + (pages > 1 ? 22 * scale : 0)) {
+        return SingleChildScrollView(child: content);
+      }
+      return content;
+    },
+  );
+}
+
 /// Unconfirmed estimates dock on the writing line, not in the page column.
 class JournalPending extends ConsumerWidget {
-  const JournalPending({super.key});
+  const JournalPending({super.key, this.maxHeight = maxPendingHeight});
+  final double maxHeight;
 
   /// One estimate row: caption plus DROP / CONFIRM.
   static const double rowBand = 40;
@@ -139,9 +196,9 @@ class JournalPending extends ConsumerWidget {
       ],
     );
     final unbounded = pending * rowBand + (pending > 1 ? confirmAllBand : 0);
-    if (unbounded <= maxPendingHeight) return content;
+    if (unbounded <= maxHeight) return content;
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: maxPendingHeight),
+      constraints: BoxConstraints(maxHeight: maxHeight),
       child: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
         child: content,
@@ -201,7 +258,8 @@ class _NavWord extends StatelessWidget {
 }
 
 class _EntryTile extends ConsumerWidget {
-  const _EntryTile({required this.entry});
+  const _EntryTile({required this.entry, this.compact = false});
+  final bool compact;
   final JournalEntry entry;
 
   @override
@@ -229,7 +287,14 @@ class _EntryTile extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(width: 44, child: Text('$h:$m', style: Type.micro)),
-                Expanded(child: Text(entry.text, style: Type.body)),
+                Expanded(
+                  child: Text(
+                    entry.text,
+                    style: Type.body,
+                    maxLines: compact ? 2 : null,
+                    overflow: compact ? TextOverflow.ellipsis : null,
+                  ),
+                ),
                 if (entry.excludedFromAi)
                   _Word(
                     S.keepLocal,
@@ -258,7 +323,7 @@ class _EntryTile extends ConsumerWidget {
                 ),
               ],
             ),
-            _EntryExtract(id: entry.id),
+            if (!compact) _EntryExtract(id: entry.id),
           ],
         ),
       ),
@@ -547,10 +612,7 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
             padding: const EdgeInsets.only(bottom: 2),
             child: Row(
               children: [
-                Text(
-                  'EDITING',
-                  style: Type.micro.copyWith(color: Inks.muted),
-                ),
+                Text('EDITING', style: Type.micro.copyWith(color: Inks.muted)),
                 const Spacer(),
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -595,7 +657,10 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine> {
                 behavior: HitTestBehavior.opaque,
                 onTap: () => setState(() => _keepLocal = !_keepLocal),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 8,
+                  ),
                   child: Text(
                     _keepLocal ? '[ LOCAL ]' : S.keepLocal,
                     maxLines: 1,

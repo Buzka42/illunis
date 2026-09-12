@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/sky/celestial_math.dart';
+import '../../core/db/records.dart';
+import '../../core/state/civil_day.dart';
 import '../../core/sky/celestial_scene.dart';
 import '../../core/state/app_providers.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/state/sleep_record.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import 'calorie_marks.dart';
+import 'weather_projection.dart';
 
 /// The day as a track: hour scale, the daylight span, last night's sleep
 /// with its stages, and a playhead. Dragging scrubs `timeOfDay` through the
@@ -51,14 +55,30 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
     final canScrub = !kReleaseMode;
     final timelineView = ValueListenableBuilder<ResolvedScene?>(
       valueListenable: widget.scene,
-      builder: (context, scene, _) => CustomPaint(
-        painter: _TimelinePainter(
-          scene: scene,
-          sleep: sleep,
-          marks: marks,
-          scrub: scrub,
-          textScale: textScale,
-        ),
+      builder: (context, scene, _) => Consumer(
+        builder: (context, ref, _) {
+          // Re-evaluate the civil date on source ticks, including midnight and
+          // resume. Historical journal navigation never moves today's track.
+          final calories = ref.watch(
+            calorieMarksProvider(dayKey(ref.watch(civilDayProvider))),
+          );
+          return Semantics(
+            label: calories.isEmpty
+                ? 'Day timeline'
+                : 'Day timeline. Confirmed calories at journal logging times. '
+                      '${calories.map((m) => '${m.kind.name} ${m.kcal.round()} kilocalories at ${formatHours(m.time)}').join('. ')}',
+            child: CustomPaint(
+              painter: _TimelinePainter(
+                scene: scene,
+                sleep: sleep,
+                marks: marks,
+                calories: calories,
+                scrub: scrub,
+                textScale: textScale,
+              ),
+            ),
+          );
+        },
       ),
     );
     return SizedBox(
@@ -79,6 +99,7 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
               )
             else
               timelineView,
+            const Positioned.fill(child: WeatherGlyphs()),
             // LIVE sits at whichever end the playhead's label is not.
             if (scrub != null)
               Positioned(
@@ -123,6 +144,7 @@ class _TimelinePainter extends CustomPainter {
     required this.scene,
     required this.sleep,
     required this.marks,
+    required this.calories,
     required this.scrub,
     required this.textScale,
   });
@@ -130,6 +152,7 @@ class _TimelinePainter extends CustomPainter {
   final ResolvedScene? scene;
   final SleepRecord? sleep;
   final List<double> marks;
+  final List<CalorieMark> calories;
   final double? scrub;
   final double textScale;
 
@@ -195,6 +218,19 @@ class _TimelinePainter extends CustomPainter {
     final headX = lo <= hi ? _x(headT, size).clamp(lo, hi) : (x0 + x1) * 0.5;
 
     if (sleep != null) _paintSleep(canvas, size, sleep!, headX);
+    // Separate lanes preserve both directions when one page logs food and
+    // movement. Draw after sleep so its band cannot hide the calorie marks.
+    for (final mark in calories) {
+      final intake = mark.kind == CalorieKind.intake;
+      canvas.drawCircle(
+        Offset(_x(mark.time, size), _trackY + (intake ? -3.5 : 3.5)),
+        mark.radius,
+        Paint()
+          ..color = (intake ? Inks.intake : Inks.negative).withValues(
+            alpha: mark.alpha,
+          ),
+      );
+    }
 
     if (scrub != null) {
       // Where the clock actually is, kept as a reference.
@@ -412,5 +448,6 @@ class _TimelinePainter extends CustomPainter {
       old.sleep != sleep ||
       old.scrub != scrub ||
       old.textScale != textScale ||
+      !listEquals(old.calories, calories) ||
       !listEquals(old.marks, marks);
 }

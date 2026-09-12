@@ -4,14 +4,23 @@ import 'package:flutter_riverpod/misc.dart';
 import '../ai/transport.dart';
 import '../db/records.dart';
 import '../db/store.dart';
+import '../fitness/performance/performance_models.dart';
+import '../fitness/performance/performance_rollups.dart';
 import '../fitness/progress.dart';
 import '../health/local_sky_source.dart';
 import '../health/rollups.dart';
 import '../journal/marks.dart';
 import '../journal/repository.dart';
 import '../patterns/sweep.dart';
+import '../sky/sky_weather.dart';
 import '../strength/progress.dart';
+import '../wearables/health_bridge.dart';
+import '../wearables/life_stats.dart';
+import '../wearables/wearable_data.dart';
+import '../weather/weather_model.dart';
+import '../weather/weather_service.dart';
 import 'sky_state_source.dart';
+import 'civil_day.dart';
 
 final storeProvider = Provider<AppStore>((ref) {
   final store = AppStore.memory();
@@ -53,16 +62,21 @@ class JournalDayNotifier extends Notifier<DateTime> {
   var catchUp = false;
 
   @override
-  DateTime build() => dateOnly(DateTime.now());
+  DateTime build() {
+    ref.listen(civilDayProvider, (previous, next) {
+      if (!catchUp) state = next;
+    });
+    return ref.read(civilDayProvider);
+  }
 
   void prev() {
     catchUp = true;
-    state = state.subtract(const Duration(days: 1));
+    state = DateTime(state.year, state.month, state.day - 1);
   }
 
   void next() {
     final today = dateOnly(DateTime.now());
-    final n = state.add(const Duration(days: 1));
+    final n = DateTime(state.year, state.month, state.day + 1);
     if (n.isAfter(today)) return;
     catchUp = !sameDay(n, today);
     state = n;
@@ -83,11 +97,7 @@ class JournalDayNotifier extends Notifier<DateTime> {
 
 /// Prose parked on the writing line after REVERT, so a correction is not a retype.
 class JournalDraft {
-  const JournalDraft(
-    this.text, {
-    this.keepLocal = false,
-    this.replacesEntryId,
-  });
+  const JournalDraft(this.text, {this.keepLocal = false, this.replacesEntryId});
   final String text;
   final bool keepLocal;
   final String? replacesEntryId;
@@ -108,11 +118,16 @@ class JournalDraftNotifier extends Notifier<JournalDraft?> {
 }
 
 /// Production wiring: clock + rollups from the on-device store.
-List<Override> illunisOverrides(AppStore store) {
+List<Override> illunisOverrides(
+  AppStore store, {
+  WeatherService? weatherService,
+}) {
+  final weather = weatherService ?? WeatherService();
   return [
     storeProvider.overrideWith((ref) => store),
+    weatherServiceProvider.overrideWith((ref) => weather),
     skyStateSourceProvider.overrideWith((ref) {
-      final source = LocalSkyStateSource(store);
+      final source = LocalSkyStateSource(store, weatherService: weather);
       ref.onDispose(source.dispose);
       return source;
     }),
@@ -138,6 +153,7 @@ class TodayFigures {
     this.weekIntakeKcal,
     this.weekVolumeKg,
     this.weekDistanceKm,
+    this.steps,
   });
 
   final String day;
@@ -157,17 +173,19 @@ class TodayFigures {
   final double? weekIntakeKcal;
   final double? weekVolumeKg;
   final double? weekDistanceKm;
+  final int? steps;
 }
 
-TodayFigures _figures(AppStore store, String day) {
+TodayFigures _figures(AppStore store, String day, DateTime now) {
   SleepEntry? sleep;
   SleepEntry? incompleteBed;
   for (final s in store.sleeps) {
     if (s.day == day && s.isComplete) sleep = s;
     if (!s.isComplete && s.day == day) incompleteBed = s;
   }
-  final today = day == dayKey(DateTime.now());
-  final yesterday = dayKey(dayKeyDate(day).subtract(const Duration(days: 1)));
+  final today = day == dayKey(now);
+  final date = dayKeyDate(day);
+  final yesterday = dayKey(DateTime(date.year, date.month, date.day - 1));
   if (today && sleep == null) {
     final latest = store.lastSleep();
     if (latest != null && (latest.day == day || latest.day == yesterday)) {
@@ -209,18 +227,23 @@ TodayFigures _figures(AppStore store, String day) {
     weekIntakeKcal: week.intakeKcal,
     weekVolumeKg: week.volumeKg,
     weekDistanceKm: week.distanceKm,
+    steps: store.stepsOn(day) ?? store.summaryOn(day)?.steps,
   );
 }
 
 final todayFiguresProvider = Provider<TodayFigures>((ref) {
   ref.watch(storeRevisionProvider);
-  return _figures(ref.watch(storeProvider), dayKey(DateTime.now()));
+  return _figures(
+    ref.watch(storeProvider),
+    dayKey(ref.watch(civilDayProvider)),
+    ref.watch(civilDayProvider),
+  );
 });
 
 final journalFiguresProvider = Provider<TodayFigures>((ref) {
   ref.watch(storeRevisionProvider);
   final day = dayKey(ref.watch(journalDayProvider));
-  return _figures(ref.watch(storeProvider), day);
+  return _figures(ref.watch(storeProvider), day, ref.watch(civilDayProvider));
 });
 
 final journalEntriesProvider = Provider<List<JournalEntry>>((ref) {
@@ -236,5 +259,72 @@ final todayEntriesProvider = journalEntriesProvider;
 /// Journal pages on the civil day the sky timeline represents (today).
 final timelineMarksProvider = Provider<List<double>>((ref) {
   ref.watch(storeRevisionProvider);
-  return timelineMarksOn(ref.watch(storeProvider), dayKey(DateTime.now()));
+  return timelineMarksOn(
+    ref.watch(storeProvider),
+    dayKey(ref.watch(civilDayProvider)),
+  );
+});
+
+// --- Weather ---
+final weatherServiceProvider = Provider<WeatherService>((ref) {
+  final service = WeatherService();
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+final weatherObservationProvider = Provider<WeatherObservation?>((ref) {
+  final service = ref.watch(weatherServiceProvider);
+  return service.cachedObservation;
+});
+
+final activeSkyWeatherProvider = Provider<SkyWeather?>((ref) {
+  final service = ref.watch(weatherServiceProvider);
+  return service.currentSkyWeather;
+});
+
+final weather24hProjectionProvider = Provider<List<HourlyWeatherProjection>>((
+  ref,
+) {
+  final obs = ref.watch(weatherObservationProvider);
+  return obs?.hourly24h ?? const [];
+});
+
+// --- Wearables / Health Connect & Life Stats ---
+final healthBridgeProvider = Provider<HealthBridge>((ref) {
+  return HealthBridge.create();
+});
+
+final wearableDailyDataProvider =
+    FutureProvider.family<WearableDailyData?, String>((ref, day) async {
+      final bridge = ref.watch(healthBridgeProvider);
+      final date = dayKeyDate(day);
+      return bridge.getDailyData(date);
+    });
+
+final lifeStatsProvider = Provider.family<DailyLifeStats, String>((ref, day) {
+  ref.watch(storeRevisionProvider);
+  final store = ref.watch(storeProvider);
+  final wearableAsync = ref.watch(wearableDailyDataProvider(day));
+  final wearable = wearableAsync.value;
+  return resolveLifeStats(store: store, day: day, wearable: wearable);
+});
+
+final todayLifeStatsProvider = Provider<DailyLifeStats>((ref) {
+  return ref.watch(lifeStatsProvider(dayKey(ref.watch(civilDayProvider))));
+});
+
+// --- Performance Rollups ---
+final performanceRollupProvider = Provider.family<PerformanceRollup, String>((
+  ref,
+  day,
+) {
+  ref.watch(storeRevisionProvider);
+  final store = ref.watch(storeProvider);
+  return computePerformanceRollup(store, day);
+});
+
+final todayPerformanceRollupProvider = Provider<PerformanceRollup>((ref) {
+  return ref.watch(
+    performanceRollupProvider(dayKey(ref.watch(civilDayProvider))),
+  );
 });

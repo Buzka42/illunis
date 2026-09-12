@@ -24,8 +24,8 @@ void main() {
     expect(find.byType(IllunisShell), findsOneWidget);
     expect(find.text('ILLUNIS'), findsOneWidget);
     expect(find.text(S.dashboard), findsOneWidget);
-    expect(find.text(S.journal), findsWidgets);
-    expect(find.text(S.version), findsOneWidget);
+    expect(find.text(S.journal), findsNothing);
+    expect(find.text(S.version), findsNothing);
   });
 
   testWidgets('a zero-width first frame does not throw', (tester) async {

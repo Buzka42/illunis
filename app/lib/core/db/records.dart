@@ -36,6 +36,14 @@ class Profile {
     this.homePlace,
     this.latitudeDeg = 52.23,
     this.longitudeDeg = 21.01,
+    this.tutorialVersion = 0,
+    this.insightDismissalDay,
+    this.dismissedInsightIds = const [],
+    this.weatherSource = 'open-meteo',
+    this.caloriesBurnedSource = 'journal',
+    this.sleepSource = 'journal',
+    this.stepsSource = 'auto',
+    this.activeMinutesSource = 'journal',
     this.aiConsentAt,
     this.ageAtLeast16 = false,
     required this.installId,
@@ -45,6 +53,14 @@ class Profile {
   final String? homePlace;
   final double latitudeDeg;
   final double longitudeDeg;
+  final int tutorialVersion;
+  final String? insightDismissalDay;
+  final List<String> dismissedInsightIds;
+  final String weatherSource;
+  final String caloriesBurnedSource;
+  final String sleepSource;
+  final String stepsSource;
+  final String activeMinutesSource;
   final DateTime? aiConsentAt;
   final bool ageAtLeast16;
   final String installId;
@@ -56,6 +72,14 @@ class Profile {
     Object? homePlace = _u,
     double? latitudeDeg,
     double? longitudeDeg,
+    int? tutorialVersion,
+    String? insightDismissalDay,
+    List<String>? dismissedInsightIds,
+    String? weatherSource,
+    String? caloriesBurnedSource,
+    String? sleepSource,
+    String? stepsSource,
+    String? activeMinutesSource,
     Object? aiConsentAt = _u,
     bool? ageAtLeast16,
     String? installId,
@@ -64,6 +88,14 @@ class Profile {
     homePlace: homePlace == _u ? this.homePlace : homePlace as String?,
     latitudeDeg: latitudeDeg ?? this.latitudeDeg,
     longitudeDeg: longitudeDeg ?? this.longitudeDeg,
+    tutorialVersion: tutorialVersion ?? this.tutorialVersion,
+    insightDismissalDay: insightDismissalDay ?? this.insightDismissalDay,
+    dismissedInsightIds: dismissedInsightIds ?? this.dismissedInsightIds,
+    weatherSource: weatherSource ?? this.weatherSource,
+    caloriesBurnedSource: caloriesBurnedSource ?? this.caloriesBurnedSource,
+    sleepSource: sleepSource ?? this.sleepSource,
+    stepsSource: stepsSource ?? this.stepsSource,
+    activeMinutesSource: activeMinutesSource ?? this.activeMinutesSource,
     aiConsentAt: aiConsentAt == _u
         ? this.aiConsentAt
         : aiConsentAt as DateTime?,
@@ -76,6 +108,14 @@ class Profile {
     'homePlace': homePlace,
     'latitudeDeg': latitudeDeg,
     'longitudeDeg': longitudeDeg,
+    'tutorialVersion': tutorialVersion,
+    'insightDismissalDay': insightDismissalDay,
+    'dismissedInsightIds': dismissedInsightIds,
+    'weatherSource': weatherSource,
+    'caloriesBurnedSource': caloriesBurnedSource,
+    'sleepSource': sleepSource,
+    'stepsSource': stepsSource,
+    'activeMinutesSource': activeMinutesSource,
     'aiConsentAt': aiConsentAt?.toIso8601String(),
     'ageAtLeast16': ageAtLeast16,
     'installId': installId,
@@ -86,6 +126,19 @@ class Profile {
     homePlace: j['homePlace'] as String?,
     latitudeDeg: (j['latitudeDeg'] as num?)?.toDouble() ?? 52.23,
     longitudeDeg: (j['longitudeDeg'] as num?)?.toDouble() ?? 21.01,
+    tutorialVersion: (j['tutorialVersion'] as num?)?.toInt() ?? 0,
+    insightDismissalDay: j['insightDismissalDay'] as String?,
+    dismissedInsightIds:
+        (j['dismissedInsightIds'] as List?)
+            ?.whereType<String>()
+            .take(64)
+            .toList() ??
+        const [],
+    weatherSource: j['weatherSource'] as String? ?? 'open-meteo',
+    caloriesBurnedSource: j['caloriesBurnedSource'] as String? ?? 'journal',
+    sleepSource: j['sleepSource'] as String? ?? 'journal',
+    stepsSource: j['stepsSource'] as String? ?? 'auto',
+    activeMinutesSource: j['activeMinutesSource'] as String? ?? 'journal',
     aiConsentAt: j['aiConsentAt'] == null
         ? null
         : DateTime.tryParse(j['aiConsentAt'] as String),
@@ -477,6 +530,39 @@ class WeightEntry {
 }
 
 @immutable
+class StepEntry {
+  const StepEntry({
+    required this.id,
+    required this.journalEntryId,
+    required this.day,
+    required this.steps,
+    this.source = 'parsed',
+  });
+
+  final String id;
+  final String journalEntryId;
+  final String day;
+  final int steps;
+  final String source;
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'journalEntryId': journalEntryId,
+    'day': day,
+    'steps': steps,
+    'source': source,
+  };
+
+  factory StepEntry.fromJson(Map<String, Object?> j) => StepEntry(
+    id: j['id'] as String,
+    journalEntryId: j['journalEntryId'] as String,
+    day: j['day'] as String,
+    steps: (j['steps'] as num).toInt(),
+    source: j['source'] as String? ?? 'parsed',
+  );
+}
+
+@immutable
 class DaySummary {
   const DaySummary({
     required this.day,
@@ -499,6 +585,7 @@ class DaySummary {
     this.moveMinutes,
     this.distanceKm,
     this.runSpeedKmh,
+    this.steps,
   });
 
   final String day;
@@ -536,28 +623,33 @@ class DaySummary {
   /// Best run that day as km/h. Higher is faster. Null when no timed run.
   final double? runSpeedKmh;
 
-  DaySummary copyWith({String? digest, String? digestSource}) => DaySummary(
-    day: day,
-    sleepHours: sleepHours,
-    sleepScore: sleepScore,
-    recovery: recovery,
-    strain: strain,
-    intakeKcal: intakeKcal,
-    expenditureKcal: expenditureKcal,
-    energyBalance: energyBalance,
-    sets: sets,
-    volumeKg: volumeKg,
-    proteinG: proteinG,
-    carbsG: carbsG,
-    fatG: fatG,
-    energyKcal: energyKcal,
-    digest: digest ?? this.digest,
-    digestSource: digestSource ?? this.digestSource,
-    best1rmKg: best1rmKg,
-    moveMinutes: moveMinutes,
-    distanceKm: distanceKm,
-    runSpeedKmh: runSpeedKmh,
-  );
+  /// Journal or wearable logged steps for this civil day.
+  final int? steps;
+
+  DaySummary copyWith({String? digest, String? digestSource, int? steps}) =>
+      DaySummary(
+        day: day,
+        sleepHours: sleepHours,
+        sleepScore: sleepScore,
+        recovery: recovery,
+        strain: strain,
+        intakeKcal: intakeKcal,
+        expenditureKcal: expenditureKcal,
+        energyBalance: energyBalance,
+        sets: sets,
+        volumeKg: volumeKg,
+        proteinG: proteinG,
+        carbsG: carbsG,
+        fatG: fatG,
+        energyKcal: energyKcal,
+        digest: digest ?? this.digest,
+        digestSource: digestSource ?? this.digestSource,
+        best1rmKg: best1rmKg,
+        moveMinutes: moveMinutes,
+        distanceKm: distanceKm,
+        runSpeedKmh: runSpeedKmh,
+        steps: steps ?? this.steps,
+      );
 
   Map<String, Object?> toJson() => {
     'day': day,
@@ -580,6 +672,7 @@ class DaySummary {
     'moveMinutes': moveMinutes,
     'distanceKm': distanceKm,
     'runSpeedKmh': runSpeedKmh,
+    'steps': steps,
   };
 
   factory DaySummary.fromJson(Map<String, Object?> j) => DaySummary(
@@ -603,6 +696,7 @@ class DaySummary {
     moveMinutes: (j['moveMinutes'] as num?)?.toDouble(),
     distanceKm: (j['distanceKm'] as num?)?.toDouble(),
     runSpeedKmh: (j['runSpeedKmh'] as num?)?.toDouble(),
+    steps: (j['steps'] as num?)?.toInt(),
   );
 }
 

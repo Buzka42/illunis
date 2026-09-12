@@ -55,9 +55,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const IllunisApp(
-            home: Scaffold(body: JournalPending()),
-          ),
+          child: const IllunisApp(home: Scaffold(body: JournalPending())),
         ),
       );
 
@@ -80,11 +78,8 @@ void main() {
       store.journal.add(entry);
 
       final container = ProviderContainer(
-        overrides: [
-          storeProvider.overrideWith((ref) => store),
-        ],
+        overrides: [storeProvider.overrideWith((ref) => store)],
       );
-      addTearDown(container.dispose);
 
       final scene = ValueNotifier<ResolvedScene?>(null);
       addTearDown(scene.dispose);
@@ -108,6 +103,8 @@ void main() {
       final h = now.hour.toString().padLeft(2, '0');
       final m = now.minute.toString().padLeft(2, '0');
       expect(draft.text, '$h:$m kawa 200ml');
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
     });
 
     testWidgets('Writing line displays EDITING when replacing entry', (
@@ -119,17 +116,14 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const IllunisApp(
-            home: Scaffold(body: JournalWritingLine()),
-          ),
+          child: const IllunisApp(home: Scaffold(body: JournalWritingLine())),
         ),
       );
 
-      container.read(journalDraftProvider.notifier).offer(
-            const JournalDraft(
-              '14:30 herbata',
-              replacesEntryId: 'old-id',
-            ),
+      container
+          .read(journalDraftProvider.notifier)
+          .offer(
+            const JournalDraft('14:30 herbata', replacesEntryId: 'old-id'),
           );
       await tester.pump();
 
@@ -226,9 +220,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const IllunisApp(
-            home: Scaffold(body: JournalWritingLine()),
-          ),
+          child: const IllunisApp(home: Scaffold(body: JournalWritingLine())),
         ),
       );
 
@@ -253,4 +245,3 @@ void main() {
     });
   });
 }
-

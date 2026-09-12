@@ -20,5 +20,14 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "illunis/health_connect")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "isAvailable" -> result.success(false)
+                    "requestPermissions" -> result.success(false)
+                    "getDailyData" -> result.success(null)
+                    else -> result.notImplemented()
+                }
+            }
     }
 }

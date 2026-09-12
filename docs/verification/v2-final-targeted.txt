@@ -1,0 +1,6 @@
+00:00 +0: loading C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart
+00:00 +0: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:01 +1: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:01 +2: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:01 +3: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:03 +4: All tests passed!

@@ -1,0 +1,210 @@
+00:00 +0: loading C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart
+00:00 +0: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: Prompt schemas and systems kRestednessSystem and kRestednessSchema are configured
+00:00 +1: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: Prompt schemas and systems kDayDigestSystem and kDayDigestSchema are configured
+00:00 +2: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: AiTransport plumbing for restedness and dayDigest restedness makes well-formed worker call and decodes valid response
+00:00 +3: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: AiTransport plumbing for restedness and dayDigest dayDigest makes well-formed worker call and decodes valid response
+00:00 +4: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: AiTransport plumbing for restedness and dayDigest fails closed when worker returns 429 meter or 500 error
+00:00 +5: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: AiTransport plumbing for restedness and dayDigest fails closed on network exception
+00:02 +6: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: revert removes the page and everything it produced
+00:03 +7: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: unconfirmed food is excluded from the day total until confirmed
+00:03 +8: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a trivial drink is intake without a confirm
+00:03 +9: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: two bananas scale the estimate into the day total
+00:03 +10: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: 1RM progress reports a delta against the prior best
+00:03 +11: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: confirm all promotes food and activity estimates
+00:03 +12: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a rest day with a log is zero strain, not unknown
+00:03 +13: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: an unconfirmed run is not strain or a session until confirmed
+00:03 +14: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: confirming a meal refreshes the local digest
+00:03 +15: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: an AI digest survives a later rollup
+00:03 +16: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: weight on a day is the last mass on or before it
+00:03 +17: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: import restores a JSON export
+00:03 +18: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a leading clock stamps the page and is not kept as prose
+00:03 +19: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: this morning without a clock still stamps eight
+00:03 +20: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a trailing morning still stamps eight
+00:03 +21: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: yesterday lands on the previous civil day
+00:03 +22: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: slept poorly attaches to last night without inventing hours
+00:03 +23: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: woke finishes last night without inventing a bedtime
+00:03 +24: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a morning bedtime is last night, last night food is yesterday
+00:03 +25: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: timeline marks sit at the log time on that civil day
+00:03 +26: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: keep local can be cleared on an existing page
+00:03 +27: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: drop removes an estimate and leaves the page
+00:03 +28: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: slept poorly lowers the night's score against the same hours
+00:03 +29: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: one confirmed meal and a run is today's energy, not a 7-day balance
+00:03 +30: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: csv marks food and activity confirmation
+00:09 +31: C:/Users/Arawn/Documents/illunis/app/test/first_run_guide_test.dart: first run guide is skippable and completion survives reload
+00:12 +32: C:/Users/Arawn/Documents/illunis/app/test/first_run_guide_test.dart: first run guide is skippable and completion survives reload
+00:12 +33: C:/Users/Arawn/Documents/illunis/app/test/first_run_guide_test.dart: first run guide is skippable and completion survives reload
+00:12 +34: C:/Users/Arawn/Documents/illunis/app/test/first_run_guide_test.dart: first run guide is skippable and completion survives reload
+00:12 +35: C:/Users/Arawn/Documents/illunis/app/test/first_run_guide_test.dart: first run guide is skippable and completion survives reload
+00:12 +36: C:/Users/Arawn/Documents/illunis/app/test/first_run_guide_test.dart: first run guide is skippable and completion survives reload
+00:12 +37: C:/Users/Arawn/Documents/illunis/app/test/first_run_guide_test.dart: first run guide is skippable and completion survives reload
+00:13 +38: loading C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart
+00:20 +38: C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart: aggregates confirmed meals per page and keeps burn separate
+00:20 +39: C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart: unknown, pending, orphaned and invalid records never become dots
+00:20 +40: C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart: dot weight is monotonic and bounded for large confirmed meals
+00:20 +41: C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart: Blade timeline keeps 48 dp height and exposes dot meaning
+00:24 +42: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:26 +43: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: journal writing line stores a lift
+00:27 +44: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: mic tap without a recognizer still leaves the field
+00:28 +45: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:29 +46: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +47: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +48: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +49: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +50: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +51: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +52: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +53: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +54: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +55: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +56: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +57: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +58: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +59: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +60: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +61: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:29 +62: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +63: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +64: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +65: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +66: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +67: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +68: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +69: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +70: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +71: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +72: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +73: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +74: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +75: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:30 +76: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:31 +77: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: drop keeps the page and revert takes it back
+00:32 +78: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: tap a page puts it back on the line without deleting it
+00:33 +79: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: the IME lifts the writing line instead of overflowing
+00:34 +80: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a leading clock is the page time, not the prose
+00:35 +81: C:/Users/Arawn/Documents/illunis/app/test/journal/stamp_test.dart: a 24h clock prefix stamps and strips
+00:35 +82: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:35 +83: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:35 +84: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:35 +85: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:35 +86: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:35 +87: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:35 +88: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:35 +89: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:37 +90: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:38 +91: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: an unconfirmed run is not a dashboard session
+00:39 +92: C:/Users/Arawn/Documents/illunis/app/test/journal/steps_parser_test.dart: Step parsing - numeric formats standard integers: 10000 steps and 8500 krokow
+00:39 +93: C:/Users/Arawn/Documents/illunis/app/test/journal/steps_parser_test.dart: Step parsing - numeric formats k suffix: 10k, 10.5k, 12,5k
+00:39 +94: C:/Users/Arawn/Documents/illunis/app/test/journal/steps_parser_test.dart: Step parsing - numeric formats case insensitivity and inflection variations
+00:39 +95: C:/Users/Arawn/Documents/illunis/app/test/journal/steps_parser_test.dart: Step parsing - number words English number words
+00:39 +96: C:/Users/Arawn/Documents/illunis/app/test/journal/steps_parser_test.dart: Step parsing - number words Polish number words
+00:39 +97: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:39 +98: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:39 +99: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:39 +100: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:39 +101: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:39 +102: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:39 +103: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:39 +104: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:40 +105: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: yesterday from today opens that civil day
+00:41 +106: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: yesterday is the calendar day even from a catch-up page
+00:42 +107: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: settings on a 1080×2412 phone does not overflow
+00:43 +108: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: settings on a 1080×2412 phone does not overflow
+00:44 +109: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: settings on a 1080×2412 phone does not overflow
+00:44 +110: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Tapping an entry offers draft with replacesEntryId
+00:45 +111: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Writing line displays EDITING when replacing entry
+00:45 +112: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 3: Stale multi-day sleep exclusion Today figures do not inherit sleep from 3 days ago
+00:45 +113: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 3: Stale multi-day sleep exclusion Today figures accept sleep completed yesterday night
+00:45 +114: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Polish: Civil wall-clock timeline marks timeOfDayFraction strictly represents wall-clock position
+00:45 +115: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 4: AI Consent disclosure aiConsent discloses cloud processing
+00:45 +116: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Polish: Accessibility Semantics pass Journal controls provide accessibility semantics
+00:45 +117: loading C:/Users/Arawn/Documents/illunis/app/test/patterns/statistics_test.dart
+00:49 +117: C:/Users/Arawn/Documents/illunis/app/test/patterns/statistics_test.dart: Pearson is high on a line and null on a constant
+00:49 +118: C:/Users/Arawn/Documents/illunis/app/test/patterns/statistics_test.dart: Benjamini–Hochberg keeps a strong pair and drops a weak one
+00:49 +119: C:/Users/Arawn/Documents/illunis/app/test/patterns/statistics_test.dart: sweep stays silent before 21 paired days
+00:49 +120: C:/Users/Arawn/Documents/illunis/app/test/patterns/statistics_test.dart: sweep names a sleep–run pair and cites the observed range
+00:49 +121: C:/Users/Arawn/Documents/illunis/app/test/patterns/statistics_test.dart: sweep names a rest–run pair from sleep score
+00:49 +122: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:52 +123: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: a zero-width first frame does not throw
+00:52 +124: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the nightstand builds without the pager
+00:52 +125: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: every TextTheme slot is defined by the product type
+00:53 +126: C:/Users/Arawn/Documents/illunis/app/test/sky/architecture_test.dart: core/sky imports nothing above its station
+00:55 +127: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris epoch days match J2000 and a known JD
+00:55 +128: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris the Sun crosses the equator at the March equinox
+00:55 +129: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris inner planets keep to their maximum elongation
+00:55 +130: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris planets resolve to unit directions and sensible magnitudes
+00:55 +131: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: ephemeris a planet below the horizon or in daylight is not visible
+00:55 +132: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun is at the zenith at noon on the equinox at the equator
+00:55 +133: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun is below the horizon at midnight in the temperate zone
+00:55 +134: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun rises in the east and sets in the west
+00:55 +135: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun summer day is long, winter day is short at 52°N
+00:55 +136: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: sun never sets at 80°N in June
+00:55 +137: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: moon is full opposite the sun
+00:55 +138: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: moon new moon travels with the sun
+00:55 +139: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: moon phase from date is in range and advances
+00:55 +140: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars sidereal time advances with the clock
+00:55 +141: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars Sirius is the brightest catalog star
+00:55 +142: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars Polaris sits on the north celestial pole
+00:55 +143: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars Orion's belt is up on a January evening at 52°N, not in June
+00:55 +144: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: stars catalog stars above the horizon project into the sky half
+00:55 +145: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera project and unproject round-trip
+00:55 +146: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera horizon is a straight line at the principal point
+00:55 +147: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera noon at 52°N still faces the sun
+00:55 +148: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera a new-moon night looks south so Orion is in the window
+00:55 +149: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: camera a risen full moon takes the night camera
+00:55 +150: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: state lerp takes the short way round midnight
+00:55 +151: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: state a null vital snaps instead of fading through a number
+00:55 +152: C:/Users/Arawn/Documents/illunis/app/test/sky/celestial_scene_test.dart: state absent vitals leave the atmosphere neutral
+00:57 +153: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: timeline follows the lunar orbit unless phase is explicitly scrubbed
+00:57 +154: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-03-20 agrees with JPL Horizons
+EPHEMERIS 2026-03-20: sunMax=0.0525deg moonMax=0.0428deg illuminationMax=0.0271pp sunriseError=0.632min sunsetError=0.369min sunrise=05:38 sunset=17:49
+00:57 +155: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-06-21 agrees with JPL Horizons
+EPHEMERIS 2026-06-21: sunMax=0.0274deg moonMax=0.0714deg illuminationMax=0.1577pp sunriseError=0.077min sunsetError=0.059min sunrise=04:14 sunset=21:01
+00:58 +156: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-09-09 agrees with JPL Horizons
+EPHEMERIS 2026-09-09: sunMax=0.0518deg moonMax=0.0695deg illuminationMax=0.0090pp sunriseError=0.395min sunsetError=0.695min sunrise=06:01 sunset=19:06
+00:58 +157: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-09-23 agrees with JPL Horizons
+EPHEMERIS 2026-09-23: sunMax=0.0567deg moonMax=0.0508deg illuminationMax=0.0562pp sunriseError=0.358min sunsetError=0.647min sunrise=06:24 sunset=18:33
+00:58 +158: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-12-21 agrees with JPL Horizons
+EPHEMERIS 2026-12-21: sunMax=0.1210deg moonMax=0.0616deg illuminationMax=0.0665pp sunriseError=0.061min sunsetError=0.035min sunrise=07:43 sunset=15:25
+00:58 +159: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: civil clock preserves UTC and day number without DST duration arithmetic
+00:59 +160: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+01:01 +161: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+01:01 +162: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+01:01 +163: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+01:02 +164: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: weather native shader reference
+01:03 +165: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: moon_overcast native shader reference
+01:06 +166: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: weather absence, copying and equality remain distinguishable
+01:06 +167: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: rain to snow blends components and a missing observation fades out
+01:06 +168: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: debug weather overrides preserve source and reset correctly
+01:06 +169: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: native shader weather occludes bodies and keeps fog at depth
+01:09 +170: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: native shader weather occludes bodies and keeps fog at depth
+01:09 +171: C:/Users/Arawn/Documents/illunis/app/test/sky_letters_test.dart: two taps dismiss, persistence survives restart, civil rollover resets
+01:09 +172: C:/Users/Arawn/Documents/illunis/app/test/sky_letters_test.dart: two taps dismiss, persistence survives restart, civil rollover resets
+01:10 +173: C:/Users/Arawn/Documents/illunis/app/test/sky_letters_test.dart: civil day changes preserve catch-up selection
+01:14 +174: C:/Users/Arawn/Documents/illunis/app/test/strength/one_rm_canon_test.dart: Epley and Brzycki agree at one rep and refuse high reps
+01:14 +175: C:/Users/Arawn/Documents/illunis/app/test/strength/one_rm_canon_test.dart: alias hits and Jaro–Winkler recovers a misspelling
+01:14 +176: C:/Users/Arawn/Documents/illunis/app/test/strength/one_rm_canon_test.dart: unknown names stay typed
+01:14 +177: C:/Users/Arawn/Documents/illunis/app/test/state/sleep_record_test.dart: mock night covers the window with contiguous segments
+01:14 +178: C:/Users/Arawn/Documents/illunis/app/test/state/sleep_record_test.dart: a night that starts after midnight has no negative hours
+01:19 +179: C:/Users/Arawn/Documents/illunis/app/test/surface_polish_test.dart: mock preview and local history have distinct provenance
+01:20 +180: C:/Users/Arawn/Documents/illunis/app/test/surface_polish_test.dart: 360px nightstand labels mock sleep and freezes drift with reduced motion
+01:21 +181: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+01:22 +182: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+01:22 +183: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+01:26 +184: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: HealthBridge platform fallback HealthBridge.create instantiates cleanly on test platform
+01:26 +185: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: HealthBridge platform fallback HealthBridge fallback returns null daily data
+01:26 +186: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking empty store produces all absent stats with null values
+01:26 +187: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking resting HR is wearable only and never estimated
+01:26 +188: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking calorie intake is journal only
+01:26 +189: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking journal wins ties when both journal and wearable data exist
+01:26 +190: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking step preference applies but reviewed journal sleep remains canonical
+01:26 +191: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking restedness provenance: AI vs rule vs absent
+01:28 +192: C:/Users/Arawn/Documents/illunis/app/test/weather/v2_weather_test.dart: epoch forecast times are instants, missing temperature is not zero
+01:28 +193: C:/Users/Arawn/Documents/illunis/app/test/weather/v2_weather_test.dart: rain, snow and hail require intensity and probability and use civil dates
+01:28 +194: C:/Users/Arawn/Documents/illunis/app/test/weather/v2_weather_test.dart: turning weather off rejects an in-flight result and never falls back
+01:29 +195: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherObservation staleness rule observation is fresh under 3 hours and stale after 3 hours
+01:29 +196: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping parses clear, rain, snow, and hourly projections
+01:29 +197: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping maps snow weather codes properly
+01:29 +198: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping handles HTTP 500 error fail-closed
+01:29 +199: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherService caching and switching notifies listeners and stores cached observation
+01:29 +200: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherService caching and switching switching source changes active source ID
+01:29 +201: All tests passed!

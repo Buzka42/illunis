@@ -66,6 +66,7 @@ class JournalRepository {
         newActivities: parsed.activities,
         newSleeps: parsed.sleeps,
         newWeights: parsed.weights,
+        newSteps: parsed.steps,
       );
       final days = <String>{entry.day};
       if (parsed.sleeps.isEmpty) {
@@ -196,7 +197,9 @@ class JournalRepository {
     final extra = _fromAi(entry, json, local);
     if (extra.isEmpty) return;
 
-    if (!store.journal.any((e) => e.id == entry.id && !e.excludedFromAi)) return;
+    if (!store.journal.any((e) => e.id == entry.id && !e.excludedFromAi)) {
+      return;
+    }
 
     await store.transaction(() async {
       await store.addDerived(
@@ -206,7 +209,9 @@ class JournalRepository {
         newSleeps: extra.sleeps,
         newWeights: extra.weights,
       );
-      if (extra.sleeps.isEmpty && local.sleeps.isEmpty && json['sleep'] is Map) {
+      if (extra.sleeps.isEmpty &&
+          local.sleeps.isEmpty &&
+          json['sleep'] is Map) {
         final q = ((json['sleep'] as Map)['quality'] as num?)?.toDouble();
         if (q != null) {
           await store.attachSleepQuality(
@@ -326,7 +331,15 @@ class JournalRepository {
         final reps = (m['reps'] as num?)?.toInt();
         final nSets = (m['sets'] as num?)?.toInt() ?? 1;
         if (name.isEmpty || w == null || reps == null) continue;
-        if (!w.isFinite || w <= 0 || w > 500 || reps < 1 || reps > 40 || nSets < 1 || nSets > 50) continue;
+        if (!w.isFinite ||
+            w <= 0 ||
+            w > 500 ||
+            reps < 1 ||
+            reps > 40 ||
+            nSets < 1 ||
+            nSets > 50) {
+          continue;
+        }
         final resolved = resolveExercise(name);
         sets.add(
           StrengthSet(
@@ -352,7 +365,13 @@ class JournalRepository {
         final m = raw.cast<String, Object?>();
         final label = m['label'] as String? ?? '';
         final kcal = (m['kcal'] as num?)?.toDouble();
-        if (label.isEmpty || kcal == null || !kcal.isFinite || kcal <= 0 || kcal > 4000) continue;
+        if (label.isEmpty ||
+            kcal == null ||
+            !kcal.isFinite ||
+            kcal <= 0 ||
+            kcal > 4000) {
+          continue;
+        }
         final already = local.nutrition.any(
           (e) => e.label.toLowerCase() == label.toLowerCase(),
         );
@@ -364,6 +383,7 @@ class JournalRepository {
           final d = val.toDouble();
           return (d.isFinite && d >= 0 && d <= 1000) ? d : null;
         }
+
         final prot = cleanMacro(m['proteinG'] as num?) ?? known?.proteinG;
         final carbs = cleanMacro(m['carbsG'] as num?) ?? known?.carbsG;
         final fat = cleanMacro(m['fatG'] as num?) ?? known?.fatG;
@@ -418,11 +438,15 @@ class JournalRepository {
           minutes = null;
         }
         var kcal = (m['kcal'] as num?)?.toDouble();
-        final wasSynthesized = (m['kcal'] == null) || (m['minutes'] == null && (km != null || pace != null));
+        final wasSynthesized =
+            (m['kcal'] == null) ||
+            (m['minutes'] == null && (km != null || pace != null));
         if (kcal == null && minutes != null && disc != null) {
           kcal = disc.met * _bodyKg * (minutes / 60);
         }
-        if (kcal == null || !kcal.isFinite || kcal <= 0 || kcal > 4000) continue;
+        if (kcal == null || !kcal.isFinite || kcal <= 0 || kcal > 4000) {
+          continue;
+        }
         final estimate = (m['estimate'] as bool? ?? true) || wasSynthesized;
         final rpe = (m['rpe'] as num?)?.toDouble();
         final hr = (m['hr'] as num?)?.toDouble();

@@ -14,6 +14,8 @@ import '../../core/state/app_providers.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../../core/units/mass.dart';
+import 'quick_guide.dart';
+import '../timeline/weather_sheet.dart';
 
 Future<void> showSettingsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -90,6 +92,16 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                 Container(height: 1, color: Inks.hairline),
                 const SizedBox(height: 14),
                 _Line(
+                  label: 'QUICK GUIDE',
+                  sub:
+                      'Swipe between surfaces. Long press a surface title for Settings.',
+                  onTap: () => showQuickGuide(context),
+                ),
+                _Line(
+                  label: 'WEATHER SOURCE / FORECAST',
+                  onTap: () => showWeatherSheet(context),
+                ),
+                _Line(
                   label: S.exportJson,
                   onTap: () => _copy(S.exportJson, _store.exportJson()),
                 ),
@@ -134,6 +146,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                   label: S.home(matchingHome(profile).label),
                   onTap: () async {
                     final next = nextHome(profile);
+                    ref.read(weatherServiceProvider).setCachedObservation(null);
                     await _store.putProfile(
                       profile.copyWith(
                         homePlace: next.id,
@@ -141,6 +154,72 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                         longitudeDeg: next.longitudeDeg,
                       ),
                     );
+                  },
+                ),
+                _Line(
+                  label:
+                      'BURN SOURCE · ${profile.caloriesBurnedSource.toUpperCase()}',
+                  sub:
+                      'Prefer journal calculations when wearable calorie estimates are unreliable. Missing preferred data falls back to the other source.',
+                  onTap: () => _store.putProfile(
+                    profile.copyWith(
+                      caloriesBurnedSource:
+                          profile.caloriesBurnedSource == 'journal'
+                          ? 'wearable'
+                          : 'journal',
+                    ),
+                  ),
+                ),
+                _Line(
+                  label: 'STEPS SOURCE · ${profile.stepsSource.toUpperCase()}',
+                  sub:
+                      'Choose journal or wearable priority. Manual steps remain in the journal.',
+                  onTap: () => _store.putProfile(
+                    profile.copyWith(
+                      stepsSource: profile.stepsSource == 'wearable'
+                          ? 'journal'
+                          : 'wearable',
+                    ),
+                  ),
+                ),
+                _Line(
+                  label:
+                      'ACTIVE SOURCE · ${profile.activeMinutesSource.toUpperCase()}',
+                  onTap: () => _store.putProfile(
+                    profile.copyWith(
+                      activeMinutesSource:
+                          profile.activeMinutesSource == 'journal'
+                          ? 'wearable'
+                          : 'journal',
+                    ),
+                  ),
+                ),
+                Text(
+                  'INTAKE · JOURNAL\nSLEEP · JOURNAL FIRST, WEARABLE FALLBACK\nRESTING HR · HEALTH CONNECT ONLY\nRESTEDNESS · RULE / AI, WHEN AVAILABLE',
+                  style: Type.micro,
+                ),
+                _Line(
+                  label: 'CONNECT / REFRESH WEARABLE',
+                  sub: 'Android Health Connect. Desktop keeps journal figures.',
+                  onTap: () async {
+                    try {
+                      final bridge = ref.read(healthBridgeProvider);
+                      final available =
+                          bridge.isSupported && await bridge.isAvailable();
+                      final allowed =
+                          available && await bridge.requestPermissions();
+                      if (!mounted) return;
+                      if (allowed) ref.invalidate(wearableDailyDataProvider);
+                      setState(
+                        () => _note = allowed
+                            ? 'Wearable refresh requested.'
+                            : 'Wearable access unavailable or denied. Journal figures remain available.',
+                      );
+                    } catch (_) {
+                      if (mounted) {
+                        setState(() => _note = 'Wearable access unavailable.');
+                      }
+                    }
                   },
                 ),
                 _Line(

@@ -9,12 +9,12 @@ globalThis.fetch = async () => {
   upstreamCalls++;
   return Response.json({ choices: [{ message: { content: '{}' } }] });
 };
-function request(token = 'secret') {
+function request(token = 'secret', call = 'dayDigest') {
   return new Request('https://audit.invalid', {
     method: 'POST',
     headers: {
       'authorization': `Bearer ${token}`,
-      'x-illunis-call': 'dayDigest',
+      'x-illunis-call': call,
       'x-illunis-install': 'a'.repeat(32),
       'content-type': 'application/json',
     },
@@ -58,7 +58,7 @@ const results = await Promise.all([worker.fetch(request(), env), worker.fetch(re
 const statuses = results.map(r => r.status).sort();
 assert.deepEqual(statuses, [200, 429]);
 assert.equal(upstreamCalls, 1);
-assert.deepEqual([...values.values()], ['1', '1']);
+assert.deepEqual([...values.values()], ['1', '1', '1']);
 console.log('Verified: concurrent requests serialize quota; 1 succeeds (200), 1 limited (429), counters at 1.');
 
 // 4. Prompt trust: system prompt sent upstream is pinned server-side
@@ -82,5 +82,18 @@ assert.ok(lastUpstreamBody.messages[0].content.includes('instrument sentence'));
 assert.notEqual(lastUpstreamBody.messages[0].content, 'audit');
 console.log('Verified: server pins system prompt per call, preventing arbitrary proxy prompt injection.');
 
+// Daily insights have independent two-request ceilings.
+for (const call of ['dayDigest', 'restedness']) {
+  const counters = new Map();
+  const capped = { ...env2, METER: {
+    async get(key) { return counters.get(key); },
+    async put(key, value) { counters.set(key, value); },
+  }};
+  assert.equal((await worker.fetch(request('secret', call), capped)).status, 200);
+  assert.equal((await worker.fetch(request('secret', call), capped)).status, 200);
+  assert.equal((await worker.fetch(request('secret', call), capped)).status, 429);
+  assert.notEqual(lastUpstreamBody.messages[0].content, 'audit');
+}
+console.log('Verified: both daily insight calls cap at two and use pinned systems.');
 console.log('All hardened worker tests passed; no real network or secrets used.');
 

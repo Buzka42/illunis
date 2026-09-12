@@ -4,18 +4,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/i18n/strings.dart';
 import '../../core/sky/celestial_scene.dart';
 import '../../core/sky/sky_view.dart';
 import '../../core/state/app_providers.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
+import '../insights/sky_letters.dart';
+import '../settings/quick_guide.dart';
 import '../dashboard/dashboard_page.dart';
 import '../debug/capture.dart';
 import '../debug/sky_debug_sheet.dart';
 import '../journal/journal_page.dart';
-import '../settings/settings_sheet.dart';
 import '../timeline/timeline_bar.dart';
 import 'shell_header.dart';
 
@@ -27,7 +27,8 @@ import 'shell_header.dart';
 /// The pager's offset turns the camera a few degrees, so crossing between
 /// surfaces reads as turning your head under the same sky.
 class IllunisShell extends ConsumerStatefulWidget {
-  const IllunisShell({super.key});
+  const IllunisShell({super.key, this.showTutorial = false});
+  final bool showTutorial;
 
   @override
   ConsumerState<IllunisShell> createState() => _IllunisShellState();
@@ -46,6 +47,17 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (widget.showTutorial && kCaptureDir.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted || ref.read(storeProvider).profile.tutorialVersion >= 2) {
+          return;
+        }
+        await showQuickGuide(context);
+        if (!mounted) return;
+        final store = ref.read(storeProvider);
+        await store.putProfile(store.profile.copyWith(tutorialVersion: 2));
+      });
+    }
     _controller.addListener(() {
       final p = _controller.hasClients && _controller.position.haveDimensions
           ? _controller.page ?? _page
@@ -80,28 +92,36 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
     super.dispose();
   }
 
-  void _go(int index) {
-    _controller.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 520),
-      curve: Curves.easeInOutCubic,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(skyStateProvider);
     final mq = MediaQuery.of(context);
+    if (mq.size.width < 100 || mq.size.height < 100) {
+      return const SizedBox.shrink();
+    }
     final horizonY = mq.size.height * kHorizonFraction;
 
     final ime = mq.viewInsets.bottom;
     final onJournal = (1 - _page).clamp(0.0, 1.0);
-    final captureBottom = math.max(mq.padding.bottom + 52, ime);
+    final captureBottom = math.max(mq.padding.bottom + 6, ime);
     final figures = ref.watch(journalFiguresProvider);
     final pending = figures.unconfirmed.length + figures.unconfirmedActs.length;
+    final pendingHeight = math.min(
+      JournalPending.heightFor(pending),
+      math.max(
+        0.0,
+        mq.size.height -
+            horizonY -
+            kCompassBandHeight -
+            TimelineBar.height -
+            mq.padding.bottom -
+            6 -
+            JournalWritingLine.band -
+            120,
+      ),
+    );
     final journalDock =
-        JournalWritingLine.band +
-        (ime > 8 ? 0.0 : JournalPending.heightFor(pending));
+        JournalWritingLine.band + (ime > 8 ? 0.0 : pendingHeight);
 
     return Scaffold(
       backgroundColor: const Color(0xFF07090D),
@@ -115,6 +135,16 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
               state: state,
               yawOffsetRad: (_page - 0.5) * _yawPerPage,
               onScene: (s) => _scene.value = s,
+            ),
+            Positioned(
+              left: Space.margin,
+              right: Space.margin,
+              top: mq.padding.top + 80,
+              child: ValueListenableBuilder<ResolvedScene?>(
+                valueListenable: _scene,
+                builder: (context, scene, _) =>
+                    SkyLetters(ink: Inks.sky(scene?.skyInkBlend ?? 0)),
+              ),
             ),
             // The day as a track, under the compass scale.
             Positioned(
@@ -130,7 +160,7 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
               top: horizonY + kCompassBandHeight + TimelineBar.height,
               bottom:
                   mq.padding.bottom +
-                  52 +
+                  6 +
                   (ime > 8 ? 0 : journalDock * onJournal),
               child: PageView(
                 controller: _controller,
@@ -174,7 +204,7 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (ime < 8) const JournalPending(),
+                          if (ime < 8) JournalPending(maxHeight: pendingHeight),
                           const JournalWritingLine(),
                         ],
                       ),
@@ -182,89 +212,6 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: mq.padding.bottom + 10,
-              child: IgnorePointer(
-                ignoring: ime > 8,
-                child: Opacity(
-                  opacity: ime > 8 ? 0 : 1,
-                  child: _SurfaceSwitch(page: _page, onSelect: _go),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Two words and a hairline. Not tabs, not pills.
-class _SurfaceSwitch extends StatelessWidget {
-  const _SurfaceSwitch({required this.page, required this.onSelect});
-
-  final double page;
-  final ValueChanged<int> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Space.margin),
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onLongPress: () => showSettingsSheet(context),
-        child: Row(
-          children: [
-            _word('JOURNAL', 0),
-            const SizedBox(width: 16),
-            _word('DASHBOARD', 1),
-            const Spacer(),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => showSettingsSheet(context),
-              child: Semantics(
-                button: true,
-                label: 'Settings',
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    S.version,
-                    style: Type.micro.copyWith(color: Inks.faint),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _word(String s, int index) {
-    final t = (1 - (page - index).abs()).clamp(0.0, 1.0);
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => onSelect(index),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              s,
-              style: Type.label.copyWith(
-                color: Color.lerp(Inks.faint, Inks.strong, t),
-              ),
-            ),
-            const SizedBox(height: 5),
-            Container(
-              height: Space.hairline,
-              width: 18 + 22 * t,
-              color: Inks.full.withValues(alpha: 0.15 + 0.7 * t),
             ),
           ],
         ),

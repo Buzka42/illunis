@@ -13,7 +13,7 @@ import 'features/shell/illunis_shell.dart';
 
 Future<void> main() async {
   final store = await _openStore();
-  _boot(const IllunisShell(), store: store);
+  _boot(const IllunisShell(showTutorial: true), store: store);
 }
 
 /// Screensaver entrypoint. Bound by `IllunisDreamService`; also reachable

@@ -1,0 +1,392 @@
+Resolving dependencies...
+Downloading packages...
+  clock 1.1.2 (1.1.3 available)
+  code_assets 1.2.1 (2.0.0 available)
+  hooks 2.0.2 (2.2.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.0 (1.19.0 available)
+  objective_c 9.5.0 (9.6.0 available)
+  platform 3.1.6 (3.2.0 available)
+  record_use 0.6.0 (1.1.1 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.11 (0.7.14 available)
+  vector_math 2.2.0 (2.4.2 available)
+Got dependencies!
+12 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart
+00:00 +0: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: Prompt schemas and systems kRestednessSystem and kRestednessSchema are configured
+00:00 +1: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: Prompt schemas and systems kDayDigestSystem and kDayDigestSchema are configured
+00:00 +2: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: AiTransport plumbing for restedness and dayDigest restedness makes well-formed worker call and decodes valid response
+00:00 +3: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: AiTransport plumbing for restedness and dayDigest dayDigest makes well-formed worker call and decodes valid response
+00:00 +4: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: AiTransport plumbing for restedness and dayDigest fails closed when worker returns 429 meter or 500 error
+00:00 +5: C:/Users/Arawn/Documents/illunis/app/test/ai/ai_plumbing_test.dart: AiTransport plumbing for restedness and dayDigest fails closed on network exception
+00:00 +6: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: revert removes the page and everything it produced
+00:00 +7: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: unconfirmed food is excluded from the day total until confirmed
+00:00 +8: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a trivial drink is intake without a confirm
+00:00 +9: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: two bananas scale the estimate into the day total
+00:00 +10: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: 1RM progress reports a delta against the prior best
+00:00 +11: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: confirm all promotes food and activity estimates
+00:00 +12: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a rest day with a log is zero strain, not unknown
+00:00 +13: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: an unconfirmed run is not strain or a session until confirmed
+00:00 +14: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: confirming a meal refreshes the local digest
+00:00 +15: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: an AI digest survives a later rollup
+00:00 +16: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: weight on a day is the last mass on or before it
+00:00 +17: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: import restores a JSON export
+00:01 +18: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a leading clock stamps the page and is not kept as prose
+00:01 +19: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: this morning without a clock still stamps eight
+00:01 +20: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a trailing morning still stamps eight
+00:01 +21: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: yesterday lands on the previous civil day
+00:01 +22: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: slept poorly attaches to last night without inventing hours
+00:01 +23: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: woke finishes last night without inventing a bedtime
+00:01 +24: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: a morning bedtime is last night, last night food is yesterday
+00:01 +25: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: timeline marks sit at the log time on that civil day
+00:01 +26: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: keep local can be cleared on an existing page
+00:01 +27: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: drop removes an estimate and leaves the page
+00:01 +28: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: slept poorly lowers the night's score against the same hours
+00:01 +29: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: one confirmed meal and a run is today's energy, not a 7-day balance
+00:01 +30: C:/Users/Arawn/Documents/illunis/app/test/db/store_test.dart: csv marks food and activity confirmation
+00:01 +31: C:/Users/Arawn/Documents/illunis/app/test/fitness/performance_rollups_test.dart: computeRollingVolume honesty and baselines returns null figures on days with no lifting
+00:01 +32: C:/Users/Arawn/Documents/illunis/app/test/fitness/performance_rollups_test.dart: computeRollingVolume honesty and baselines aggregates 28-day window volume and ratio vs baseline
+00:01 +33: C:/Users/Arawn/Documents/illunis/app/test/fitness/performance_rollups_test.dart: computeRollingStrain and ACWR strain figures are null when no activities or strain logged
+00:01 +34: C:/Users/Arawn/Documents/illunis/app/test/fitness/performance_rollups_test.dart: computeRollingStrain and ACWR computes ACWR when load is present across acute/chronic window
+00:01 +35: C:/Users/Arawn/Documents/illunis/app/test/fitness/performance_rollups_test.dart: computeExerciseOneRmBaselines tracks today 1RM, previous best, all-time best, and delta
+00:01 +36: C:/Users/Arawn/Documents/illunis/app/test/fitness/performance_rollups_test.dart: computePerformanceRollup bundles volume, strain, and 1rm baselines
+00:02 +37: C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart: aggregates confirmed meals per page and keeps burn separate
+00:02 +38: C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart: unknown, pending, orphaned and invalid records never become dots
+00:02 +39: C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart: dot weight is monotonic and bounded for large confirmed meals
+00:02 +40: C:/Users/Arawn/Documents/illunis/app/test/journal/calorie_marks_test.dart: Blade timeline keeps 48 dp height and exposes dot meaning
+00:03 +41: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +42: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +43: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +44: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +45: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +46: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +47: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +48: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +49: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +50: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +51: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +52: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +53: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +54: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +55: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +56: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +57: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +58: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +59: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +60: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +61: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +62: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +63: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +64: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +65: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +66: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +67: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +68: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +69: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +70: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +71: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard is honest when the record is empty
+00:05 +72: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: journal writing line stores a lift
+00:06 +73: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: mic tap without a recognizer still leaves the field
+00:06 +74: C:/Users/Arawn/Documents/illunis/app/test/journal/stamp_test.dart: a 24h clock prefix stamps and strips
+00:06 +75: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:06 +76: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:06 +77: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:06 +78: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:06 +79: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:06 +80: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:06 +81: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:06 +82: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: dashboard prev looks at yesterday
+00:07 +83: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a 1080×2412 phone does not overflow the dashboard
+00:07 +84: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: drop keeps the page and revert takes it back
+00:07 +85: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: tap a page puts it back on the line without deleting it
+00:08 +86: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: the IME lifts the writing line instead of overflowing
+00:08 +87: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: a leading clock is the page time, not the prose
+00:08 +88: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:09 +89: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: confirming a meal writes INTAKE on the dashboard
+00:09 +90: C:/Users/Arawn/Documents/illunis/app/test/journal/steps_parser_test.dart: Step parsing - numeric formats k suffix: 10k, 10.5k, 12,5k
+00:09 +91: C:/Users/Arawn/Documents/illunis/app/test/journal/steps_parser_test.dart: Step parsing - numeric formats case insensitivity and inflection variations
+00:09 +92: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +93: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +94: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +95: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +96: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +97: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +98: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +99: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +100: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +101: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: sleep and mass reach the dashboard without a confirm
+00:09 +102: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: an unconfirmed run is not a dashboard session
+00:10 +103: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: coffee is intake without a confirm
+00:10 +104: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: yesterday from today opens that civil day
+00:10 +105: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: yesterday is the calendar day even from a catch-up page
+00:10 +106: C:/Users/Arawn/Documents/illunis/app/test/journal/capture_test.dart: yesterday is the calendar day even from a catch-up page
+00:10 +107: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 1: Pending dock clamp JournalPending renders scrollable when count exceeds clamp
+00:11 +108: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 1: Pending dock clamp JournalPending renders scrollable when count exceeds clamp
+00:12 +109: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Tapping an entry offers draft with replacesEntryId
+Pending timers:
+Timer (duration: 0:00:01.000000, periodic: true), created:
+#0      new FakeTimer._ (package:fake_async/fake_async.dart:342:62)
+#1      FakeAsync._createTimer (package:fake_async/fake_async.dart:260:29)
+#2      FakeAsync.run.<anonymous closure> (package:fake_async/fake_async.dart:187:15)
+#5      new LiveMockSource.<anonymous closure> (package:illunis/core/state/sky_state_source.dart:32:24)
+#17     ElementWithFuture.handleStream.<anonymous closure> (package:riverpod/src/core/element.dart:174:29)
+#18     ElementWithFuture._handleAsync (package:riverpod/src/core/element.dart:282:35)
+#19     ElementWithFuture.handleStream (package:riverpod/src/core/element.dart:165:12)
+#20     $StreamProviderElement.create (package:riverpod/src/providers/stream_provider.dart:158:12)
+#21     ProviderElement.buildState (package:riverpod/src/core/element.dart:751:28)
+#22     ProviderElement.mount (package:riverpod/src/core/element.dart:587:7)
+#23     ProviderElement.flush (package:riverpod/src/core/element.dart:704:9)
+#24     $ProviderBaseImpl._addListener (package:riverpod/src/core/provider/provider.dart:119:24)
+#25     ProviderElement.listen (package:riverpod/src/core/element.dart:991:28)
+#26     Ref.watch (package:riverpod/src/core/ref.dart:726:20)
+#27     civilDayProvider.<anonymous closure> (package:illunis/core/state/civil_day.dart:21:11)
+#28     Provider.create (package:riverpod/src/providers/provider.dart:59:36)
+#29     $ProviderElement.create (package:riverpod/src/providers/provider.dart:343:33)
+#30     ProviderElement.buildState (package:riverpod/src/core/element.dart:751:28)
+#31     ProviderElement.mount (package:riverpod/src/core/element.dart:587:7)
+#32     ProviderElement.flush (package:riverpod/src/core/element.dart:704:9)
+#33     $ProviderBaseImpl._addListener (package:riverpod/src/core/provider/provider.dart:119:24)
+#34     ProviderElement.listen (package:riverpod/src/core/element.dart:991:28)
+#35     Ref.listen (package:riverpod/src/core/ref.dart:769:26)
+#36     JournalDayNotifier.build (package:illunis/core/state/app_providers.dart:66:9)
+#37     $NotifierProviderElement.handleCreate (package:riverpod/src/providers/notifier.dart:95:31)
+#38     Notifier.runBuild (package:riverpod/src/providers/notifier/orphan.dart:69:47)
+#39     $ClassProviderElement.create (package:riverpod/src/core/provider/notifier_provider.dart:570:43)
+#40     ProviderElement.buildState (package:riverpod/src/core/element.dart:751:28)
+#41     ProviderElement.mount (package:riverpod/src/core/element.dart:587:7)
+#42     ProviderElement.flush (package:riverpod/src/core/element.dart:704:9)
+#43     $ProviderBaseImpl._addListener (package:riverpod/src/core/provider/provider.dart:119:24)
+#44     ProviderElement.listen (package:riverpod/src/core/element.dart:991:28)
+#45     Ref.watch (package:riverpod/src/core/ref.dart:726:20)
+#46     journalEntriesProvider.<anonymous closure> (package:illunis/core/state/app_providers.dart:252:26)
+#47     Provider.create (package:riverpod/src/providers/provider.dart:59:36)
+#48     $ProviderElement.create (package:riverpod/src/providers/provider.dart:343:33)
+#49     ProviderElement.buildState (package:riverpod/src/core/element.dart:751:28)
+#50     ProviderElement.mount (package:riverpod/src/core/element.dart:587:7)
+#51     ProviderElement.flush (package:riverpod/src/core/element.dart:704:9)
+#52     $ProviderBaseImpl._addListener (package:riverpod/src/core/provider/provider.dart:119:24)
+#53     ProviderContainer.listen (package:riverpod/src/core/provider_container.dart:1141:26)
+#54     ConsumerStatefulElement.watch.<anonymous closure> (package:flutter_riverpod/src/core/consumer.dart:490:37)
+#55     _LinkedHashMapMixin.putIfAbsent (dart:_compact_hash:682:23)
+#56     ConsumerStatefulElement.watch (package:flutter_riverpod/src/core/consumer.dart:483:14)
+#57     JournalPage.build (package:illunis/features/journal/journal_page.dart:26:25)
+#58     _ConsumerState.build (package:flutter_riverpod/src/core/consumer.dart:283:48)
+#59     StatefulElement.build (package:flutter/src/widgets/framework.dart:5931:27)
+#60     ConsumerStatefulElement.build (package:flutter_riverpod/src/core/consumer.dart:460:20)
+#61     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5817:15)
+#62     StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#63     Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#64     ComponentElement._firstBuild (package:flutter/src/widgets/framework.dart:5799:5)
+#65     StatefulElement._firstBuild (package:flutter/src/widgets/framework.dart:5973:11)
+#66     ComponentElement.mount (package:flutter/src/widgets/framework.dart:5793:5)
+#67     ConsumerStatefulElement.mount (package:flutter_riverpod/src/core/consumer.dart:389:11)
+...     Normal element mounting (25 frames)
+#92     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#93     MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7264:36)
+#94     MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7279:32)
+...     Normal element mounting (362 frames)
+#456    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#457    MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7264:36)
+#458    MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7279:32)
+...     Normal element mounting (470 frames)
+#928    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4587:20)
+#929    Element.updateChild (package:flutter/src/widgets/framework.dart:4053:20)
+#930    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#931    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#932    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#933    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
+#934    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#935    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#936    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#937    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#938    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#939    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#940    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#941    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#942    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#943    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
+#944    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#945    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#946    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#947    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#948    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#949    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#950    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#951    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#952    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#953    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#954    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#955    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#956    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#957    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#958    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#959    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#960    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#961    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#962    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#963    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#964    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#965    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#966    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#967    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#968    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#969    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#970    ProxyElement.update (package:flutter/src/widgets/framework.dart:6149:5)
+#971    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#972    _RawViewElement._updateChild (package:flutter/src/widgets/view.dart:481:16)
+#973    _RawViewElement.update (package:flutter/src/widgets/view.dart:568:5)
+#974    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#975    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#976    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#977    StatelessElement.update (package:flutter/src/widgets/framework.dart:5895:5)
+#978    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#979    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5841:16)
+#980    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5982:11)
+#981    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#982    StatefulElement.update (package:flutter/src/widgets/framework.dart:6007:5)
+#983    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
+#984    RootElement._rebuild (package:flutter/src/widgets/binding.dart:2091:16)
+#985    RootElement.update (package:flutter/src/widgets/binding.dart:2069:5)
+#986    RootElement.performRebuild (package:flutter/src/widgets/binding.dart:2083:7)
+#987    Element.rebuild (package:flutter/src/widgets/framework.dart:5529:7)
+#988    BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2750:15)
+#989    BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2807:11)
+#990    BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3111:18)
+#991    AutomatedTestWidgetsFlutterBinding.drawFrame (package:flutter_test/src/binding.dart:2431:19)
+#992    RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:509:5)
+#993    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1430:15)
+#994    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1345:9)
+#995    AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:2260:9)
+#998    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#999    AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:2249:27)
+#1000   WidgetTester.pumpWidget.<anonymous closure> (package:flutter_test/src/widget_tester.dart:598:22)
+#1003   TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#1004   WidgetTester.pumpWidget (package:flutter_test/src/widget_tester.dart:595:27)
+#1005   main.<anonymous closure>.<anonymous closure> (file:///C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart:92:20)
+#1006   testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#1007   TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 18 frames from dart:async and package:stack_trace)
+
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+A Timer is still pending even after the widget tree was disposed.
+'package:flutter_test/src/binding.dart':
+Failed assertion: line 2542 pos 12: '!timersPending'
+
+When the exception was thrown, this was the stack:
+#2      AutomatedTestWidgetsFlutterBinding._verifyInvariants (package:flutter_test/src/binding.dart:2542:12)
+#3      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1973:7)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 3 frames from class _AssertionError and package:stack_trace)
+
+The test description was:
+  Tapping an entry offers draft with replacesEntryId
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:12 +109 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Tapping an entry offers draft with replacesEntryId [E]
+  Test failed. See exception logs above.
+  The test description was: Tapping an entry offers draft with replacesEntryId
+  
+00:12 +109 -1: C:/Users/Arawn/Documents/illunis/app/test/patterns/statistics_test.dart: Pearson is high on a line and null on a constant
+00:12 +110 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Writing line displays EDITING when replacing entry
+00:12 +111 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Writing line displays EDITING when replacing entry
+00:12 +112 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Writing line displays EDITING when replacing entry
+00:12 +113 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Writing line displays EDITING when replacing entry
+00:12 +114 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Writing line displays EDITING when replacing entry
+00:13 +115 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 3: Stale multi-day sleep exclusion Today figures do not inherit sleep from 3 days ago
+00:13 +116 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 3: Stale multi-day sleep exclusion Today figures accept sleep completed yesterday night
+00:13 +117 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Polish: Civil wall-clock timeline marks timeOfDayFraction strictly represents wall-clock position
+00:13 +118 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 4: AI Consent disclosure aiConsent discloses cloud processing
+00:13 +119 -1: C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Polish: Accessibility Semantics pass Journal controls provide accessibility semantics
+00:14 +120 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:14 +121 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +122 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +123 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +124 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +125 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +126 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +127 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +128 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +129 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +130 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +131 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +132 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +133 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +134 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +135 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +136 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +137 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +138 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +139 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +140 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +141 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +142 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +143 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +144 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +145 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +146 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:15 +147 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the shell builds with both surfaces and the sky
+00:16 +148 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: a zero-width first frame does not throw
+00:16 +149 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: the nightstand builds without the pager
+00:16 +150 -1: C:/Users/Arawn/Documents/illunis/app/test/shell_smoke_test.dart: every TextTheme slot is defined by the product type
+00:17 +151 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: timeline follows the lunar orbit unless phase is explicitly scrubbed
+00:17 +152 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-03-20 agrees with JPL Horizons
+EPHEMERIS 2026-03-20: sunMax=0.0525deg moonMax=0.0428deg illuminationMax=0.0271pp sunriseError=0.632min sunsetError=0.369min sunrise=05:38 sunset=17:49
+00:17 +153 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-06-21 agrees with JPL Horizons
+EPHEMERIS 2026-06-21: sunMax=0.0274deg moonMax=0.0714deg illuminationMax=0.1577pp sunriseError=0.077min sunsetError=0.059min sunrise=04:14 sunset=21:01
+00:17 +154 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-09-09 agrees with JPL Horizons
+EPHEMERIS 2026-09-09: sunMax=0.0518deg moonMax=0.0695deg illuminationMax=0.0090pp sunriseError=0.395min sunsetError=0.695min sunrise=06:01 sunset=19:06
+00:17 +155 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-09-23 agrees with JPL Horizons
+EPHEMERIS 2026-09-23: sunMax=0.0567deg moonMax=0.0508deg illuminationMax=0.0562pp sunriseError=0.358min sunsetError=0.647min sunrise=06:24 sunset=18:33
+00:17 +156 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: Warsaw 2026-12-21 agrees with JPL Horizons
+EPHEMERIS 2026-12-21: sunMax=0.1210deg moonMax=0.0616deg illuminationMax=0.0665pp sunriseError=0.061min sunsetError=0.035min sunrise=07:43 sunset=15:25
+00:17 +157 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/ephemeris_reference_test.dart: civil clock preserves UTC and day number without DST duration arithmetic
+00:18 +158 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:18 +159 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:18 +160 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:19 +161 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: clear_twilight native shader reference
+00:20 +162 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: weather native shader reference
+00:20 +163 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: weather native shader reference
+00:20 +164 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: weather native shader reference
+00:20 +165 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/sky_golden_test.dart: weather native shader reference
+00:21 +166 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: native shader weather occludes bodies and keeps fog at depth
+00:21 +167 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: native shader weather occludes bodies and keeps fog at depth
+00:23 +168 -1: C:/Users/Arawn/Documents/illunis/app/test/sky_letters_test.dart: day-one digest stays separate from correlations with fewer than 21 pairs
+00:23 +169 -1: C:/Users/Arawn/Documents/illunis/app/test/sky/weather_test.dart: weather eases, reduced motion freezes effects, lifecycle pauses sky
+00:23 +170 -1: C:/Users/Arawn/Documents/illunis/app/test/sky_letters_test.dart: two taps dismiss, persistence survives restart, civil rollover resets
+00:24 +171 -1: C:/Users/Arawn/Documents/illunis/app/test/sky_letters_test.dart: civil day changes preserve catch-up selection
+00:24 +172 -1: C:/Users/Arawn/Documents/illunis/app/test/state/sleep_record_test.dart: mock night covers the window with contiguous segments
+00:24 +173 -1: C:/Users/Arawn/Documents/illunis/app/test/state/sleep_record_test.dart: a night that starts after midnight has no negative hours
+00:24 +174 -1: loading C:/Users/Arawn/Documents/illunis/app/test/strength/one_rm_canon_test.dart
+00:25 +174 -1: C:/Users/Arawn/Documents/illunis/app/test/strength/one_rm_canon_test.dart: Epley and Brzycki agree at one rep and refuse high reps
+00:25 +175 -1: C:/Users/Arawn/Documents/illunis/app/test/strength/one_rm_canon_test.dart: alias hits and Jaro–Winkler recovers a misspelling
+00:25 +176 -1: C:/Users/Arawn/Documents/illunis/app/test/strength/one_rm_canon_test.dart: unknown names stay typed
+00:25 +177 -1: C:/Users/Arawn/Documents/illunis/app/test/surface_polish_test.dart: mock preview and local history have distinct provenance
+00:27 +178 -1: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:27 +179 -1: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:28 +180 -1: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:28 +181 -1: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:30 +182 -1: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: HealthBridge platform fallback HealthBridge.create instantiates cleanly on test platform
+00:30 +183 -1: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: HealthBridge platform fallback HealthBridge fallback returns null daily data
+00:30 +184 -1: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking empty store produces all absent stats with null values
+00:30 +185 -1: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking resting HR is wearable only and never estimated
+00:30 +186 -1: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking calorie intake is journal only
+00:30 +187 -1: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking journal wins ties when both journal and wearable data exist
+00:30 +188 -1: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking step preference applies but reviewed journal sleep remains canonical
+00:30 +189 -1: C:/Users/Arawn/Documents/illunis/app/test/wearables/life_stats_test.dart: resolveLifeStats honesty and tie-breaking restedness provenance: AI vs rule vs absent
+00:30 +190 -1: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherObservation staleness rule observation is fresh under 3 hours and stale after 3 hours
+00:30 +191 -1: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping parses clear, rain, snow, and hourly projections
+00:30 +192 -1: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping maps snow weather codes properly
+00:30 +193 -1: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping handles HTTP 500 error fail-closed
+00:30 +194 -1: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherService caching and switching notifies listeners and stores cached observation
+00:30 +195 -1: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherService caching and switching switching source changes active source ID
+00:30 +196 -1: Some tests failed.
+
+Failing tests:
+  C:/Users/Arawn/Documents/illunis/app/test/launch_blockers_test.dart: Launch Blocker 2: Entry edit vs duplicate semantics Tapping an entry offers draft with replacesEntryId

@@ -23,6 +23,7 @@ class AppStore extends ChangeNotifier {
   final List<ActivityEntry> activities = [];
   final List<SleepEntry> sleeps = [];
   final List<WeightEntry> weights = [];
+  final List<StepEntry> steps = [];
   final List<DaySummary> summaries = [];
   String? insightNote;
   String? insightKey;
@@ -136,6 +137,7 @@ class AppStore extends ChangeNotifier {
     'activities': [for (final e in activities) e.toJson()],
     'sleeps': [for (final e in sleeps) e.toJson()],
     'weights': [for (final e in weights) e.toJson()],
+    'steps': [for (final e in steps) e.toJson()],
     'summaries': [for (final e in summaries) e.toJson()],
     if (insightNote != null) 'insightNote': insightNote,
     if (insightKey != null) 'insightKey': insightKey,
@@ -148,6 +150,7 @@ class AppStore extends ChangeNotifier {
     activities.clear();
     sleeps.clear();
     weights.clear();
+    steps.clear();
     summaries.clear();
     if (raw['profile'] is Map) {
       profile = Profile.fromJson(
@@ -168,6 +171,7 @@ class AppStore extends ChangeNotifier {
     loadList('activities', (j) => activities.add(ActivityEntry.fromJson(j)));
     loadList('sleeps', (j) => sleeps.add(SleepEntry.fromJson(j)));
     loadList('weights', (j) => weights.add(WeightEntry.fromJson(j)));
+    loadList('steps', (j) => steps.add(StepEntry.fromJson(j)));
     loadList('summaries', (j) => summaries.add(DaySummary.fromJson(j)));
     insightNote = raw['insightNote'] as String?;
     insightKey = raw['insightKey'] as String?;
@@ -190,12 +194,14 @@ class AppStore extends ChangeNotifier {
     List<ActivityEntry> newActivities = const [],
     List<SleepEntry> newSleeps = const [],
     List<WeightEntry> newWeights = const [],
+    List<StepEntry> newSteps = const [],
   }) async {
     sets.addAll(newSets);
     nutrition.addAll(newNutrition);
     activities.addAll(newActivities);
     sleeps.addAll(newSleeps);
     weights.addAll(newWeights);
+    steps.addAll(newSteps);
     await _persist();
   }
 
@@ -221,6 +227,10 @@ class AppStore extends ChangeNotifier {
       affectedDays.add(w.day);
     }
     weights.removeWhere((e) => e.journalEntryId == id);
+    for (final st in steps.where((e) => e.journalEntryId == id)) {
+      affectedDays.add(st.day);
+    }
+    steps.removeWhere((e) => e.journalEntryId == id);
 
     final remainingSleeps = <SleepEntry>[];
     for (final s in sleeps) {
@@ -436,15 +446,20 @@ class AppStore extends ChangeNotifier {
       }
     }
 
+    final tempSteps = <StepEntry>[];
     parseList('journal', (j) => tempJournal.add(JournalEntry.fromJson(j)));
     parseList('sets', (j) => tempSets.add(StrengthSet.fromJson(j)));
-    parseList('nutrition', (j) => tempNutrition.add(NutritionEntry.fromJson(j)));
+    parseList(
+      'nutrition',
+      (j) => tempNutrition.add(NutritionEntry.fromJson(j)),
+    );
     parseList(
       'activities',
       (j) => tempActivities.add(ActivityEntry.fromJson(j)),
     );
     parseList('sleeps', (j) => tempSleeps.add(SleepEntry.fromJson(j)));
     parseList('weights', (j) => tempWeights.add(WeightEntry.fromJson(j)));
+    parseList('steps', (j) => tempSteps.add(StepEntry.fromJson(j)));
     parseList('summaries', (j) => tempSummaries.add(DaySummary.fromJson(j)));
 
     Profile newProfile = profile;
@@ -478,6 +493,9 @@ class AppStore extends ChangeNotifier {
     weights
       ..clear()
       ..addAll(tempWeights);
+    steps
+      ..clear()
+      ..addAll(tempSteps);
     summaries
       ..clear()
       ..addAll(tempSummaries);
@@ -489,12 +507,17 @@ class AppStore extends ChangeNotifier {
   }
 
   Future<void> deleteAll() async {
+    profile = profile.copyWith(
+      insightDismissalDay: '',
+      dismissedInsightIds: const [],
+    );
     journal.clear();
     sets.clear();
     nutrition.clear();
     activities.clear();
     sleeps.clear();
     weights.clear();
+    steps.clear();
     summaries.clear();
     insightNote = null;
     insightKey = null;
@@ -550,11 +573,20 @@ class AppStore extends ChangeNotifier {
     for (final e in weights) {
       buf.writeln('${_csvCell(e.day)},weight,,${e.kg},1');
     }
+    for (final e in steps) {
+      buf.writeln('${_csvCell(e.day)},steps,,${e.steps},1');
+    }
     return buf.toString();
   }
 
   List<JournalEntry> entriesOn(String day) =>
       journal.where((e) => e.day == day).toList();
+
+  int? stepsOn(String day) {
+    final matches = steps.where((e) => e.day == day);
+    if (matches.isEmpty) return null;
+    return matches.fold<int>(0, (a, s) => a + s.steps);
+  }
 
   DaySummary? summaryOn(String day) {
     for (final s in summaries) {

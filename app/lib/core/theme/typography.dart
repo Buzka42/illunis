@@ -15,6 +15,7 @@ class Inks {
   static const Color warm = Color(0xFFF2C99A);
   static const Color cool = Color(0xFFB9C6E0);
   static const Color negative = Color(0xFFE8A39A);
+  static const Color intake = Color(0xFFA4C9A0);
   static const Color slate = Color(0xFF1B2433);
 
   /// Header ink follows the same resolved sky blend as the instrument layer.

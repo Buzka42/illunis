@@ -55,6 +55,9 @@ Set<String> _allDays(AppStore store) {
   for (final e in store.weights) {
     s.add(e.day);
   }
+  for (final e in store.steps) {
+    s.add(e.day);
+  }
   return s;
 }
 
@@ -96,45 +99,43 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
       ) ||
       store.weights.any(
         (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+      ) ||
+      store.steps.any(
+        (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
       );
   if (!hasLog) {
     return DaySummary(day: day);
   }
 
-  final sleeps =
-      store.sleeps
-          .where(
-            (e) =>
-                e.day == day &&
-                e.isComplete &&
-                (!forAi || store.isSleepAiEligible(e)),
-          )
-          .toList();
-  final sets =
-      store.sets
-          .where(
-            (e) =>
-                e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
-          )
-          .toList();
-  final foods =
-      store.nutrition
-          .where(
-            (e) =>
-                e.day == day &&
-                e.confirmed &&
-                (!forAi || store.isAiEligible(e.journalEntryId)),
-          )
-          .toList();
-  final acts =
-      store.activities
-          .where(
-            (e) =>
-                e.day == day &&
-                e.confirmed &&
-                (!forAi || store.isAiEligible(e.journalEntryId)),
-          )
-          .toList();
+  final sleeps = store.sleeps
+      .where(
+        (e) =>
+            e.day == day &&
+            e.isComplete &&
+            (!forAi || store.isSleepAiEligible(e)),
+      )
+      .toList();
+  final sets = store.sets
+      .where(
+        (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+      )
+      .toList();
+  final foods = store.nutrition
+      .where(
+        (e) =>
+            e.day == day &&
+            e.confirmed &&
+            (!forAi || store.isAiEligible(e.journalEntryId)),
+      )
+      .toList();
+  final acts = store.activities
+      .where(
+        (e) =>
+            e.day == day &&
+            e.confirmed &&
+            (!forAi || store.isAiEligible(e.journalEntryId)),
+      )
+      .toList();
   final pendingWork = store.activities.any(
     (e) =>
         e.day == day &&
@@ -148,17 +149,17 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
   }
 
   final sleepScore = _sleepScore(store, day, sleeps, sleepHours, forAi: forAi);
-  final recovery =
-      sleepScore == null ? null : (0.35 + 0.65 * sleepScore).clamp(0.0, 1.0);
+  final recovery = sleepScore == null
+      ? null
+      : (0.35 + 0.65 * sleepScore).clamp(0.0, 1.0);
 
   final nSets = sets.fold<int>(0, (a, s) => a + s.sets);
   final volume = sets.fold<double>(0, (a, s) => a + s.volumeKg);
   final load = dailyLoad(store, day, forAi: forAi);
   final trained = sets.isNotEmpty || acts.isNotEmpty;
-  final strain =
-      trained
-          ? _strain(store, day, load, nSets + acts.length, forAi: forAi)
-          : (pendingWork ? null : 0.0);
+  final strain = trained
+      ? _strain(store, day, load, nSets + acts.length, forAi: forAi)
+      : (pendingWork ? null : 0.0);
 
   double? intake;
   double? protein;
@@ -185,15 +186,13 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
   final confirmedActivityKcal = acts.fold<double>(0, (a, s) => a + s.kcal);
   final gymLogged = acts.any((a) => a.disciplineId == 'gym');
   final liftHours = nSets * 2.5 / 60.0;
-  final liftKcal =
-      (weight == null || nSets == 0 || gymLogged)
-          ? 0.0
-          : 6.0 * weight * liftHours;
+  final liftKcal = (weight == null || nSets == 0 || gymLogged)
+      ? 0.0
+      : 6.0 * weight * liftHours;
   final movementKcal = confirmedActivityKcal + liftKcal;
-  final expenditure =
-      weight == null
-          ? (movementKcal <= 0 ? null : movementKcal)
-          : 22.0 * weight + movementKcal;
+  final expenditure = weight == null
+      ? (movementKcal <= 0 ? null : movementKcal)
+      : 22.0 * weight + movementKcal;
 
   double? best1rm;
   for (final s in sets) {
@@ -220,9 +219,19 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
     }
   }
 
+  final daySteps = store.steps
+      .where(
+        (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+      )
+      .toList();
+  final int? steps = daySteps.isEmpty
+      ? null
+      : daySteps.fold<int>(0, (a, s) => a + s.steps);
+
   final energy = _energy(store, day, intake, expenditure, forAi: forAi);
-  final todayDelta =
-      intake != null && expenditure != null ? intake - expenditure : null;
+  final todayDelta = intake != null && expenditure != null
+      ? intake - expenditure
+      : null;
   final prev = store.summaryOn(day);
   final built = DaySummary(
     day: day,
@@ -243,6 +252,7 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
     moveMinutes: moveMinutes,
     distanceKm: distanceKm,
     runSpeedKmh: runSpeed,
+    steps: steps,
   );
   if (forAi) return built;
   final keepAi = prev?.digestSource == 'ai' && (prev?.digest ?? '').isNotEmpty;
@@ -354,10 +364,9 @@ double? _strain(
   final deltas = <double>[];
   for (var i = 0; i < 7; i++) {
     final d = dayKey(start.add(Duration(days: i)));
-    final s =
-        d == day
-            ? null
-            : (forAi ? summaryForAi(store, d) : store.summaryOn(d));
+    final s = d == day
+        ? null
+        : (forAi ? summaryForAi(store, d) : store.summaryOn(d));
     final intake = d == day ? intakeToday : s?.intakeKcal;
     final exp = d == day ? expenditureToday : s?.expenditureKcal;
     if (intake == null) {

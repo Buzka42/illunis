@@ -1,0 +1,15 @@
+00:00 +0: loading C:/Users/Arawn/Documents/illunis/app/test/weather/v2_weather_test.dart
+00:00 +0: C:/Users/Arawn/Documents/illunis/app/test/weather/v2_weather_test.dart: epoch forecast times are instants, missing temperature is not zero
+00:00 +1: C:/Users/Arawn/Documents/illunis/app/test/weather/v2_weather_test.dart: rain, snow and hail require intensity and probability and use civil dates
+00:00 +2: C:/Users/Arawn/Documents/illunis/app/test/weather/v2_weather_test.dart: turning weather off rejects an in-flight result and never falls back
+00:00 +3: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherObservation staleness rule observation is fresh under 3 hours and stale after 3 hours
+00:00 +4: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping parses clear, rain, snow, and hourly projections
+00:01 +5: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping maps snow weather codes properly
+00:01 +6: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: OpenMeteoWeatherSource mapping handles HTTP 500 error fail-closed
+00:01 +7: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherService caching and switching notifies listeners and stores cached observation
+00:01 +8: C:/Users/Arawn/Documents/illunis/app/test/weather/weather_seam_test.dart: WeatherService caching and switching switching source changes active source ID
+00:12 +9: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:16 +10: C:/Users/Arawn/Documents/illunis/app/test/v2_surfaces_test.dart: Blade surfaces paginate records and retain Settings without bottom bar
+00:17 +11: C:/Users/Arawn/Documents/illunis/app/test/sky_letters_test.dart: two taps dismiss, persistence survives restart, civil rollover resets
+00:18 +12: C:/Users/Arawn/Documents/illunis/app/test/sky_letters_test.dart: civil day changes preserve catch-up selection
+00:19 +13: All tests passed!
