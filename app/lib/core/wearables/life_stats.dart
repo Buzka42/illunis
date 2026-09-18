@@ -88,14 +88,20 @@ DailyLifeStats resolveLifeStats({
       : const LifeStat<double>.absent(StatSource.journal);
 
   // 3. Steps — wearable/phone pedometer, plus manual journal entry
-  // Journal wins ties.
+  // Journal wins ties. Provenance comes from the rollup dedup (journal /
+  // wearable rule label), so the dashboard JNL/HC tag tells the truth even
+  // when both sources logged the same day.
   LifeStat<int> steps;
   final journalSteps = summary?.steps ?? store.stepsOn(day);
+  final stepsProvenance = summary?.stepsSource ?? store.stepsSourceOn(day);
+  final journalStepsSource = stepsProvenance == 'wearable'
+      ? StatSource.wearable
+      : StatSource.journal;
   final wearableSteps = wearable?.steps;
   if (profile.stepsSource == 'wearable' && wearableSteps != null) {
     steps = LifeStat(value: wearableSteps, source: StatSource.wearable);
   } else if (journalSteps != null) {
-    steps = LifeStat(value: journalSteps, source: StatSource.journal);
+    steps = LifeStat(value: journalSteps, source: journalStepsSource);
   } else if (wearableSteps != null) {
     steps = LifeStat(value: wearableSteps, source: StatSource.wearable);
   } else {

@@ -67,6 +67,28 @@ DaySummary summaryForAi(AppStore store, String day) {
   return _summaryFor(store, day, forAi: true);
 }
 
+/// Steps that convert to one unit of training load. 10k steps ≈ 300–500 kcal
+/// for an average adult, so dividing by 10k puts a 10k-step day on the same
+/// scale as the existing activity term (activityKcal / 400): roughly a light
+/// training day. Every movement counts; gym volume still dominates big days.
+const double stepsPerLoadUnit = 10000.0;
+
+/// Authoritative step entries for [day] after the journal-first dedup.
+/// Wearable snapshots never add to journal figures.
+List<StepEntry> _eligibleSteps(AppStore store, String day, {bool forAi = false}) {
+  final matches = store.steps.where(
+    (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
+  );
+  final journal = matches.where((e) => !isWearableStepsSource(e.source));
+  if (journal.isNotEmpty) return journal.toList();
+  if (matches.isEmpty) return const [];
+  var best = matches.first;
+  for (final e in matches) {
+    if (e.steps > best.steps) best = e;
+  }
+  return [best];
+}
+
 double dailyLoad(AppStore store, String day, {bool forAi = false}) {
   final sets = store.sets.where(
     (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
@@ -79,7 +101,12 @@ double dailyLoad(AppStore store, String day, {bool forAi = false}) {
   );
   final volume = sets.fold<double>(0, (a, s) => a + s.volumeKg);
   final actKcal = acts.fold<double>(0, (a, s) => a + s.kcal);
-  return volume / 1000.0 + actKcal / 400.0;
+  final stepCount = _eligibleSteps(
+    store,
+    day,
+    forAi: forAi,
+  ).fold<int>(0, (a, s) => a + s.steps);
+  return volume / 1000.0 + actKcal / 400.0 + stepCount / stepsPerLoadUnit;
 }
 
 DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
@@ -149,16 +176,31 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
   }
 
   final sleepScore = _sleepScore(store, day, sleeps, sleepHours, forAi: forAi);
+  // Recovery stays sleep-derived on purpose: strain measures what the day
+  // cost (gym + sessions + steps), recovery measures what the night restored.
+  // Feeding movement into recovery would double-count activity and let a big
+  // step count mask a sleep debt.
   final recovery = sleepScore == null
       ? null
       : (0.35 + 0.65 * sleepScore).clamp(0.0, 1.0);
 
+  final daySteps = _eligibleSteps(store, day, forAi: forAi);
+  final int? steps = daySteps.isEmpty
+      ? null
+      : daySteps.fold<int>(0, (a, s) => a + s.steps);
+  final String? stepsSource = daySteps.isEmpty
+      ? null
+      : (daySteps.any((e) => !isWearableStepsSource(e.source))
+          ? 'journal'
+          : 'wearable');
+
   final nSets = sets.fold<int>(0, (a, s) => a + s.sets);
   final volume = sets.fold<double>(0, (a, s) => a + s.volumeKg);
   final load = dailyLoad(store, day, forAi: forAi);
-  final trained = sets.isNotEmpty || acts.isNotEmpty;
+  final trained = sets.isNotEmpty || acts.isNotEmpty || steps != null;
   final strain = trained
-      ? _strain(store, day, load, nSets + acts.length, forAi: forAi)
+      ? _strain(store, day, load, nSets + acts.length + (steps == null ? 0 : 1),
+          forAi: forAi)
       : (pendingWork ? null : 0.0);
 
   double? intake;
@@ -219,15 +261,6 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
     }
   }
 
-  final daySteps = store.steps
-      .where(
-        (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
-      )
-      .toList();
-  final int? steps = daySteps.isEmpty
-      ? null
-      : daySteps.fold<int>(0, (a, s) => a + s.steps);
-
   final energy = _energy(store, day, intake, expenditure, forAi: forAi);
   final todayDelta = intake != null && expenditure != null
       ? intake - expenditure
@@ -253,6 +286,7 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
     distanceKm: distanceKm,
     runSpeedKmh: runSpeed,
     steps: steps,
+    stepsSource: stepsSource,
   );
   if (forAi) return built;
   final keepAi = prev?.digestSource == 'ai' && (prev?.digest ?? '').isNotEmpty;

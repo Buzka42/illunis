@@ -582,10 +582,31 @@ class AppStore extends ChangeNotifier {
   List<JournalEntry> entriesOn(String day) =>
       journal.where((e) => e.day == day).toList();
 
-  int? stepsOn(String day) {
-    final matches = steps.where((e) => e.day == day);
+  int? stepsOn(String day) => authoritativeSteps(day)?.steps;
+
+  /// Provenance of [stepsOn]: `journal`, `wearable`, or null when no data.
+  String? stepsSourceOn(String day) => authoritativeSteps(day)?.source;
+
+  /// One authoritative steps figure per day. Journal-first, mirroring the
+  /// sleep journal-first rule: journal entries are reviewed text, wearable
+  /// bridge snapshots are passive and would double-count when summed.
+  /// Same-day journal entries sum (separate logs); a wearable-only day
+  /// collapses to the max snapshot (repeated syncs, not additive movement).
+  ({int steps, String source})? authoritativeSteps(String day) {
+    final matches = steps.where((e) => e.day == day).toList();
     if (matches.isEmpty) return null;
-    return matches.fold<int>(0, (a, s) => a + s.steps);
+    final journal = matches.where((e) => !isWearableStepsSource(e.source));
+    if (journal.isNotEmpty) {
+      return (
+        steps: journal.fold<int>(0, (a, s) => a + s.steps),
+        source: 'journal',
+      );
+    }
+    var best = matches.first.steps;
+    for (final e in matches) {
+      if (e.steps > best) best = e.steps;
+    }
+    return (steps: best, source: 'wearable');
   }
 
   DaySummary? summaryOn(String day) {

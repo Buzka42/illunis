@@ -85,7 +85,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       _Stat(
         S.strain,
         strain?.toStringAsFixed(2) ?? S.emptyDash,
-        'LOAD',
+        strain == null ? 'LOAD' : 'LOAD · ${(strain * 100).round()}%',
         mock ? 'MOCK' : 'RULE',
       ),
     ];
