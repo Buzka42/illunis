@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/records.dart';
+import '../../core/patterns/progressive.dart';
 import '../../core/state/app_providers.dart';
 import '../../core/state/civil_day.dart';
 import '../../core/theme/typography.dart';
@@ -13,13 +14,7 @@ class SkyLetter {
 final skyLettersProvider = Provider<List<SkyLetter>>((ref) {
   final figures = ref.watch(todayFiguresProvider);
   final summary = figures.summary;
-  return [
-    if (summary?.digest != null && summary!.digest!.trim().isNotEmpty)
-      SkyLetter(
-        'daily-digest',
-        summary.digest!,
-        summary.digestSource == 'ai' ? 'DAILY · AI' : 'DAILY · RULE',
-      ),
+  final learned = [
     for (final finding in figures.findings)
       if (finding.correlation.n >= 21)
         SkyLetter(
@@ -27,6 +22,26 @@ final skyLettersProvider = Provider<List<SkyLetter>>((ref) {
           finding.sentence,
           'LEARNED · LOCAL · ${finding.correlation.n} PAIRED DAYS',
         ),
+  ];
+  // Below the 21-day gate, progressive letters fill the silence.
+  // Day 21+ keeps the learned path; progressive stays empty there.
+  final early = learned.isEmpty
+      ? [
+          for (final p in progressiveLetters(
+            days: ref.watch(storeProvider).summaries,
+          ))
+            SkyLetter(p.id, p.text, p.provenance),
+        ]
+      : <SkyLetter>[];
+  return [
+    if (summary?.digest != null && summary!.digest!.trim().isNotEmpty)
+      SkyLetter(
+        'daily-digest',
+        summary.digest!,
+        summary.digestSource == 'ai' ? 'DAILY · AI' : 'DAILY · RULE',
+      ),
+    ...early,
+    ...learned,
   ];
 });
 
