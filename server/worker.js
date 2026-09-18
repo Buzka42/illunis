@@ -3,8 +3,9 @@
  * {system, user, responseSchema} unchanged and returns {"raw": text}.
  * Never repairs JSON. Never logs the payload.
  *
- * Bindings: OPENAI_API_KEY, ILLUNIS_TOKEN (optional shared secret),
- * MODEL (optional), METER (KV namespace, optional).
+ * Bindings: GEMINI_API_KEY (preferred) and/or OPENAI_API_KEY (fallback),
+ * ILLUNIS_TOKEN (optional shared secret), MODEL / GEMINI_MODEL (optional),
+ * METER (KV namespace, optional).
  */
 const PINNED_PROMPTS = {
   journalInterpretation: `You extract structured health-log items from one journal entry for a
@@ -57,6 +58,26 @@ const CALL_CAPS = {
   restedness: 2,
 };
 
+// Strip JSON Schema keywords the Gemini responseSchema subset rejects
+// (additionalProperties, type arrays) while preserving shape and bounds.
+function sanitizeGeminiSchema(node) {
+  if (Array.isArray(node)) return node.map(sanitizeGeminiSchema);
+  if (node && typeof node === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(node)) {
+      if (k === 'additionalProperties') continue;
+      out[k] = sanitizeGeminiSchema(v);
+    }
+    if (Array.isArray(out.type) && out.type.includes('null')) {
+      const rest = out.type.filter((t) => t !== 'null');
+      out.type = rest.length === 1 ? rest[0] : rest;
+      out.nullable = true;
+    }
+    return out;
+  }
+  return node;
+}
+
 let reservationLock = Promise.resolve();
 
 async function reserveQuota(env, install, day, call, capInstall, capGlobal) {
@@ -101,7 +122,7 @@ export default {
     if (!env.METER) {
       return new Response('config:meter', { status: 500, headers: cors() });
     }
-    if (!env.OPENAI_API_KEY) {
+    if (!env.OPENAI_API_KEY && !env.GEMINI_API_KEY) {
       return new Response('key', { status: 503, headers: cors() });
     }
 
@@ -161,39 +182,80 @@ export default {
 
     const pinnedSystem = PINNED_PROMPTS[call] || system;
 
+    // Gemini-first: when GEMINI_API_KEY is bound the request goes to the
+    // Gemini generateContent endpoint (model default: newest Flash-Lite).
+    // Otherwise the legacy OpenAI chat-completions path is used unchanged.
+    // Either way: pinned system, caller-supplied user + responseSchema,
+    // ≤128 output tokens, single attempt, 15 s deadline, raw passthrough.
+    const useGemini = !!env.GEMINI_API_KEY;
+
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 15000);
-      const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${env.OPENAI_API_KEY}`,
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: env.MODEL || 'gpt-4.1-mini',
-          messages: [
-            { role: 'system', content: pinnedSystem },
-            { role: 'user', content: user },
-          ],
-          response_format: {
-            type: 'json_schema',
-            json_schema: {
-              name: call,
-              schema: responseSchema,
-              strict: false,
+      let raw;
+      if (useGemini) {
+        const model = env.GEMINI_MODEL || env.MODEL || 'gemini-3.5-flash-lite';
+        const upstream = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'x-goog-api-key': env.GEMINI_API_KEY,
             },
+            signal: controller.signal,
+            body: JSON.stringify({
+              systemInstruction: { role: 'system', parts: [{ text: pinnedSystem }] },
+              contents: [{ role: 'user', parts: [{ text: user }] }],
+              generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: sanitizeGeminiSchema(responseSchema),
+                maxOutputTokens: 128,
+                temperature: 0,
+              },
+            }),
           },
-        }),
-      }).finally(() => clearTimeout(timer));
+        ).finally(() => clearTimeout(timer));
 
-      if (!upstream.ok) {
-        return new Response('upstream', { status: 502, headers: cors() });
+        if (!upstream.ok) {
+          return new Response('upstream', { status: 502, headers: cors() });
+        }
+        const json = await upstream.json();
+        const parts = json?.candidates?.[0]?.content?.parts || [];
+        raw = parts.map((p) => p?.text || '').join('');
+      } else {
+        const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: 'Bearer ' + env.OPENAI_API_KEY,
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: env.MODEL || 'gpt-4.1-mini',
+            messages: [
+              { role: 'system', content: pinnedSystem },
+              { role: 'user', content: user },
+            ],
+            response_format: {
+              type: 'json_schema',
+              json_schema: {
+                name: call,
+                schema: responseSchema,
+                strict: false,
+              },
+            },
+          }),
+        }).finally(() => clearTimeout(timer));
+
+        if (!upstream.ok) {
+          return new Response('upstream', { status: 502, headers: cors() });
+        }
+
+        const json = await upstream.json();
+        raw = json?.choices?.[0]?.message?.content ?? '';
       }
-
-      const json = await upstream.json();
-      const raw = json?.choices?.[0]?.message?.content ?? '';
+      if (typeof raw !== 'string') raw = '';
       if (raw.length > 65536) {
         return new Response('upstream-output-too-large', { status: 502, headers: cors() });
       }
