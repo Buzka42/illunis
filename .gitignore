@@ -21,3 +21,4 @@ ios/.symlinks/
 .DS_Store
 captures/
 graphify-out/
+server/.wrangler/
