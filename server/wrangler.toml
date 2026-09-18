@@ -1,0 +1,7 @@
+name = "illunis-ai"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[kv_namespaces]]
+binding = "METER"
+id = "a8e944441149427f8cf9ffc9c73868eb"
