@@ -63,10 +63,14 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
             calorieMarksProvider(dayKey(ref.watch(civilDayProvider))),
           );
           return Semantics(
-            label: calories.isEmpty
-                ? 'Day timeline'
-                : 'Day timeline. Confirmed calories at journal logging times. '
-                      '${calories.map((m) => '${m.kind.name} ${m.kcal.round()} kilocalories at ${formatHours(m.time)}').join('. ')}',
+            label: [
+              'Day timeline',
+              if (sleep != null)
+                'Sleep ${formatDuration(sleep.asleepHours / 24)}',
+              if (calories.isNotEmpty)
+                'Confirmed calories at journal logging times. '
+                    '${calories.map((m) => '${m.kind.name} ${m.kcal.round()} kilocalories at ${formatHours(m.time)}').join('. ')}',
+            ].join('. '),
             child: CustomPaint(
               painter: _TimelinePainter(
                 scene: scene,

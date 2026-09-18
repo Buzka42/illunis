@@ -180,7 +180,12 @@ TodayFigures _figures(AppStore store, String day, DateTime now) {
   SleepEntry? sleep;
   SleepEntry? incompleteBed;
   for (final s in store.sleeps) {
-    if (s.day == day && s.isComplete) sleep = s;
+    // The night is the longest complete stretch of the day. A later short
+    // nap must not shadow it: the timeline band, the nightstand, and the
+    // mock sleep figure all read the night, not the nap.
+    if (s.day == day && s.isComplete) {
+      if (sleep == null || s.durationHours > sleep.durationHours) sleep = s;
+    }
     if (!s.isComplete && s.day == day) incompleteBed = s;
   }
   final today = day == dayKey(now);
