@@ -12,7 +12,6 @@ import '../../core/state/sky_state_source.dart';
 import '../../core/state/sleep_record.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
-import '../../core/units/mass.dart';
 import '../shell/surface_title.dart';
 import '../timeline/weather_projection.dart';
 import '../timeline/weather_sheet.dart';
@@ -26,18 +25,15 @@ class DashboardPage extends ConsumerStatefulWidget {
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
-  int _lift = 0;
   @override
   Widget build(BuildContext context) {
     final selected = ref.watch(journalDayProvider);
     final day = dayKey(selected);
     final today = sameDay(selected, DateTime.now());
     final stats = ref.watch(lifeStatsProvider(day));
-    final performance = ref.watch(performanceRollupProvider(day));
     final figures = ref.watch(journalFiguresProvider);
     final preset = ref.watch(skyOverridesProvider.select((o) => o.preset));
     final mock = today && preset != SkyPreset.live;
-    final units = ref.watch(storeProvider).profile.units;
     final strain = mock ? widget.state.strain : figures.summary?.strain;
     final sleep = mock
         ? ref.watch(sleepRecordProvider)?.asleepHours
@@ -89,9 +85,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         mock ? 'MOCK' : 'RULE',
       ),
     ];
-    final lifts = performance.lifts;
-    final lift = lifts.isEmpty ? null : lifts[_lift % lifts.length];
-    String mass(double? v) => v == null ? S.emptyDash : formatMass(v, units);
     final hasData =
         figures.entryCount > 0 ||
         [
@@ -175,35 +168,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               ),
               Container(height: 1, color: Inks.hairline),
-              const SizedBox(height: 4),
-              _FigureLine(
-                'VOL 28D',
-                mass(performance.volume.totalWindowVolumeKg),
-                '${massUnit(units)} · LOCAL',
-              ),
-              _FigureLine(
-                'LOAD 28D',
-                number(performance.strain.chronic28DayMeanLoad),
-                'MEAN · RULE',
-              ),
-              Semantics(
-                button: lifts.length > 1,
-                hint: lifts.length > 1 ? 'Tap for next exercise' : null,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: lifts.length > 1
-                      ? () => setState(() => _lift++)
-                      : null,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: _FigureLine(
-                      lift?.name ?? '1RM',
-                      mass(lift?.todayEpleyKg),
-                      '${massUnit(units)} · EPLEY${lifts.length > 1 ? ' ${_lift % lifts.length + 1}/${lifts.length} ›' : ''}',
-                    ),
-                  ),
-                ),
-              ),
             ],
           );
           final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
