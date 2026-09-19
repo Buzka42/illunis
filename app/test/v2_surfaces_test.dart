@@ -75,7 +75,7 @@ void main() {
           of: find.byType(DashboardPage),
           matching: find.byType(SingleChildScrollView),
         ),
-        findsNothing,
+        findsOneWidget,
       );
       expect(find.text('2450'), findsOneWidget);
       expect(find.text('REST HR'), findsOneWidget);

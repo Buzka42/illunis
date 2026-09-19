@@ -40,37 +40,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final sleep = mock
         ? ref.watch(sleepRecordProvider)?.asleepHours
         : stats.sleep.value;
-    final cells = <Widget>[
-      _Stat(
-        'BURN',
-        number(stats.caloriesBurned.value),
-        'KCAL',
-        stats.caloriesBurned.source.name,
-      ),
-      _Stat(
-        S.intake,
-        number(stats.calorieIntake.value),
-        'KCAL',
-        stats.calorieIntake.source.name,
-      ),
+    final supporting = <Widget>[
       _Stat('STEPS', number(stats.steps.value), '', stats.steps.source.name),
-      _Stat(
-        S.sleep,
-        sleep == null ? S.emptyDash : '${sleep.toStringAsFixed(1)}h',
-        '',
-        mock ? 'MOCK' : stats.sleep.source.name,
-      ),
       _Stat(
         'REST HR',
         number(stats.restingHr.value),
         'BPM',
         stats.restingHr.source.name,
-      ),
-      _Stat(
-        'ACTIVE',
-        number(stats.activeMinutes.value),
-        'MIN',
-        stats.activeMinutes.source.name,
       ),
       _Stat(
         'RESTED',
@@ -99,17 +75,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           stats.restedness.value,
         ].any((v) => v != null);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.margin, 0, Space.margin, 4),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final content = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.symmetric(horizontal: Space.margin),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              const SurfaceTitle(S.dashboard),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SurfaceTitle(S.dashboard),
-                  const Spacer(),
                   Text(
                     mock
                         ? (preset == SkyPreset.noData ? S.noData : S.mockData)
@@ -130,59 +107,81 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   ),
                 ],
               ),
-              if (!today) Text(formatShortDate(selected), style: Type.micro),
-              const _WeatherLine(),
-              const SizedBox(height: 4),
-              for (var row = 0; row < 2; row++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var col = 0; col < 4; col++)
-                        Expanded(child: cells[row * 4 + col]),
-                    ],
-                  ),
-                ),
-              Container(height: 1, color: Inks.hairline),
-              ValueListenableBuilder<ResolvedScene?>(
-                valueListenable: widget.scene,
-                builder: (context, scene, _) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Column(
-                    children: [
-                      _FigureLine(
-                        'SUN',
-                        '↑ ${time(scene?.sunrise)}   ↓ ${time(scene?.sunset)}',
-                        scene?.dayLength == null
-                            ? S.emptyDash
-                            : formatDuration(scene!.dayLength!),
-                      ),
-                      _FigureLine(
-                        'MOON',
-                        '↑ ${time(scene?.moonrise)}   ↓ ${time(scene?.moonset)}',
-                        scene == null
-                            ? S.emptyDash
-                            : '${(scene.moonIllumination * 100).round()}%',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(height: 1, color: Inks.hairline),
-              // _ComparisonsSection(day: day), // A3: wire during redesign (layout budget)
-              Container(height: 1, color: Inks.hairline),
             ],
-          );
-          final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
-          // Accessibility text and short windows retain all figures. Blade at
-          // default text size uses a fixed, non-scrolling composition.
-          if (constraints.maxHeight < (today ? 224 : 236) * scale ||
-              constraints.maxWidth < 300) {
-            return SingleChildScrollView(child: content);
-          }
-          return content;
-        },
+          ),
+          if (!today) Text(formatShortDate(selected), style: Type.micro),
+          Expanded(
+            child: SingleChildScrollView(
+              key: const PageStorageKey('dashboard-reading'),
+              padding: const EdgeInsets.only(top: 4, bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ComparisonsSection(day: day),
+                  const _Rule(),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final scale =
+                          MediaQuery.textScalerOf(context).scale(10) / 10;
+                      final columns = constraints.maxWidth >= 300 * scale
+                          ? 4
+                          : 2;
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 12,
+                        children: [
+                          for (final stat in supporting)
+                            SizedBox(
+                              width:
+                                  (constraints.maxWidth - 8 * (columns - 1)) /
+                                  columns,
+                              child: stat,
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  if (mock)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: _FigureLine(
+                        'PREVIEW SLEEP',
+                        sleep == null
+                            ? S.emptyDash
+                            : '${sleep.toStringAsFixed(1)}h',
+                        'MOCK',
+                      ),
+                    ),
+                  const _Rule(),
+                  const _WeatherLine(),
+                  const SizedBox(height: 10),
+                  ValueListenableBuilder<ResolvedScene?>(
+                    valueListenable: widget.scene,
+                    builder: (context, scene, _) => Column(
+                      children: [
+                        _FigureLine(
+                          'SUN',
+                          '↑ ${time(scene?.sunrise)}   ↓ ${time(scene?.sunset)}',
+                          scene?.dayLength == null
+                              ? S.emptyDash
+                              : formatDuration(scene!.dayLength!),
+                        ),
+                        const SizedBox(height: 4),
+                        _FigureLine(
+                          'MOON',
+                          '↑ ${time(scene?.moonrise)}   ↓ ${time(scene?.moonset)}',
+                          scene == null
+                              ? S.emptyDash
+                              : '${(scene.moonIllumination * 100).round()}%',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -220,20 +219,38 @@ class _FigureLine extends StatelessWidget {
   const _FigureLine(this.label, this.value, this.unit);
   final String label, value, unit;
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        flex: 2,
-        child: Text(
-          label,
-          style: Type.micro,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      Expanded(flex: 3, child: Text(value, style: Type.micro, maxLines: 1)),
-      Text(unit, style: Type.micro.copyWith(color: Inks.muted)),
-    ],
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
+      if (constraints.maxWidth < 300 * scale) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: Type.label),
+              Wrap(
+                spacing: 12,
+                children: [
+                  Text(value, style: Type.micro),
+                  Text(unit, style: Type.micro),
+                ],
+              ),
+            ],
+          ),
+        );
+      }
+      return Row(
+        children: [
+          Expanded(flex: 2, child: Text(label, style: Type.micro)),
+          Expanded(flex: 3, child: Text(value, style: Type.micro)),
+          Flexible(
+            flex: 2,
+            child: Text(unit, style: Type.micro, textAlign: TextAlign.right),
+          ),
+        ],
+      );
+    },
   );
 }
 
@@ -295,131 +312,318 @@ class _WeatherLine extends ConsumerWidget {
   }
 }
 
-/// Plain functional rendering of [DashboardComparisons].
-/// Astra recomposes this later; no redesign here: text lines and
-/// proportional bars only, no pills/cards/rings/gradients.
-// ignore: unused_element (wired during A3 redesign; layout budget)
+String _source(StatSource? source) => switch (source) {
+  StatSource.journal => 'JNL',
+  StatSource.wearable => 'HC',
+  StatSource.rule => 'RULE',
+  StatSource.ai => 'AI',
+  null => '—',
+};
+
+String _composition(Map<StatSource, int> counts) => counts.isEmpty
+    ? '—'
+    : counts.entries.map((e) => '${_source(e.key)} ${e.value}').join(' · ');
+
+class _Rule extends StatelessWidget {
+  const _Rule();
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 7),
+    child: SizedBox(height: 0.5, child: ColoredBox(color: Inks.hairline)),
+  );
+}
+
+/// Three comparisons, one reading order. Supporting instruments continue below
+/// the fold instead of shrinking the evidence to fit a particular handset.
 class _ComparisonsSection extends ConsumerWidget {
   const _ComparisonsSection({required this.day});
   final String day;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = ref.watch(dashboardComparisonsProvider(day));
-    String kcal(double? v) => v == null ? S.emptyDash : '${v.round()}';
-    String hours(double? v) => v == null ? S.emptyDash : '${v.toStringAsFixed(1)}h';
-    String src(StatSource? s) => switch (s) {
-      StatSource.journal => 'JNL',
-      StatSource.wearable => 'HC',
-      StatSource.rule => 'RULE',
-      StatSource.ai => 'AI',
-      null => '—',
-    };
-    String composition(Map<StatSource, int> counts) => counts.isEmpty
-        ? 'UNOBSERVED'
-        : counts.entries.map((e) => '${src(e.key)}×${e.value}').join(' ');
-    Widget bar(double? value) {
-      final max = c.intakeBurn.sharedScaleMax;
-      final f = value == null || max == null || max <= 0
-          ? 0.0
-          : (value / max).clamp(0.0, 1.0);
-      return Expanded(
-        flex: 3,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: f,
-            child: Container(height: 2, color: Inks.muted),
-          ),
-        ),
-      );
-    }
-
     final ib = c.intakeBurn;
     final mv = c.movement;
     final sl = c.sleep;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text('EATEN', style: Type.micro, maxLines: 1),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  '${kcal(ib.intake.value)} KCAL ${src(ib.intake.source)}',
-                  style: Type.micro,
-                  maxLines: 1,
+    final movementMax = [
+      mv.current.meanActiveMinutes ?? 0,
+      mv.previous.meanActiveMinutes ?? 0,
+    ].reduce((a, b) => a > b ? a : b);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _SectionHeading('Energy', trailing: 'KCAL'),
+        const SizedBox(height: 7),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
+            final columns = constraints.maxWidth >= 300 * scale ? 2 : 1;
+            return Wrap(
+              spacing: 20,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  width: (constraints.maxWidth - 20 * (columns - 1)) / columns,
+                  child: _EnergyLine(
+                    label: S.intake,
+                    value: ib.intake,
+                    maximum: ib.sharedScaleMax,
+                    color: Inks.intake,
+                    pending: ib.pendingIntakeCount,
+                  ),
                 ),
-              ),
-              bar(ib.intake.value),
-            ],
-          ),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text('BURNED', style: Type.micro, maxLines: 1),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  '${kcal(ib.burn.value)} KCAL ${src(ib.burn.source)}'
-                  '${ib.burnEstimated == true ? ' EST' : ''}'
-                  '${ib.hasPending ? ' +PENDING' : ''}',
-                  style: Type.micro,
-                  maxLines: 1,
+                SizedBox(
+                  width: (constraints.maxWidth - 20 * (columns - 1)) / columns,
+                  child: _EnergyLine(
+                    label: 'BURN',
+                    value: ib.burn,
+                    maximum: ib.sharedScaleMax,
+                    color: Inks.body,
+                    estimated: ib.burnEstimated == true,
+                    pending: ib.pendingBurnCount,
+                  ),
                 ),
-              ),
-              bar(ib.burn.value),
-            ],
-          ),
-          _FigureLine(
-            'BALANCE',
-            ib.balanceKcal == null ? S.emptyDash : '${ib.balanceKcal!.round()} KCAL',
-            ib.intakeShareOfBurn == null
-                ? 'SHARE —'
-                : 'SHARE ${(ib.intakeShareOfBurn! * 100).round()}%',
-          ),
-          _FigureLine(
-            'MOVE 7D',
-            mv.current.meanActiveMinutes == null
-                ? S.emptyDash
-                : '${mv.current.meanActiveMinutes!.round()} MIN',
-            '${mv.current.observedCount}/7 ${composition(mv.current.sourceCounts)}',
-          ),
-          _FigureLine(
-            'PREV 7D',
-            mv.previous.meanActiveMinutes == null
-                ? S.emptyDash
-                : '${mv.previous.meanActiveMinutes!.round()} MIN',
-            '${mv.previous.observedCount}/7 ${composition(mv.previous.sourceCounts)}',
-          ),
-          _FigureLine(
-            'MOVE Δ',
-            mv.deltaMean == null ? S.emptyDash : '${mv.deltaMean!.round()} MIN',
-            mv.hasVerdict ? 'OBSERVED' : 'NO VERDICT',
-          ),
-          _FigureLine(
-            'SLEEP 7N',
-            sl.meanHours == null ? S.emptyDash : '${sl.meanHours!.toStringAsFixed(1)}H AVG',
-            sl.observedCount == 0
-                ? 'UNOBSERVED'
-                : '${sl.observedCount}/7 RANGE ${hours(sl.minHours)}–${hours(sl.maxHours)}',
-          ),
-          Text(
-            sl.nights
-                .map((n) => hours(n.hours))
-                .join(' '),
-            style: Type.micro.copyWith(color: Inks.muted),
-            maxLines: 2,
-          ),
-        ],
-      ),
+              ],
+            );
+          },
+        ),
+        const _Rule(),
+        const _SectionHeading('Movement', trailing: 'MIN / OBSERVED DAY'),
+        const SizedBox(height: 7),
+        _MovementLine(
+          label: 'LAST 7D',
+          window: mv.current,
+          maximum: movementMax,
+          color: Inks.body,
+        ),
+        const SizedBox(height: 6),
+        _MovementLine(
+          label: 'PREV 7D',
+          window: mv.previous,
+          maximum: movementMax,
+          color: Inks.faint,
+        ),
+        const _Rule(),
+        _SectionHeading(S.sleep, trailing: '${sl.observedCount}/7 NIGHTS'),
+        const SizedBox(height: 7),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
+            final wide = constraints.maxWidth >= 280 * scale;
+            final maxHours = sl.maxHours;
+            final ceiling = maxHours == null || maxHours < 10 ? 10.0 : maxHours;
+            return Wrap(
+              spacing: 0,
+              runSpacing: 10,
+              children: [
+                for (final night in sl.nights)
+                  SizedBox(
+                    width: constraints.maxWidth / (wide ? 7 : 4),
+                    child: _SleepMark(night: night, maximum: ceiling),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading(this.title, {required this.trailing});
+  final String title, trailing;
+  @override
+  Widget build(BuildContext context) => Wrap(
+    alignment: WrapAlignment.spaceBetween,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    spacing: 12,
+    children: [
+      Text(title, style: Type.control),
+      Text(trailing, style: Type.micro),
+    ],
+  );
+}
+
+class _EnergyLine extends StatelessWidget {
+  const _EnergyLine({
+    required this.label,
+    required this.value,
+    required this.maximum,
+    required this.color,
+    this.estimated = false,
+    this.pending = 0,
+  });
+  final String label;
+  final ComparedValue value;
+  final double? maximum;
+  final Color color;
+  final bool estimated;
+  final int pending;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label:
+        '$label, ${value.value?.round() ?? 'unobserved'} kilocalories, ${_source(value.source)}'
+        '${estimated ? ', estimated' : ''}${pending > 0 ? ', $pending pending excluded' : ''}',
+    excludeSemantics: true,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label, style: Type.label),
+        const SizedBox(height: 3),
+        Text(
+          value.value?.round().toString() ?? S.emptyDash,
+          style: Type.figure,
+        ),
+        const SizedBox(height: 3),
+        Text(
+          '${_source(value.source)} KCAL${estimated ? ' EST' : ''}',
+          style: Type.micro,
+        ),
+        const SizedBox(height: 4),
+        _MeasureBar(value: value.value, maximum: maximum, color: color),
+        if (pending > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text('$pending PENDING · EXCLUDED', style: Type.micro),
+          ),
+      ],
+    ),
+  );
+}
+
+class _MovementLine extends StatelessWidget {
+  const _MovementLine({
+    required this.label,
+    required this.window,
+    required this.maximum,
+    required this.color,
+  });
+  final String label;
+  final MovementWindow window;
+  final double maximum;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label:
+        '${window.startDay} to ${window.endDay}, '
+        '${window.meanActiveMinutes?.toStringAsFixed(1) ?? 'unobserved'} minutes per observed day, '
+        '${window.observedCount} of 7 days, ${_composition(window.sourceCounts)}',
+    excludeSemantics: true,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            Text(label, style: Type.label),
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  window.meanActiveMinutes?.toStringAsFixed(1) ?? S.emptyDash,
+                  style: Type.figureSmall,
+                ),
+                Text(
+                  '${window.observedCount}/7 · ${_composition(window.sourceCounts)}',
+                  style: Type.micro,
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        _MeasureBar(
+          value: window.meanActiveMinutes,
+          maximum: maximum,
+          color: color,
+        ),
+      ],
+    ),
+  );
+}
+
+/// Shared zero-origin scale. A zero is a short vertical tick; absence has no
+/// mark. The endpoint is square, never a knob or a decorative progress gauge.
+class _MeasureBar extends StatelessWidget {
+  const _MeasureBar({
+    required this.value,
+    required this.maximum,
+    required this.color,
+  });
+  final double? value, maximum;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 3,
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final fraction = value == null || maximum == null || maximum! <= 0
+            ? 0.0
+            : (value! / maximum!).clamp(0.0, 1.0);
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: value == null
+                ? 0
+                : value == 0
+                ? 1
+                : constraints.maxWidth * fraction,
+            height: value == 0 ? 3 : 1,
+            child: ColoredBox(color: color),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+class _SleepMark extends StatelessWidget {
+  const _SleepMark({required this.night, required this.maximum});
+  final SleepNight night;
+  final double maximum;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label:
+        '${night.day}, ${night.hours?.toStringAsFixed(1) ?? 'unobserved'} hours, ${_source(night.source)}',
+    excludeSemantics: true,
+    child: Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(night.day.substring(8), style: Type.micro),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 14,
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: SizedBox(
+                width: night.hours == null ? 0 : 1,
+                height: night.hours == null
+                    ? 0
+                    : night.hours == 0
+                    ? 1
+                    : 14 * (night.hours! / maximum).clamp(0.0, 1.0),
+                child: const ColoredBox(color: Inks.cool),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            night.hours == null
+                ? S.emptyDash
+                : '${night.hours!.toStringAsFixed(1)}h',
+            style: Type.micro.copyWith(color: Inks.body),
+          ),
+          const SizedBox(height: 2),
+          Text(_source(night.source), style: Type.micro),
+        ],
+      ),
+    ),
+  );
 }

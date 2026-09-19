@@ -341,6 +341,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.text('RUN'), findsNothing);
+    expect(find.text('0/7 · —'), findsNWidgets(2));
     expect(find.text(S.training), findsNothing);
     expect(find.text(S.local), findsOneWidget);
     expect(find.text(S.noData), findsNothing);
@@ -353,14 +354,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(store.activities.single.confirmed, isTrue);
-    expect(find.text('ACTIVE'), findsOneWidget);
+    expect(find.text('LAST 7D'), findsOneWidget);
+    expect(find.text('1/7 · JNL 1'), findsOneWidget);
     expect(
       find.text(
         store
             .summaryOn(dayKey(DateTime.now()))!
             .moveMinutes!
-            .round()
-            .toString(),
+            .toStringAsFixed(1),
       ),
       findsWidgets,
     );

@@ -21,8 +21,11 @@ class ShellHeader extends StatelessWidget {
         final ink = Inks.sky(resolved?.skyInkBlend ?? 0);
         return Padding(
           padding: const EdgeInsets.fromLTRB(Space.margin, 14, Space.margin, 0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.start,
+            spacing: 12,
+            runSpacing: 4,
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -35,7 +38,6 @@ class ShellHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              const Spacer(),
               ValueListenableBuilder<ResolvedScene?>(
                 valueListenable: scene,
                 builder: (context, s, _) {

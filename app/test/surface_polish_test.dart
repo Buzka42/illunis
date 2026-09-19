@@ -69,7 +69,11 @@ void main() {
         .set(const SkyOverrides(preset: SkyPreset.restedMorning));
     await tester.pump();
     expect(find.text(S.mockData), findsOneWidget);
-    expect(find.text('JNL KCAL'), findsNWidgets(2));
+    expect(find.text('JNL KCAL'), findsOneWidget);
+    expect(
+      find.text('— KCAL'),
+      findsOneWidget,
+    ); // absent burn has no invented source
     expect(find.text('550'), findsOneWidget);
     container.read(journalDayProvider.notifier).prev();
     await tester.pump();

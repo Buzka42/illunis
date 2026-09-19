@@ -76,7 +76,10 @@ class _WeatherSheetState extends ConsumerState<_WeatherSheet> {
                   'HOME · ${matchingHome(profile).label}\nTimes use the device clock. Home coordinates are sent only to the selected weather service.',
                   style: Type.micro,
                 ),
-                Row(
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
                   children: [
                     TextButton(
                       onPressed: () async {
@@ -96,7 +99,6 @@ class _WeatherSheetState extends ConsumerState<_WeatherSheet> {
                         style: Type.label,
                       ),
                     ),
-                    const Spacer(),
                     TextButton(
                       onPressed: _busy || profile.weatherSource == 'off'
                           ? null
