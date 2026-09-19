@@ -10,11 +10,13 @@ import '../../core/sky/sky_state.dart';
 import '../../core/state/app_providers.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/state/sleep_record.dart';
+import '../../core/wearables/life_stats.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../shell/surface_title.dart';
 import '../timeline/weather_projection.dart';
 import '../timeline/weather_sheet.dart';
+import 'dashboard_comparisons.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key, required this.scene, required this.state});
@@ -168,6 +170,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               ),
               Container(height: 1, color: Inks.hairline),
+              // _ComparisonsSection(day: day), // A3: wire during redesign (layout budget)
+              Container(height: 1, color: Inks.hairline),
             ],
           );
           final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
@@ -286,6 +290,135 @@ class _WeatherLine extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Plain functional rendering of [DashboardComparisons].
+/// Astra recomposes this later; no redesign here: text lines and
+/// proportional bars only, no pills/cards/rings/gradients.
+// ignore: unused_element (wired during A3 redesign; layout budget)
+class _ComparisonsSection extends ConsumerWidget {
+  const _ComparisonsSection({required this.day});
+  final String day;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = ref.watch(dashboardComparisonsProvider(day));
+    String kcal(double? v) => v == null ? S.emptyDash : '${v.round()}';
+    String hours(double? v) => v == null ? S.emptyDash : '${v.toStringAsFixed(1)}h';
+    String src(StatSource? s) => switch (s) {
+      StatSource.journal => 'JNL',
+      StatSource.wearable => 'HC',
+      StatSource.rule => 'RULE',
+      StatSource.ai => 'AI',
+      null => '—',
+    };
+    String composition(Map<StatSource, int> counts) => counts.isEmpty
+        ? 'UNOBSERVED'
+        : counts.entries.map((e) => '${src(e.key)}×${e.value}').join(' ');
+    Widget bar(double? value) {
+      final max = c.intakeBurn.sharedScaleMax;
+      final f = value == null || max == null || max <= 0
+          ? 0.0
+          : (value / max).clamp(0.0, 1.0);
+      return Expanded(
+        flex: 3,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: f,
+            child: Container(height: 2, color: Inks.muted),
+          ),
+        ),
+      );
+    }
+
+    final ib = c.intakeBurn;
+    final mv = c.movement;
+    final sl = c.sleep;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text('EATEN', style: Type.micro, maxLines: 1),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  '${kcal(ib.intake.value)} KCAL ${src(ib.intake.source)}',
+                  style: Type.micro,
+                  maxLines: 1,
+                ),
+              ),
+              bar(ib.intake.value),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text('BURNED', style: Type.micro, maxLines: 1),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  '${kcal(ib.burn.value)} KCAL ${src(ib.burn.source)}'
+                  '${ib.burnEstimated == true ? ' EST' : ''}'
+                  '${ib.hasPending ? ' +PENDING' : ''}',
+                  style: Type.micro,
+                  maxLines: 1,
+                ),
+              ),
+              bar(ib.burn.value),
+            ],
+          ),
+          _FigureLine(
+            'BALANCE',
+            ib.balanceKcal == null ? S.emptyDash : '${ib.balanceKcal!.round()} KCAL',
+            ib.intakeShareOfBurn == null
+                ? 'SHARE —'
+                : 'SHARE ${(ib.intakeShareOfBurn! * 100).round()}%',
+          ),
+          _FigureLine(
+            'MOVE 7D',
+            mv.current.meanActiveMinutes == null
+                ? S.emptyDash
+                : '${mv.current.meanActiveMinutes!.round()} MIN',
+            '${mv.current.observedCount}/7 ${composition(mv.current.sourceCounts)}',
+          ),
+          _FigureLine(
+            'PREV 7D',
+            mv.previous.meanActiveMinutes == null
+                ? S.emptyDash
+                : '${mv.previous.meanActiveMinutes!.round()} MIN',
+            '${mv.previous.observedCount}/7 ${composition(mv.previous.sourceCounts)}',
+          ),
+          _FigureLine(
+            'MOVE Δ',
+            mv.deltaMean == null ? S.emptyDash : '${mv.deltaMean!.round()} MIN',
+            mv.hasVerdict ? 'OBSERVED' : 'NO VERDICT',
+          ),
+          _FigureLine(
+            'SLEEP 7N',
+            sl.meanHours == null ? S.emptyDash : '${sl.meanHours!.toStringAsFixed(1)}H AVG',
+            sl.observedCount == 0
+                ? 'UNOBSERVED'
+                : '${sl.observedCount}/7 RANGE ${hours(sl.minHours)}–${hours(sl.maxHours)}',
+          ),
+          Text(
+            sl.nights
+                .map((n) => hours(n.hours))
+                .join(' '),
+            style: Type.micro.copyWith(color: Inks.muted),
+            maxLines: 2,
+          ),
+        ],
       ),
     );
   }
