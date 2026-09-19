@@ -4,15 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/platform/host.dart';
 import '../../core/sky/celestial_math.dart';
+import '../../core/sky/celestial_scene.dart';
+import '../../core/sky/path_event_geometry.dart';
+import '../../core/sky/sky_camera.dart';
 import '../../core/sky/sky_state.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import '../shell/dream_shell.dart';
 import 'frame_budget.dart';
+import 'path_event_fixtures.dart';
 
 /// Debug builds only: scrub the day, the year, the observer and the moon;
-/// switch vitals presets. Long-press the wordmark to open.
+/// switch vitals presets and path event fixtures. Long-press the wordmark to open.
 Future<void> showSkyDebugSheet(BuildContext context) {
   if (!kDebugMode) return Future<void>.value();
   return showModalBottomSheet<void>(
@@ -23,18 +27,45 @@ Future<void> showSkyDebugSheet(BuildContext context) {
     shape: const RoundedRectangleBorder(),
     builder: (_) => ConstrainedBox(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
       ),
       child: const SingleChildScrollView(child: _SkyDebugSheet()),
     ),
   );
 }
 
-class _SkyDebugSheet extends ConsumerWidget {
+class _SkyDebugSheet extends ConsumerStatefulWidget {
   const _SkyDebugSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SkyDebugSheet> createState() => _SkyDebugSheetState();
+}
+
+class _SkyDebugSheetState extends ConsumerState<_SkyDebugSheet> {
+  PathEventFixtureId? _activeFixtureId;
+
+  void _applyFixture(
+    PathEventFixtureId id,
+    SkyOverridesNotifier n,
+    SkyOverrides o,
+  ) {
+    setState(() {
+      _activeFixtureId = id;
+    });
+    final fix = PathEventFixture.get(id);
+    n.set(
+      o.copyWith(
+        timeOfDay: fix.state.timeOfDay,
+        dayOfYear: fix.state.dayOfYear,
+        latitudeDeg: fix.state.latitudeDeg,
+        moonPhase: fix.state.moonPhase,
+        weather: fix.state.weather,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final o = ref.watch(skyOverridesProvider);
     final n = ref.read(skyOverridesProvider.notifier);
     final live = ref.watch(skyStateProvider);
@@ -59,7 +90,12 @@ class _SkyDebugSheet extends ConsumerWidget {
                     ? 'FOLLOW CLOCK'
                     : 'FOLLOWING CLOCK',
                 active: !(o.any || o.preset != SkyPreset.live),
-                onTap: n.reset,
+                onTap: () {
+                  setState(() {
+                    _activeFixtureId = null;
+                  });
+                  n.reset();
+                },
               ),
             ],
           ),
@@ -106,8 +142,13 @@ class _SkyDebugSheet extends ConsumerWidget {
               for (final p in SkyPreset.values)
                 _TextButton(
                   label: p.label.toUpperCase(),
-                  active: o.preset == p,
-                  onTap: () => n.set(o.copyWith(preset: p)),
+                  active: o.preset == p && _activeFixtureId == null,
+                  onTap: () {
+                    setState(() {
+                      _activeFixtureId = null;
+                    });
+                    n.set(o.copyWith(preset: p));
+                  },
                 ),
             ],
           ),
@@ -164,6 +205,30 @@ class _SkyDebugSheet extends ConsumerWidget {
               ),
           ],
           const SizedBox(height: 14),
+          Container(height: 1, color: Inks.hairline),
+          const SizedBox(height: 12),
+          Text('PATH EVENT FIXTURES (A2)', style: Type.label),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 14,
+            runSpacing: 8,
+            children: [
+              for (final f in PathEventFixtureId.values)
+                _TextButton(
+                  label: f.title.toUpperCase(),
+                  active: _activeFixtureId == f,
+                  onTap: () => _applyFixture(f, n, o),
+                ),
+            ],
+          ),
+          if (_activeFixtureId != null) ...[
+            const SizedBox(height: 12),
+            _FixturePreviewCard(
+              fixture: PathEventFixture.get(_activeFixtureId!),
+              live: live,
+            ),
+          ],
+          const SizedBox(height: 14),
           _HostRow(
             onPreview: () {
               final nav = Navigator.of(context);
@@ -184,6 +249,194 @@ class _SkyDebugSheet extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _FixturePreviewCard extends StatelessWidget {
+  const _FixturePreviewCard({required this.fixture, required this.live});
+
+  final PathEventFixture fixture;
+  final SkyState live;
+
+  @override
+  Widget build(BuildContext context) {
+    // Pure cache computation outside paint
+    final scene = CelestialScene.resolve(live);
+    const previewSize = Size(320, 110);
+    final cam = SkyCamera(
+      size: previewSize,
+      azimuthRad: scene.trackAzimuthRad,
+    );
+    final cache = PathEventGeometryPipeline.compute(
+      events: fixture.events,
+      scene: scene,
+      camera: cam,
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F131A),
+        border: Border.all(color: Inks.hairline),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(
+                fixture.id.title.toUpperCase(),
+                style: Type.label.copyWith(color: Inks.strong),
+              ),
+              const Spacer(),
+              Text(
+                '${cache.projectedEvents.length} events · ${cache.isMoonless ? "moonless" : "lit"}',
+                style: Type.micro.copyWith(color: Inks.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            fixture.id.description,
+            style: Type.micro.copyWith(color: Inks.faint),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            height: previewSize.height,
+            decoration: BoxDecoration(
+              color: const Color(0xFF07090D),
+              border: Border.all(color: Inks.hairline.withValues(alpha: 0.5)),
+            ),
+            child: CustomPaint(
+              size: previewSize,
+              painter: _PathEventDebugPainter(cache: cache),
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final pe in cache.projectedEvents) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: pe.event.isIntake
+                          ? const Color(0xFFA4C9A0)
+                          : const Color(0xFFE8A39A),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${pe.event.label ?? (pe.event.isIntake ? "Intake" : "Burn")} (${pe.event.energy?.round() ?? "—"} kcal, r=${pe.radius.toStringAsFixed(1)}px)',
+                      style: Type.micro.copyWith(color: Inks.body),
+                    ),
+                  ),
+                  Text(
+                    pe.honestyLabel,
+                    style: Type.micro.copyWith(color: Inks.muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PathEventDebugPainter extends CustomPainter {
+  const _PathEventDebugPainter({required this.cache});
+
+  final PathEventGeometryCache cache;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.clipRect(rect);
+
+    // Horizon line reference
+    final horizonY = size.height * kHorizonFraction;
+    canvas.drawLine(
+      Offset(0, horizonY),
+      Offset(size.width, horizonY),
+      Paint()
+        ..color = Inks.hairline
+        ..strokeWidth = 1,
+    );
+
+    // 1. Draw streaks from precomputed samples
+    for (final pe in cache.projectedEvents) {
+      if (pe.streakSamples.length > 1) {
+        final streakPath = Path();
+        var started = false;
+        for (final sample in pe.streakSamples) {
+          final pt = sample.screenPoint;
+          if (pt != null && sample.isVisible) {
+            if (!started) {
+              streakPath.moveTo(pt.dx, pt.dy);
+              started = true;
+            } else {
+              streakPath.lineTo(pt.dx, pt.dy);
+            }
+          } else {
+            started = false;
+          }
+        }
+        if (started) {
+          final color = pe.event.isIntake
+              ? const Color(0xFFA4C9A0)
+              : const Color(0xFFE8A39A);
+          canvas.drawPath(
+            streakPath,
+            Paint()
+              ..color = color.withValues(alpha: 0.6)
+              ..strokeWidth = 2.5
+              ..style = PaintingStyle.stroke
+              ..strokeCap = StrokeCap.round,
+          );
+        }
+      }
+    }
+
+    // 2. Draw marks at effective screen points
+    for (final pe in cache.projectedEvents) {
+      final pt = pe.effectiveScreenPoint;
+      if (pt == null || !pe.isAnchorVisible) continue;
+
+      final color = pe.event.isIntake
+          ? const Color(0xFFA4C9A0)
+          : const Color(0xFFE8A39A);
+
+      // Area-proportional circle
+      canvas.drawCircle(
+        pt,
+        pe.radius,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill,
+      );
+
+      // Coincident displacement line
+      if (pe.coincidentOffset != Offset.zero && pe.anchorScreenPoint != null) {
+        canvas.drawLine(
+          pe.anchorScreenPoint!,
+          pt,
+          Paint()
+            ..color = color.withValues(alpha: 0.4)
+            ..strokeWidth = 1,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PathEventDebugPainter oldDelegate) =>
+      oldDelegate.cache != cache;
 }
 
 double _weatherAmount(SkyWeather? weather, String field) => switch (field) {
