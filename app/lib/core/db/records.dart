@@ -594,6 +594,7 @@ class DaySummary {
     this.energyKcal,
     this.digest,
     this.digestSource,
+    this.digestStyle,
     this.best1rmKg,
     this.moveMinutes,
     this.distanceKm,
@@ -625,6 +626,9 @@ class DaySummary {
   /// `local` or `ai`. AI is kept across rollup refreshes.
   final String? digestSource;
 
+  /// Style variant of the digest (`concise`, `narrative`, `metric`). Defaults to `concise`.
+  final String? digestStyle;
+
   /// Best Epley 1RM logged this day, if any. Feeds the surplus ↔ strength pair.
   final double? best1rmKg;
 
@@ -648,6 +652,7 @@ class DaySummary {
   DaySummary copyWith({
     String? digest,
     String? digestSource,
+    String? digestStyle,
     int? steps,
     String? stepsSource,
   }) =>
@@ -668,6 +673,7 @@ class DaySummary {
         energyKcal: energyKcal,
         digest: digest ?? this.digest,
         digestSource: digestSource ?? this.digestSource,
+        digestStyle: digestStyle ?? this.digestStyle,
         best1rmKg: best1rmKg,
         moveMinutes: moveMinutes,
         distanceKm: distanceKm,
@@ -693,6 +699,7 @@ class DaySummary {
     'energyKcal': energyKcal,
     'digest': digest,
     'digestSource': digestSource,
+    'digestStyle': digestStyle ?? 'concise',
     'best1rmKg': best1rmKg,
     'moveMinutes': moveMinutes,
     'distanceKm': distanceKm,
@@ -718,6 +725,7 @@ class DaySummary {
     energyKcal: (j['energyKcal'] as num?)?.toDouble(),
     digest: j['digest'] as String?,
     digestSource: j['digestSource'] as String?,
+    digestStyle: (j['digestStyle'] as String?) ?? 'concise',
     best1rmKg: (j['best1rmKg'] as num?)?.toDouble(),
     moveMinutes: (j['moveMinutes'] as num?)?.toDouble(),
     distanceKm: (j['distanceKm'] as num?)?.toDouble(),

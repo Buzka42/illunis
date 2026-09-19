@@ -1,0 +1,19 @@
+{
+  "description": "Sub-21 finding: count is 0. Must fail closed before quota/upstream.",
+  "call": "patternInsight",
+  "findings": [
+    {
+      "id": "sleep-strain",
+      "count": 0,
+      "correlation": 0.42,
+      "evidence": "6.0h–8.5h · 40–80",
+      "sentence": "Longer nights have gone with heavier days."
+    }
+  ],
+  "expected": {
+    "status": 400,
+    "refusal": "ineligible",
+    "upstreamCalls": 0,
+    "quotaReserved": false
+  }
+}

@@ -3,7 +3,7 @@ import '../db/store.dart';
 import '../fitness/progress.dart';
 
 /// Style variant for the synthesized daily digest sentence.
-enum DigestVariant {
+enum DigestStyle {
   /// Dense, direct instrument synthesis (default).
   concise,
 
@@ -11,8 +11,22 @@ enum DigestVariant {
   narrative,
 
   /// Structured metric-forward ledger synthesis.
-  metric,
+  metric;
+
+  static DigestStyle fromString(String? val) {
+    switch (val) {
+      case 'narrative':
+        return DigestStyle.narrative;
+      case 'metric':
+        return DigestStyle.metric;
+      case 'concise':
+      default:
+        return DigestStyle.concise;
+    }
+  }
 }
+
+typedef DigestVariant = DigestStyle;
 
 enum _SleepSufficiency { restful, unrested, short, neutral }
 

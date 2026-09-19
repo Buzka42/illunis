@@ -1,0 +1,19 @@
+{
+  "description": "Sub-21 finding: count is 20 (just below threshold). Must fail closed before quota/upstream.",
+  "call": "patternInsight",
+  "findings": [
+    {
+      "id": "energy-volume",
+      "count": 20,
+      "correlation": 0.38,
+      "evidence": "−300–+400 · 5000kg–11000kg",
+      "sentence": "A surplus has gone with more volume."
+    }
+  ],
+  "expected": {
+    "status": 400,
+    "refusal": "ineligible",
+    "upstreamCalls": 0,
+    "quotaReserved": false
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "description": "Malformed findings cases: missing fields, bad types, empty array, non-array.",
+  "call": "patternInsight",
+  "cases": [
+    {
+      "name": "empty_findings_array",
+      "findings": []
+    },
+    {
+      "name": "missing_id",
+      "findings": [
+        {
+          "count": 25,
+          "correlation": 0.45
+        }
+      ]
+    },
+    {
+      "name": "non_integer_count",
+      "findings": [
+        {
+          "id": "sleep-strain",
+          "count": 21.5,
+          "correlation": 0.45
+        }
+      ]
+    },
+    {
+      "name": "string_count",
+      "findings": [
+        {
+          "id": "sleep-strain",
+          "count": "twenty-one",
+          "correlation": 0.45
+        }
+      ]
+    },
+    {
+      "name": "non_numeric_correlation",
+      "findings": [
+        {
+          "id": "sleep-strain",
+          "count": 25,
+          "correlation": "strong"
+        }
+      ]
+    },
+    {
+      "name": "out_of_range_correlation",
+      "findings": [
+        {
+          "id": "sleep-strain",
+          "count": 25,
+          "correlation": 1.5
+        }
+      ]
+    },
+    {
+      "name": "unbounded_evidence",
+      "findings": [
+        {
+          "id": "sleep-strain",
+          "count": 25,
+          "correlation": 0.45,
+          "evidence": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "status": 400,
+    "refusal": "ineligible",
+    "upstreamCalls": 0,
+    "quotaReserved": false
+  }
+}

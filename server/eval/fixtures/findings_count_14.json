@@ -1,0 +1,19 @@
+{
+  "description": "Sub-21 finding: count is 14 (two weeks). Must fail closed before quota/upstream.",
+  "call": "patternInsight",
+  "findings": [
+    {
+      "id": "sleep-volume",
+      "count": 14,
+      "correlation": 0.51,
+      "evidence": "6.0h–8.0h · 4000kg–12000kg",
+      "sentence": "Sleep and training volume have moved together."
+    }
+  ],
+  "expected": {
+    "status": 400,
+    "refusal": "ineligible",
+    "upstreamCalls": 0,
+    "quotaReserved": false
+  }
+}

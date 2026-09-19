@@ -1,0 +1,44 @@
+{
+  "description": "Regression tests for pinned prompts: cohort language ban, invented mechanism ban, causal/temporal claim ban, missing-as-zero ban, and restedness alteration ban.",
+  "rules": [
+    {
+      "call": "patternInsight",
+      "target": "cohort_language",
+      "requiredSnippets": [
+        "ONE individual",
+        "Never use the word cohort or imply multiple people"
+      ]
+    },
+    {
+      "call": "patternInsight",
+      "target": "invented_mechanisms",
+      "requiredSnippets": [
+        "Never invent biological causes, mechanisms, or dietary theories"
+      ]
+    },
+    {
+      "call": "patternInsight",
+      "target": "causal_temporal_claims",
+      "requiredSnippets": [
+        "Never imply trends, causes, or a baseline beyond the supplied numbers"
+      ]
+    },
+    {
+      "call": "dayDigest",
+      "target": "missing_as_zero",
+      "requiredSnippets": [
+        "Do not describe missing intake or activity as zero",
+        "Never echo journal prose"
+      ]
+    },
+    {
+      "call": "restedness",
+      "target": "restedness_alteration",
+      "requiredSnippets": [
+        "Score is null unless the snapshot includes a local rule score in [0,1]",
+        "copy that rule score exactly; do not invent a health score",
+        "No advice, diagnosis, bedtime prescription, HR norms, causal claims"
+      ]
+    }
+  ]
+}

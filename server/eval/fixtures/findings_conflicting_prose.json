@@ -1,0 +1,47 @@
+{
+  "description": "Conflicting prose findings: positive correlation with negative direction statement, or negative correlation with positive direction statement.",
+  "call": "patternInsight",
+  "cases": [
+    {
+      "name": "positive_correlation_with_negative_sentence",
+      "findings": [
+        {
+          "id": "sleep-strain",
+          "count": 25,
+          "correlation": 0.48,
+          "evidence": "6.0h–8.5h · 40–85",
+          "sentence": "Shorter nights have gone with heavier days."
+        }
+      ]
+    },
+    {
+      "name": "negative_correlation_with_positive_sentence",
+      "findings": [
+        {
+          "id": "sleep-strain",
+          "count": 25,
+          "correlation": -0.48,
+          "evidence": "6.0h–8.5h · 40–85",
+          "sentence": "Longer nights have gone with heavier days."
+        }
+      ]
+    },
+    {
+      "name": "energy_volume_positive_with_deficit_sentence",
+      "findings": [
+        {
+          "id": "energy-volume",
+          "count": 25,
+          "correlation": 0.50,
+          "sentence": "A deficit has gone with more volume."
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "status": 400,
+    "refusal": "ineligible",
+    "upstreamCalls": 0,
+    "quotaReserved": false
+  }
+}

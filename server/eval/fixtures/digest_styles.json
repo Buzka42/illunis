@@ -1,0 +1,37 @@
+{
+  "description": "DigestStyle fixture: concise, narrative, metric styles, legacy default to concise, and invalid style rejection.",
+  "call": "dayDigest",
+  "cases": [
+    {
+      "name": "concise_style",
+      "style": "concise",
+      "expectedStatus": 200,
+      "expectedPromptSnippet": "instrument sentence"
+    },
+    {
+      "name": "narrative_style",
+      "style": "narrative",
+      "expectedStatus": 200,
+      "expectedPromptSnippet": "narrative instrument sentence"
+    },
+    {
+      "name": "metric_style",
+      "style": "metric",
+      "expectedStatus": 200,
+      "expectedPromptSnippet": "structured metric-forward ledger sentence"
+    },
+    {
+      "name": "legacy_style_omitted",
+      "style": null,
+      "expectedStatus": 200,
+      "expectedPromptSnippet": "instrument sentence"
+    },
+    {
+      "name": "invalid_style_rejected",
+      "style": "flowery",
+      "expectedStatus": 400,
+      "expectedBody": "style",
+      "upstreamCalls": 0
+    }
+  ]
+}

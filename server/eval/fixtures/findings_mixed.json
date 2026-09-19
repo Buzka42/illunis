@@ -1,0 +1,26 @@
+{
+  "description": "Mixed eligible and ineligible findings: one at 25, one at 14. Must fail closed for the entire payload.",
+  "call": "patternInsight",
+  "findings": [
+    {
+      "id": "sleep-strain",
+      "count": 25,
+      "correlation": 0.45,
+      "evidence": "6.0h–8.5h · 40–85",
+      "sentence": "Longer nights have gone with heavier days."
+    },
+    {
+      "id": "sleep-volume",
+      "count": 14,
+      "correlation": 0.50,
+      "evidence": "6.0h–8.0h · 4000kg–12000kg",
+      "sentence": "Sleep and training volume have moved together."
+    }
+  ],
+  "expected": {
+    "status": 400,
+    "refusal": "ineligible",
+    "upstreamCalls": 0,
+    "quotaReserved": false
+  }
+}

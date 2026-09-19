@@ -6,6 +6,7 @@ import '../db/store.dart';
 import '../fitness/disciplines.dart';
 import '../fitness/format.dart';
 import '../fitness/session.dart';
+import '../health/digest.dart';
 import '../health/rollups.dart';
 import '../journal/parser.dart';
 import '../journal/stamp.dart';
@@ -226,9 +227,15 @@ class JournalRepository {
     unawaited(_maybeInsights());
   }
 
-  Future<void> _maybeDigest(String day) async {
+  Future<void> _maybeDigest(
+    String day, {
+    DigestStyle style = DigestStyle.concise,
+  }) async {
     final existing = store.summaryOn(day);
-    if (existing?.digestSource == 'ai' && (existing?.digest ?? '').isNotEmpty) {
+    final cachedStyle = existing?.digestStyle ?? 'concise';
+    if (existing?.digestSource == 'ai' &&
+        (existing?.digest ?? '').isNotEmpty &&
+        cachedStyle == style.name) {
       return;
     }
     final s = summaryForAi(store, day);
@@ -240,6 +247,7 @@ class JournalRepository {
     final result = await transport.dayDigest(
       profile: store.profile,
       user: user,
+      style: style,
     );
     if (!result.ok) return;
     if (!store.profile.hasAiConsent || !store.profile.ageAtLeast16) return;
@@ -251,7 +259,11 @@ class JournalRepository {
     final latest = store.summaryOn(day);
     if (latest == null) return;
     await store.putSummary(
-      latest.copyWith(digest: sentence.trim(), digestSource: 'ai'),
+      latest.copyWith(
+        digest: sentence.trim(),
+        digestSource: 'ai',
+        digestStyle: style.name,
+      ),
     );
   }
 
@@ -278,6 +290,7 @@ class JournalRepository {
       return;
     }
     final buf = StringBuffer();
+    final findingsPayload = <Map<String, Object?>>[];
     for (final f in board.findings.take(6)) {
       buf.writeln(
         '${f.pairLabel} r=${f.correlation.r.toStringAsFixed(2)} n=${f.correlation.n}',
@@ -285,12 +298,27 @@ class JournalRepository {
       buf.writeln(f.sentence);
       if (f.evidence != null) buf.writeln(f.evidence);
       buf.writeln();
+
+      findingsPayload.add({
+        'id': f.id,
+        'count': f.correlation.n,
+        'correlation': double.parse(f.correlation.r.toStringAsFixed(3)),
+        'evidence': f.evidence ?? '',
+        'sentence': f.sentence,
+      });
     }
     final result = await transport.patternInsight(
       profile: store.profile,
       user: buf.toString(),
+      findings: findingsPayload,
     );
-    if (!result.ok) return;
+    if (!result.ok) {
+      // Keep local fallback on refusal or error
+      if (store.insightNote == null && board.findings.isNotEmpty) {
+        await store.putInsight(note: board.findings.first.sentence, key: key);
+      }
+      return;
+    }
     if (!store.profile.hasAiConsent || !store.profile.ageAtLeast16) return;
     final currentBoard = insightBoard([
       for (final s in store.summaries) summaryForAi(store, s.day),

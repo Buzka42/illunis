@@ -6,6 +6,7 @@ import 'package:http/testing.dart';
 import 'package:illunis/core/ai/prompts.dart';
 import 'package:illunis/core/ai/transport.dart';
 import 'package:illunis/core/db/records.dart';
+import 'package:illunis/core/health/digest.dart';
 
 void main() {
   final profile = Profile(
@@ -131,6 +132,94 @@ void main() {
 
       expect(res.ok, isFalse);
       expect(res.error, contains('connection refused'));
+    });
+
+    test('dayDigest passes DigestStyle in transport body and defaults to concise', () async {
+      String? sentStyle;
+      final client = MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        sentStyle = body['style'] as String?;
+        return http.Response(jsonEncode({'raw': '{"sentence": "ok"}'}), 200);
+      });
+
+      final transport = AiTransport(
+        client: client,
+        endpoint: 'https://worker.test',
+        token: 'test-token',
+      );
+
+      // Default style
+      await transport.dayDigest(profile: profile, user: 'data');
+      expect(sentStyle, 'concise');
+
+      // Narrative style
+      await transport.dayDigest(profile: profile, user: 'data', style: DigestStyle.narrative);
+      expect(sentStyle, 'narrative');
+
+      // Metric style
+      await transport.dayDigest(profile: profile, user: 'data', style: DigestStyle.metric);
+      expect(sentStyle, 'metric');
+    });
+
+    test('patternInsight passes structured findings payload in transport body', () async {
+      List<dynamic>? sentFindings;
+      final client = MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        sentFindings = body['findings'] as List<dynamic>?;
+        return http.Response(jsonEncode({'raw': '{"sentence": "ok"}'}), 200);
+      });
+
+      final transport = AiTransport(
+        client: client,
+        endpoint: 'https://worker.test',
+        token: 'test-token',
+      );
+
+      final findings = [
+        {
+          'id': 'sleep-strain',
+          'count': 25,
+          'correlation': 0.42,
+          'evidence': '6h–8h · 40–80',
+          'sentence': 'Longer nights have gone with heavier days.',
+        }
+      ];
+
+      await transport.patternInsight(
+        profile: profile,
+        user: 'user text',
+        findings: findings,
+      );
+
+      expect(sentFindings, isNotNull);
+      expect(sentFindings!.length, 1);
+      final f = sentFindings!.first as Map<String, dynamic>;
+      expect(f['id'], 'sleep-strain');
+      expect(f['count'], 25);
+      expect(f['correlation'], 0.42);
+    });
+
+    test('DaySummary persistence retains digestStyle and defaults legacy null to concise', () {
+      // Legacy JSON without digestStyle
+      final legacyJson = {
+        'day': '2026-09-19',
+        'digest': 'Legacy digest',
+        'digestSource': 'ai',
+      };
+      final parsedLegacy = DaySummary.fromJson(legacyJson);
+      expect(parsedLegacy.digestStyle, 'concise');
+
+      // Explicit style
+      const explicit = DaySummary(
+        day: '2026-09-19',
+        digest: 'Narrative digest',
+        digestSource: 'ai',
+        digestStyle: 'narrative',
+      );
+      final json = explicit.toJson();
+      expect(json['digestStyle'], 'narrative');
+      final restored = DaySummary.fromJson(json);
+      expect(restored.digestStyle, 'narrative');
     });
   });
 }

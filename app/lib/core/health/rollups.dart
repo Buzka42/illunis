@@ -278,7 +278,11 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
   if (forAi) return built;
   final keepAi = prev?.digestSource == 'ai' && (prev?.digest ?? '').isNotEmpty;
   if (keepAi) {
-    return built.copyWith(digest: prev!.digest, digestSource: 'ai');
+    return built.copyWith(
+      digest: prev!.digest,
+      digestSource: 'ai',
+      digestStyle: prev.digestStyle ?? 'concise',
+    );
   }
   final local = composeDayDigest(store, day, built);
   return built.copyWith(

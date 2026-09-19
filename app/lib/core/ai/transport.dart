@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../db/records.dart';
+import '../health/digest.dart';
 import 'prompts.dart';
 
 const kAiEndpoint = String.fromEnvironment('ILLUNIS_AI_ENDPOINT');
@@ -41,6 +42,8 @@ class AiTransport {
     required String user,
     required Map<String, Object?> responseSchema,
     bool excludedFromAi = false,
+    String? style,
+    List<Map<String, Object?>>? findings,
   }) async {
     if (!configured) return const AiResult(error: 'no-endpoint');
     if (excludedFromAi) return const AiResult(error: 'keep-local');
@@ -64,6 +67,8 @@ class AiTransport {
               'system': system,
               'user': user,
               'responseSchema': responseSchema,
+              'style': ?style,
+              'findings': ?findings,
             }),
           )
           .timeout(const Duration(seconds: 20));
@@ -102,19 +107,25 @@ class AiTransport {
     );
   }
 
-  Future<AiResult> dayDigest({required Profile profile, required String user}) {
+  Future<AiResult> dayDigest({
+    required Profile profile,
+    required String user,
+    DigestStyle style = DigestStyle.concise,
+  }) {
     return call(
       name: 'dayDigest',
       profile: profile,
       system: kDayDigestSystem,
       user: user,
       responseSchema: kDayDigestSchema,
+      style: style.name,
     );
   }
 
   Future<AiResult> patternInsight({
     required Profile profile,
     required String user,
+    List<Map<String, Object?>>? findings,
   }) {
     return call(
       name: 'patternInsight',
@@ -122,6 +133,7 @@ class AiTransport {
       system: kPatternInsightSystem,
       user: user,
       responseSchema: kPatternInsightSchema,
+      findings: findings,
     );
   }
 
