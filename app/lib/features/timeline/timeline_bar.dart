@@ -66,7 +66,8 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
             label: [
               'Day timeline',
               if (sleep != null)
-                'Sleep ${formatDuration(sleep.asleepHours / 24)}',
+                'Sleep ${formatDuration(sleep.asleepHours / 24)}'
+                    '${sleep.source == SleepSource.wearable ? ' from wearable' : ''}',
               if (calories.isNotEmpty)
                 'Confirmed calories at journal logging times. '
                     '${calories.map((m) => '${m.kind.name} ${m.kcal.round()} kilocalories at ${formatHours(m.time)}').join('. ')}',
@@ -384,7 +385,9 @@ class _TimelinePainter extends CustomPainter {
     // to the playhead's time when the two would share the space.
     final labelT = (((r.endHours % 24) + 24) % 24) / 24;
     final lx = _x(labelT, size) + 6;
-    final label = 'SLEEP ${formatDuration(r.asleepHours / 24)}';
+    final label =
+        'SLEEP ${formatDuration(r.asleepHours / 24)}'
+        '${r.source == SleepSource.wearable ? ' · HC' : ''}';
     final w = _measure(label, size: 7.5, weight: 600).width;
     final clear = (headX + 24 < lx) || (headX - 24 > lx + w);
     if (!clear) return;

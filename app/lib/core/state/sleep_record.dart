@@ -19,19 +19,29 @@ class SleepSegment {
   final SleepStage stage;
 }
 
+/// Where the timeline band came from. Journal wins ties (R5); wearable is
+/// the fallback when the journal has no sleep for the day. The dashboard
+/// SLEEP tile already resolves the same way via `resolveLifeStats`.
+enum SleepSource { journal, wearable }
+
 @immutable
 class SleepRecord {
   const SleepRecord({
     required this.startHours,
     required this.endHours,
     this.segments = const [],
+    this.source = SleepSource.journal,
   });
-
   final double startHours;
   final double endHours;
 
   /// Stage breakdown when the source has one; empty means duration only.
   final List<SleepSegment> segments;
+
+  /// Provenance of the band. Wearable bands are duration-only (Health
+  /// Connect reports hours, not bed/wake times) and are anchored to end at
+  /// 07:00 local so the band sits in the morning half of the track.
+  final SleepSource source;
 
   double get durationHours => endHours - startHours;
 
@@ -91,7 +101,9 @@ class SleepRecord {
 }
 
 /// Last night, as the source knows it. Debug presets still inject a staged
-/// mock; live mode reads the journal's last sleep, or nothing.
+/// mock; live mode reads the journal's longest sleep (R5 rule — the night,
+/// not a nap), falling back to the wearable bridge (same source the
+/// dashboard SLEEP tile uses) when the journal has no sleep for the day.
 final sleepRecordProvider = Provider<SleepRecord?>((ref) {
   final preset = ref.watch(skyOverridesProvider.select((o) => o.preset));
   if (preset != SkyPreset.live) {
@@ -114,6 +126,32 @@ final sleepRecordProvider = Provider<SleepRecord?>((ref) {
   }
   ref.watch(storeRevisionProvider);
   final s = ref.watch(todayFiguresProvider).sleep;
-  if (s == null) return null;
-  return SleepRecord(startHours: s.startHours, endHours: s.endHours);
+  if (s != null) {
+    debugPrint(
+      'IllunisSleep source=journal hours=${s.durationHours.toStringAsFixed(2)}',
+    );
+    return SleepRecord(
+      startHours: s.startHours,
+      endHours: s.endHours,
+      source: SleepSource.journal,
+    );
+  }
+  // Journal absent: wearable fallback. lifeStatsProvider already applies the
+  // journal-wins rule, so reaching here means the value (if any) is
+  // wearable-sourced. Duration-only: no bed/wake times from the bridge.
+  final wearableSleep = ref.watch(todayLifeStatsProvider).sleep;
+  final hours = wearableSleep.value;
+  if (hours == null || hours <= 0) {
+    debugPrint('IllunisSleep source=none');
+    return null;
+  }
+  debugPrint(
+    'IllunisSleep source=wearable hours=${hours.toStringAsFixed(2)}',
+  );
+  const wakeAt = 7.0;
+  return SleepRecord(
+    startHours: wakeAt - hours,
+    endHours: wakeAt,
+    source: SleepSource.wearable,
+  );
 });
