@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
@@ -13,6 +14,12 @@ import '../../core/state/sky_state_source.dart';
 /// PNG of itself at a set of times of day, then returns to the clock.
 /// It is how the sky is reviewed as a contact sheet rather than a viewport.
 const String kCaptureDir = String.fromEnvironment('ILLUNIS_CAPTURE');
+
+/// Debug-only build-SHA plumbing (Kimi BLD-01 scaffold). Run with
+/// `--dart-define=ILLUNIS_BUILD_SHA=<sha>` so a recapture run can tie every
+/// frame back to the exact commit. Empty in normal dev runs; never read in
+/// release (this whole sequence is kDebugMode-gated, no release surface).
+const String kBuildSha = String.fromEnvironment('ILLUNIS_BUILD_SHA');
 
 const List<double> kCaptureTimes = [
   0.02, // deep night
@@ -35,6 +42,17 @@ Future<void> runCaptureSequence(
   if (!kDebugMode || kCaptureDir.isEmpty) return;
   final dir = Directory(kCaptureDir);
   await dir.create(recursive: true);
+  // Capture line: ties the whole run to the build under test.
+  debugPrint('capture build ${kBuildSha.isEmpty ? 'dev' : kBuildSha}');
+  // Capture manifest scaffold (Kimi BLD-01): the recapture step will record
+  // one entry per frame with {commit, size, dpr, insets} — commit is
+  // kBuildSha above; size/dpr/insets come from MediaQuery at the shell
+  // boundary and are not yet threaded through. Run-level manifest only.
+  final manifest = <String, Object>{
+    'commit': kBuildSha,
+    'times': kCaptureTimes,
+    'frames': <String>[],
+  };
   final overrides = container.read(skyOverridesProvider.notifier);
   await Future<void>.delayed(const Duration(milliseconds: 1500));
   for (final preset in presets) {
@@ -53,9 +71,13 @@ Future<void> runCaptureSequence(
       await File(
         '${dir.path}${Platform.pathSeparator}$name',
       ).writeAsBytes(bytes.buffer.asUint8List());
+      (manifest['frames'] as List<String>).add(name);
       debugPrint('captured $name');
     }
   }
+  await File(
+    '${dir.path}${Platform.pathSeparator}manifest.json',
+  ).writeAsString(jsonEncode(manifest));
   overrides.reset();
   debugPrint('capture complete');
 }

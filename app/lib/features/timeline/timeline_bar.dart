@@ -16,6 +16,20 @@ import '../../core/theme/typography.dart';
 import 'calorie_marks.dart';
 import 'weather_projection.dart';
 
+/// Single source for the timeline scrub badge. `LIVE` shows only when the
+/// playhead rides the clock (scrub == null) and there is data to show;
+/// otherwise the badge shows the scrubbed time, or NOW when live with no
+/// scene yet. Amber (warm) is reserved for the live state.
+String scrubBadgeLabel({required double? scrub, required bool hasData}) {
+  if (scrub != null) return formatHours(scrub);
+  if (hasData) return 'LIVE';
+  return 'NOW';
+}
+
+/// Amber (warm) belongs to the live state only.
+bool scrubBadgeIsLive({required double? scrub, required bool hasData}) =>
+    scrub == null && hasData;
+
 /// The day as a track: hour scale, the daylight span, last night's sleep
 /// with its stages, and a playhead. Dragging scrubs `timeOfDay` through the
 /// same override the debug sheet uses, so the whole sky follows the finger.
@@ -105,37 +119,54 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
             else
               timelineView,
             const Positioned.fill(child: WeatherGlyphs()),
-            // LIVE sits at whichever end the playhead's label is not.
-            if (scrub != null)
-              Positioned(
-                right: scrub < 0.72 ? _pad - 6 : null,
-                left: scrub < 0.72 ? null : _pad - 6,
-                top: 0,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _live,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(6, 2, 6, 6),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            color: Inks.warm,
-                            shape: BoxShape.circle,
-                          ),
+            // Scrub badge, single source: LIVE only on the clock with data,
+            // else the scrubbed time or NOW. Amber (warm) marks live only.
+            if (canScrub)
+              ValueListenableBuilder<ResolvedScene?>(
+                valueListenable: widget.scene,
+                builder: (context, badgeScene, _) {
+                  final hasData = badgeScene != null;
+                  final live = scrubBadgeIsLive(
+                    scrub: scrub,
+                    hasData: hasData,
+                  );
+                  final atRight = scrub == null || scrub < 0.72;
+                  return Positioned(
+                    right: atRight ? _pad - 6 : null,
+                    left: atRight ? null : _pad - 6,
+                    top: 0,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _live,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(6, 2, 6, 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: live ? Inks.warm : Inks.body,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              scrubBadgeLabel(
+                                scrub: scrub,
+                                hasData: hasData,
+                              ),
+                              style: Type.label.copyWith(
+                                color: live ? Inks.warm : Inks.strong,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'LIVE',
-                          style: Type.label.copyWith(color: Inks.strong),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
           ],
         ),
@@ -250,8 +281,9 @@ class _TimelinePainter extends CustomPainter {
     }
     final t = headT;
     final x = _x(t, size);
+    // Amber is reserved for the live badge; heads stay neutral ink.
     final head = Paint()
-      ..color = (scrub != null ? Inks.warm : _ink).withValues(alpha: 0.85)
+      ..color = _ink.withValues(alpha: 0.85)
       ..strokeWidth = 1;
     canvas.drawLine(Offset(x, _trackY - 15), Offset(x, _trackY + 6), head);
     canvas.drawCircle(
@@ -266,7 +298,7 @@ class _TimelinePainter extends CustomPainter {
       size: 8.5,
       alpha: scrub != null ? 0.95 : 0.6,
       weight: 600,
-      color: scrub != null ? Inks.warm : _ink,
+      color: _ink,
       anchor: Alignment.bottomCenter,
     );
   }

@@ -40,6 +40,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
   var _confirmDelete = false;
   String? _note;
   final _scroll = ScrollController();
+  var _hasMore = false;
 
   AppStore get _store => ref.read(storeProvider);
 
@@ -47,6 +48,19 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
   void dispose() {
     _scroll.dispose();
     super.dispose();
+  }
+
+  /// Whether more content sits below the fold. Drives the MORE cue.
+  void _syncMore() {
+    if (!mounted || !_scroll.hasClients) return;
+    final more = _scroll.position.extentAfter > 0;
+    if (more != _hasMore) setState(() => _hasMore = more);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncMore());
   }
 
   /// Sets the status note and scrolls it into view: the note renders below
@@ -86,46 +100,75 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
   Widget build(BuildContext context) {
     ref.watch(storeRevisionProvider);
     final profile = _store.profile;
-    final maxH = MediaQuery.sizeOf(context).height * 0.72;
+    final mq = MediaQuery.of(context);
+    final maxH = (mq.size.height - mq.padding.vertical) * 0.88;
+    final bottomPad = 18.0 + mq.viewPadding.bottom;
+    // Keep the continuation cue honest after content changes.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncMore());
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxH),
-        child: SingleChildScrollView(
-          controller: _scroll,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Space.margin,
-              18,
-              Space.margin,
-              18,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Space.margin,
+                18,
+                Space.margin,
+                0,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Text(S.settings, style: Type.label),
+                      const Spacer(),
+                      Text(
+                        S.version,
+                        style: Type.micro.copyWith(color: Inks.faint),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Container(height: 1, color: Inks.hairline),
+                ],
+              ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Text(S.settings, style: Type.label),
-                    const Spacer(),
-                    Text(
-                      S.version,
-                      style: Type.micro.copyWith(color: Inks.faint),
+            Flexible(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (n) {
+                  if (n is ScrollUpdateNotification ||
+                      n is ScrollEndNotification) {
+                    WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => _syncMore(),
+                    );
+                  }
+                  return false;
+                },
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      Space.margin,
+                      14,
+                      Space.margin,
+                      bottomPad,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Container(height: 1, color: Inks.hairline),
-                const SizedBox(height: 14),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                 _Line(
                   label: 'QUICK GUIDE',
                   sub:
                       'Swipe between surfaces. Long press a surface title for Settings.',
                   onTap: () => showQuickGuide(context),
                 ),
-                _Line(
-                  label: 'WEATHER SOURCE / FORECAST',
-                  onTap: () => showWeatherSheet(context),
-                ),
+                const _SectionLabel('DATA'),
                 _Line(
                   label: S.exportJson,
                   onTap: () => _copy(S.exportJson, _store.exportJson()),
@@ -154,6 +197,11 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                       setState(() => _note = S.importFailed);
                     }
                   },
+                ),
+                const _SectionLabel('SOURCES'),
+                _Line(
+                  label: 'WEATHER SOURCE / FORECAST',
+                  onTap: () => showWeatherSheet(context),
                 ),
                 _Line(
                   label: isImperial(profile.units) ? S.unitsLb : S.unitsKg,
@@ -263,6 +311,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                     }
                   },
                 ),
+                const _SectionLabel('PRIVACY'),
                 _Line(
                   label: profile.hasAiConsent
                       ? '${S.aiConsent} · ON'
@@ -288,6 +337,9 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                     );
                   },
                 ),
+                const SizedBox(height: 18),
+                Container(height: 1, color: Inks.hairline),
+                const SizedBox(height: 6),
                 _Line(
                   label: _confirmDelete ? S.confirmDelete : S.deleteAll,
                   onTap: () async {
@@ -304,10 +356,42 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                   const SizedBox(height: 12),
                   Text(_note!, style: Type.caption),
                 ],
-              ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
+            if (_hasMore)
+              Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 8),
+                child: Center(
+                  child: Text('MORE ↓', style: Type.micro),
+                ),
+              ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// Hairline section label: plain mono over a hairline, no containers.
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 14, bottom: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(text, style: Type.micro),
+          const SizedBox(height: 6),
+          Container(height: 1, color: Inks.hairline),
+        ],
       ),
     );
   }
