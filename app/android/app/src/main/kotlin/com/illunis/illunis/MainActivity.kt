@@ -215,9 +215,24 @@ class MainActivity : FlutterActivity() {
         var calories: Double? = null
         var activeMinutes: Double? = null
         if (granted.contains(HealthPermission.getReadPermission(StepsRecord::class))) {
-            steps = client.aggregate(
+            // Single-source rule: the HC aggregate sums every writer
+            // (Garmin + phone counter), which nearly doubles the figure.
+            // Read raw records, total per dataOrigin package, and take the
+            // Garmin snapshot when present, else the max single package.
+            val recs = client.readRecords(
+                ReadRecordsRequest(StepsRecord::class, range),
+            ).records
+            val byOrigin = recs.groupBy { it.metadata.dataOrigin.packageName }
+                .mapValues { (_, rs) -> rs.sumOf { it.count } }
+            for ((pkg, total) in byOrigin) {
+                Log.i(TAG, "day=$day stepsOrigin pkg=$pkg total=$total")
+            }
+            val aggTotal = client.aggregate(
                 AggregateRequest(setOf(StepsRecord.COUNT_TOTAL), range),
             )[StepsRecord.COUNT_TOTAL]
+            Log.i(TAG, "day=$day stepsAgg=$aggTotal origins=${byOrigin.size}")
+            steps = byOrigin["com.garmin.android.apps.connectmobile"]
+                ?: byOrigin.values.maxOrNull()
         }
         if (granted.contains(HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class))) {
             calories = client.aggregate(
@@ -233,14 +248,35 @@ class MainActivity : FlutterActivity() {
 
         var sleepHours: Double? = null
         if (granted.contains(HealthPermission.getReadPermission(SleepSessionRecord::class))) {
+            // Garmin nights span midnight (e.g. 23:00 -> 07:00), so a
+            // same-day window misses the session entirely: its startTime
+            // falls on the previous civil day. Query day-1..day+1 and
+            // attribute each whole session to its end (morning) day —
+            // the Garmin Connect convention.
+            val wideStart = day.minusDays(1).atStartOfDay(zone).toInstant()
+            val wideEnd = day.plusDays(1).atStartOfDay(zone).toInstant()
             val sessions = client.readRecords(
-                ReadRecordsRequest(SleepSessionRecord::class, range),
+                ReadRecordsRequest(
+                    SleepSessionRecord::class,
+                    TimeRangeFilter.between(wideStart, wideEnd),
+                ),
             ).records
             var totalSecs = 0L
+            var attributed = 0
             for (s in sessions) {
-                totalSecs += java.time.Duration.between(s.startTime, s.endTime).seconds
+                val endDay = s.endTime.atZone(zone).toLocalDate()
+                Log.i(
+                    TAG,
+                    "day=$day sleepSession start=${s.startTime} end=${s.endTime} " +
+                        "endDay=$endDay origin=${s.metadata.dataOrigin.packageName}",
+                )
+                if (endDay == day) {
+                    totalSecs += java.time.Duration.between(s.startTime, s.endTime).seconds
+                    attributed++
+                }
             }
-            if (sessions.isNotEmpty()) {
+            Log.i(TAG, "day=$day sleepSessions=${sessions.size} attributed=$attributed")
+            if (attributed > 0) {
                 sleepHours = (totalSecs / 3600.0).coerceIn(0.0, 24.0)
             }
         }
@@ -277,6 +313,7 @@ class MainActivity : FlutterActivity() {
             TAG,
             "day=$day steps=$steps sleepH=$sleepHours rhr=$restingHr " +
                 "activeMin=$activeMinutes kcal=$calories granted=${granted.size} " +
+                "grantedSet=${granted.sorted()} " +
                 (if (partial) "(partial)" else ""),
         )
         return out

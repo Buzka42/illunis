@@ -142,4 +142,76 @@ void main() {
       expect(stats.sleep.value, isNotNull);
     });
   });
+
+  group('single-source steps (dual-writer regression)', () {
+    test('Garmin origin wins over phone counter snapshots', () {
+      // Real 2026-09-19 shape: three writers for the same day.
+      expect(
+        pickSingleSourceSteps({
+          'com.google.android.apps.fitness': 179,
+          'com.android.healthconnect.phone.j68d3905aec29373e972595a06c365e0b':
+              81,
+          garminConnectPackage: 283,
+        }),
+        283,
+      );
+    });
+
+    test('max single package when Garmin absent', () {
+      expect(
+        pickSingleSourceSteps({'phone.counter': 4000, 'fit.app': 6500}),
+        6500,
+      );
+    });
+
+    test('empty origins stay null (absence, never zero)', () {
+      expect(pickSingleSourceSteps({}), isNull);
+    });
+
+    test('stored wearable snapshots collapse to max, journal sums', () {
+      final store = AppStore.memory();
+      store.steps.add(step('2026-09-19', 200, 'health-connect'));
+      store.steps.add(step('2026-09-19', 283, 'wearable'));
+      // Passive-only day: repeated syncs are snapshots, not additive.
+      expect(store.authoritativeSteps('2026-09-19')?.steps, 283);
+      store.steps.add(step('2026-09-19', 5000, 'parsed'));
+      // Journal-first once reviewed text exists.
+      expect(store.authoritativeSteps('2026-09-19')?.steps, 5000);
+      expect(store.authoritativeSteps('2026-09-19')?.source, 'journal');
+    });
+  });
+
+  group('midnight-spanning sleep attribution (regression)', () {
+    test('whole night lands on the morning (end) day', () {
+      final night = (
+        start: DateTime(2026, 9, 18, 21, 51),
+        end: DateTime(2026, 9, 19, 6, 42),
+      );
+      expect(
+        sleepHoursEndingOnDay([night], '2026-09-19'),
+        closeTo(8.85, 0.01),
+      );
+      // The start day gets nothing from this night.
+      expect(sleepHoursEndingOnDay([night], '2026-09-18'), isNull);
+    });
+
+    test('neighbour nights attribute to their own mornings', () {
+      final sessions = [
+        (start: DateTime(2026, 9, 17, 22, 54), end: DateTime(2026, 9, 18, 5, 26)),
+        (start: DateTime(2026, 9, 18, 21, 51), end: DateTime(2026, 9, 19, 6, 42)),
+      ];
+      expect(
+        sleepHoursEndingOnDay(sessions, '2026-09-18'),
+        closeTo(6.53, 0.01),
+      );
+      expect(
+        sleepHoursEndingOnDay(sessions, '2026-09-19'),
+        closeTo(8.85, 0.01),
+      );
+    });
+
+    test('no session ending that day stays null', () {
+      expect(sleepHoursEndingOnDay([], '2026-09-19'), isNull);
+    });
+  });
 }
