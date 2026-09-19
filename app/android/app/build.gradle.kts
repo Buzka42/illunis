@@ -33,7 +33,8 @@ android {
 
     defaultConfig {
         applicationId = "com.illunis.illunis"
-        minSdk = flutter.minSdkVersion
+        // Health Connect connect-client requires API 26+.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -44,6 +45,11 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+}
+
+dependencies {
+    implementation("androidx.health.connect:connect-client:1.1.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }
 
 kotlin {

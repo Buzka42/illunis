@@ -562,6 +562,19 @@ class StepEntry {
   );
 }
 
+/// True for passive step snapshots (bridge syncs, pedometer imports).
+/// Journal-parsed entries are reviewed text and win ties — mirroring the
+/// sleep journal-first rule. Ported from track-r/strain-steps (R1 dedup).
+bool isWearableStepsSource(String source) => const {
+  'wearable',
+  'bridge',
+  'health-connect',
+  'health_connect',
+  'hc',
+  'pedometer',
+  'phone',
+}.contains(source.toLowerCase());
+
 @immutable
 class DaySummary {
   const DaySummary({
@@ -586,6 +599,7 @@ class DaySummary {
     this.distanceKm,
     this.runSpeedKmh,
     this.steps,
+    this.stepsSource,
   });
 
   final String day;
@@ -626,7 +640,17 @@ class DaySummary {
   /// Journal or wearable logged steps for this civil day.
   final int? steps;
 
-  DaySummary copyWith({String? digest, String? digestSource, int? steps}) =>
+  /// Provenance of [steps]: `journal` or `wearable`. Journal-first, mirroring
+  /// the sleep journal-first rule — reviewed text beats passive snapshots.
+  /// Null when [steps] is null. Surfaced on the dashboard as JNL/HC.
+  final String? stepsSource;
+
+  DaySummary copyWith({
+    String? digest,
+    String? digestSource,
+    int? steps,
+    String? stepsSource,
+  }) =>
       DaySummary(
         day: day,
         sleepHours: sleepHours,
@@ -649,6 +673,7 @@ class DaySummary {
         distanceKm: distanceKm,
         runSpeedKmh: runSpeedKmh,
         steps: steps ?? this.steps,
+        stepsSource: stepsSource ?? this.stepsSource,
       );
 
   Map<String, Object?> toJson() => {
@@ -673,6 +698,7 @@ class DaySummary {
     'distanceKm': distanceKm,
     'runSpeedKmh': runSpeedKmh,
     'steps': steps,
+    'stepsSource': stepsSource,
   };
 
   factory DaySummary.fromJson(Map<String, Object?> j) => DaySummary(
@@ -697,6 +723,7 @@ class DaySummary {
     distanceKm: (j['distanceKm'] as num?)?.toDouble(),
     runSpeedKmh: (j['runSpeedKmh'] as num?)?.toDouble(),
     steps: (j['steps'] as num?)?.toInt(),
+    stepsSource: j['stepsSource'] as String?,
   );
 }
 

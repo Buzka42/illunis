@@ -224,9 +224,29 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
         (e) => e.day == day && (!forAi || store.isAiEligible(e.journalEntryId)),
       )
       .toList();
-  final int? steps = daySteps.isEmpty
+  // Journal-first dedup (R1, ported from track-r/strain-steps): journal
+  // entries sum; a wearable-only day collapses to the max snapshot so
+  // repeated bridge syncs never double-count.
+  final journalSteps = daySteps.where((e) => !isWearableStepsSource(e.source));
+  final List<StepEntry> eligibleSteps;
+  final String? eligibleStepsSource;
+  if (journalSteps.isNotEmpty) {
+    eligibleSteps = journalSteps.toList();
+    eligibleStepsSource = 'journal';
+  } else if (daySteps.isEmpty) {
+    eligibleSteps = const [];
+    eligibleStepsSource = null;
+  } else {
+    var best = daySteps.first;
+    for (final e in daySteps) {
+      if (e.steps > best.steps) best = e;
+    }
+    eligibleSteps = [best];
+    eligibleStepsSource = 'wearable';
+  }
+  final int? steps = eligibleSteps.isEmpty
       ? null
-      : daySteps.fold<int>(0, (a, s) => a + s.steps);
+      : eligibleSteps.fold<int>(0, (a, s) => a + s.steps);
 
   final energy = _energy(store, day, intake, expenditure, forAi: forAi);
   final todayDelta = intake != null && expenditure != null
@@ -253,6 +273,7 @@ DaySummary _summaryFor(AppStore store, String day, {bool forAi = false}) {
     distanceKm: distanceKm,
     runSpeedKmh: runSpeed,
     steps: steps,
+    stepsSource: eligibleStepsSource,
   );
   if (forAi) return built;
   final keepAi = prev?.digestSource == 'ai' && (prev?.digest ?? '').isNotEmpty;
