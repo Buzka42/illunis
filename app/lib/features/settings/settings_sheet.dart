@@ -209,11 +209,14 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                       final allowed =
                           available && await bridge.requestPermissions();
                       if (!mounted) return;
-                      if (allowed) ref.invalidate(wearableDailyDataProvider);
+                      // Always attempt a refresh: on ROMs where the permission
+                      // sheet won't open, grants made in HC settings still flow
+                      // through getDailyData (partial by granted set).
+                      ref.invalidate(wearableDailyDataProvider);
                       setState(
                         () => _note = allowed
                             ? 'Wearable refresh requested.'
-                            : 'Wearable access unavailable or denied. Journal figures remain available.',
+                            : 'Tried permissions; refreshed from granted access. Grant Illunis in Health Connect if figures stay empty.',
                       );
                     } catch (_) {
                       if (mounted) {
