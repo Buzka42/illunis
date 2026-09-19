@@ -138,10 +138,28 @@ class MainActivity : FlutterActivity() {
         }
         pendingPermissionResult = result
         try {
-            startActivityForResult(
-                permissionContract.createIntent(this, permissions),
-                permissionRequestCode,
-            )
+            val intent = permissionContract.createIntent(this, permissions)
+            // Implicit HC permission intents don't resolve on all ROMs;
+            // pin the intent to whichever package handles it.
+            val handler = packageManager
+                .queryIntentActivities(intent, 0)
+                .firstOrNull()
+            if (handler == null) {
+                // ROM doesn't resolve the permission intent: send the owner
+                // to Health Connect settings to grant Illunis access manually.
+                Log.w(TAG, "no activity for permission intent, opening HC settings")
+                try {
+                    startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+                } catch (e: Exception) {
+                    Log.w(TAG, "HC settings fallback failed", e)
+                }
+                pendingPermissionResult = null
+                result.success(false)
+                return
+            }
+            intent.setPackage(handler.activityInfo.packageName)
+            Log.i(TAG, "permission intent -> ${handler.activityInfo.packageName}")
+            startActivityForResult(intent, permissionRequestCode)
         } catch (e: Exception) {
             Log.w(TAG, "permission launch failed", e)
             pendingPermissionResult = null
