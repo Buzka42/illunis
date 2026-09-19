@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/db/records.dart';
 import '../../core/db/store.dart';
 import '../../core/health/rollups.dart';
 import '../../core/i18n/strings.dart';
@@ -38,8 +39,31 @@ class _SettingsSheet extends ConsumerStatefulWidget {
 class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
   var _confirmDelete = false;
   String? _note;
+  final _scroll = ScrollController();
 
   AppStore get _store => ref.read(storeProvider);
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Sets the status note and scrolls it into view: the note renders below
+  /// DELETE ALL, off-screen on most phones, so without this a successful
+  /// CONNECT tap looks like literally nothing happened.
+  void _revealNote(String note) {
+    if (!mounted) return;
+    setState(() => _note = note);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   Future<void> _copy(String label, String payload) async {
     await Clipboard.setData(ClipboardData(text: payload));
@@ -67,6 +91,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxH),
         child: SingleChildScrollView(
+          controller: _scroll,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
               Space.margin,
@@ -203,25 +228,38 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                   sub: 'Android Health Connect. Desktop keeps journal figures.',
                   onTap: () async {
                     try {
+                      debugPrint('ILLUNIS_TAP connect fired');
                       final bridge = ref.read(healthBridgeProvider);
+                      final today = dayKey(DateTime.now());
+                      // Read first: existing grants flow with no permission UI.
+                      // Permissions are requested only when the read is empty.
+                      ref.invalidate(wearableDailyDataProvider);
+                      final data = await ref.read(
+                        wearableDailyDataProvider(today).future,
+                      );
+                      debugPrint('ILLUNIS_TAP read: $data');
+                      if (!mounted) return;
+                      if (data != null && !data.isEmpty) {
+                        _revealNote(
+                          'Wearable refreshed from Health Connect.',
+                        );
+                        return;
+                      }
                       final available =
                           bridge.isSupported && await bridge.isAvailable();
                       final allowed =
                           available && await bridge.requestPermissions();
                       if (!mounted) return;
-                      // Always attempt a refresh: on ROMs where the permission
-                      // sheet won't open, grants made in HC settings still flow
-                      // through getDailyData (partial by granted set).
-                      ref.invalidate(wearableDailyDataProvider);
-                      setState(
-                        () => _note = allowed
-                            ? 'Wearable refresh requested.'
-                            : 'Tried permissions; refreshed from granted access. Grant Illunis in Health Connect if figures stay empty.',
-                      );
-                    } catch (_) {
-                      if (mounted) {
-                        setState(() => _note = 'Wearable access unavailable.');
+                      if (allowed) {
+                        ref.invalidate(wearableDailyDataProvider);
+                        _revealNote('Wearable refresh requested.');
+                      } else {
+                        _revealNote(
+                          'No wearable data. Grant Illunis in Health Connect, then tap again.',
+                        );
                       }
+                    } catch (_) {
+                      _revealNote('Wearable access unavailable.');
                     }
                   },
                 ),
