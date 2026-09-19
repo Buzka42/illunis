@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/i18n/strings.dart';
 import '../../core/journal/dictation.dart';
 import '../../core/state/app_providers.dart';
-import '../../core/theme/tokens.dart';
 import '../../core/theme/typography.dart';
 import 'journal_actions.dart';
+import 'entry_presentation.dart';
 import 'journal_layout.dart';
 import 'journal_presentation_model.dart';
 
@@ -31,7 +31,6 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine>
   late final JournalDictation _dictation;
   var _listening = false;
   String _spokenBase = '';
-  String? _submitError;
   bool _syncingController = false;
 
   @override
@@ -42,20 +41,31 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine>
     super.initState();
     _dictation = widget.dictation ?? JournalDictation();
     final initialState = ref.read(journalSubmissionStateProvider);
-    _controller = TextEditingController(text: initialState.draftText);
-    _submitError = initialState.submitError;
+    _controller = TextEditingController.fromValue(
+      TextEditingValue(
+        text: initialState.draftText,
+        selection: TextSelection.collapsed(
+          offset: initialState.cursorPosition.clamp(
+            0,
+            initialState.draftText.length,
+          ),
+        ),
+      ),
+    );
     _focus = FocusNode();
 
     // Check if a legacy draft was offered before mount
     final pendingLegacyDraft = ref.read(journalDraftProvider);
     if (pendingLegacyDraft != null) {
       _controller.text = pendingLegacyDraft.text;
-      ref.read(journalSubmissionStateProvider.notifier).setDraft(
-        text: pendingLegacyDraft.text,
-        keepLocal: pendingLegacyDraft.keepLocal,
-        replacesEntryId: pendingLegacyDraft.replacesEntryId,
-        requestFocus: true,
-      );
+      ref
+          .read(journalSubmissionStateProvider.notifier)
+          .setDraft(
+            text: pendingLegacyDraft.text,
+            keepLocal: pendingLegacyDraft.keepLocal,
+            replacesEntryId: pendingLegacyDraft.replacesEntryId,
+            requestFocus: true,
+          );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _focus.requestFocus();
@@ -74,10 +84,9 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine>
 
   void _onTextChanged() {
     if (_syncingController) return;
-    ref.read(journalSubmissionStateProvider.notifier).setText(
-      _controller.text,
-      _controller.selection.baseOffset,
-    );
+    ref
+        .read(journalSubmissionStateProvider.notifier)
+        .setText(_controller.text, _controller.selection.baseOffset);
   }
 
   void _onFocusChanged() {
@@ -96,16 +105,16 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine>
 
   Future<void> _submit(String raw) async {
     final text = raw.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || ref.read(journalSubmissionStateProvider).isSubmitting) {
+      return;
+    }
     final actions = ref.read(journalActionsProvider);
     try {
       await actions.submit(text);
       if (!mounted) return;
       _controller.clear();
-      setState(() => _submitError = null);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _submitError = e.toString());
+    } catch (_) {
+      // JournalActions retains the draft and publishes the failure for retry.
     }
   }
 
@@ -151,7 +160,7 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine>
     ref.watch(storeRevisionProvider);
     final persistError = ref.watch(storeProvider).lastPersistenceError;
     final subState = ref.watch(journalSubmissionStateProvider);
-    final saveError = _submitError ?? subState.submitError ?? persistError;
+    final saveError = subState.submitError ?? persistError;
     final keepLocal = subState.keepLocal;
     final isEditing = subState.replacesEntryId != null;
 
@@ -164,18 +173,23 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine>
         selection: TextSelection.collapsed(offset: next.text.length),
       );
       _syncingController = false;
-      ref.read(journalSubmissionStateProvider.notifier).setDraft(
-        text: next.text,
-        keepLocal: next.keepLocal,
-        replacesEntryId: next.replacesEntryId,
-        requestFocus: true,
-      );
+      ref
+          .read(journalSubmissionStateProvider.notifier)
+          .setDraft(
+            text: next.text,
+            keepLocal: next.keepLocal,
+            replacesEntryId: next.replacesEntryId,
+            requestFocus: true,
+          );
       _focus.requestFocus();
       ref.read(journalDraftProvider.notifier).clear();
     });
 
     // Listen to submission state changes from outside
-    ref.listen<JournalSubmissionState>(journalSubmissionStateProvider, (prev, next) {
+    ref.listen<JournalSubmissionState>(journalSubmissionStateProvider, (
+      prev,
+      next,
+    ) {
       if (next.draftText != _controller.text) {
         _syncingController = true;
         _controller.value = TextEditingValue(
@@ -189,107 +203,160 @@ class _JournalWritingLineState extends ConsumerState<JournalWritingLine>
       }
     });
 
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        AnimatedContainer(
+          duration: Duration(milliseconds: reduced ? 0 : 160),
+          height: 1,
+          color: _focus.hasFocus || _listening
+              ? Inks.warm.withValues(alpha: 0.7)
+              : Inks.body,
+        ),
         if (isEditing)
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: Row(
-              children: [
-                Text('EDITING', style: Type.micro.copyWith(color: Inks.muted)),
-                const Spacer(),
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    _controller.clear();
-                    ref.read(journalActionsProvider).dropEdit();
-                  },
-                  child: Text(
-                    S.drop,
-                    style: Type.micro.copyWith(color: Inks.faint),
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'EDITING',
+              style: Type.micro.copyWith(color: Inks.warm),
             ),
           ),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                focusNode: _focus,
-                style: Type.body.copyWith(color: Inks.strong),
-                cursorColor: Inks.strong,
-                textInputAction: TextInputAction.done,
-                onSubmitted: _submit,
-                decoration: InputDecoration(
-                  isDense: true,
-                  border: InputBorder.none,
-                  hintText: S.journalHint,
-                  hintStyle: Type.body.copyWith(color: Inks.muted),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        SizedBox(
+          height: JournalLayoutInputs.fieldHeight(scale),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focus,
+                  readOnly: subState.isSubmitting,
+                  style: Type.body.copyWith(color: Inks.strong, height: 1.5),
+                  cursorColor: Inks.warm,
+                  cursorWidth: 1,
+                  cursorOpacityAnimates: !reduced,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: _submit,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    border: InputBorder.none,
+                    hintText: isEditing ? 'Revise this line…' : S.journalHint,
+                    hintStyle: Type.body.copyWith(color: Inks.body),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Semantics(
-              button: true,
-              label: keepLocal ? 'Keep local enabled' : 'Keep local disabled',
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  ref.read(journalActionsProvider).setKeepLocal(!keepLocal);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 8,
+              Semantics(
+                button: true,
+                label: _listening ? 'Stop dictation' : 'Start dictation',
+                child: GestureDetector(
+                  key: const ValueKey('journal-mic'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: subState.isSubmitting ? null : _toggleMic,
+                  child: SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Center(
+                      child: CustomPaint(
+                        size: const Size(14, 18),
+                        painter: MicMark(_listening ? Inks.warm : Inks.body),
+                      ),
+                    ),
                   ),
-                  child: Text(
-                    keepLocal ? '[ LOCAL ]' : S.keepLocal,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.fade,
-                    style: Type.label.copyWith(
-                      color: keepLocal ? Inks.warm : Inks.faint,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            Flexible(
+              child: Semantics(
+                button: true,
+                toggled: keepLocal,
+                label: keepLocal ? 'Keep local enabled' : 'Keep local disabled',
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: subState.isSubmitting
+                      ? null
+                      : () => ref
+                            .read(journalActionsProvider)
+                            .setKeepLocal(!keepLocal),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 44),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: 1,
+                      child: Text(
+                        keepLocal ? 'LOCAL ONLY' : S.keepLocal,
+                        style: Type.label.copyWith(
+                          color: keepLocal ? Inks.warm : Inks.body,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const Spacer(),
+            if (isEditing)
+              JournalWord(
+                S.drop,
+                faint: true,
+                onTap: () {
+                  if (subState.isSubmitting) return;
+                  _controller.clear();
+                  ref.read(journalActionsProvider).dropEdit();
+                },
+              ),
             Semantics(
               button: true,
-              label: _listening ? 'Stop dictation' : 'Start dictation',
+              enabled:
+                  subState.draftText.trim().isNotEmpty &&
+                  !subState.isSubmitting,
               child: GestureDetector(
-                key: const ValueKey('journal-mic'),
+                key: const ValueKey('journal-save'),
                 behavior: HitTestBehavior.opaque,
-                onTap: _toggleMic,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 0, 8),
-                  child: CustomPaint(
-                    size: const Size(14, 18),
-                    painter: MicMark(_listening ? Inks.warm : Inks.body),
+                onTap:
+                    subState.draftText.trim().isEmpty || subState.isSubmitting
+                    ? null
+                    : () => _submit(_controller.text),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    minWidth: 44,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    widthFactor: 1,
+                    child: Text(
+                      subState.isSubmitting ? 'SAVING' : 'SAVE',
+                      style: Type.label.copyWith(
+                        color: subState.draftText.trim().isEmpty
+                            ? Inks.muted
+                            : Inks.strong,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        Container(
-          height: Space.hairline,
-          color: Inks.full.withValues(alpha: 0.4),
-        ),
         if (saveError != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              'NOT SAVED — $saveError',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Type.micro.copyWith(color: Inks.negative),
+          Semantics(
+            liveRegion: true,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 4),
+              child: Text(
+                'NOT SAVED — $saveError',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Type.micro.copyWith(color: Inks.negative, height: 1.4),
+              ),
             ),
           ),
       ],

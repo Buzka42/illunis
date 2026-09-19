@@ -157,6 +157,11 @@ void main() {
     expect(store.activities, isEmpty);
     expect(store.journal, hasLength(1));
     expect(find.text(S.confirm), findsNothing);
+    await tester.pump(const Duration(milliseconds: 220));
+    final revertContext = tester.element(find.text(S.revert));
+    await Scrollable.of(
+      revertContext,
+    ).position.ensureVisible(revertContext.findRenderObject()!);
     await tester.tap(find.text(S.revert));
     await tester.pump();
     expect(store.journal, isEmpty);

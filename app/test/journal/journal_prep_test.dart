@@ -60,7 +60,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: JournalTestApp(home: Scaffold(body: JournalPage(scene: scene))),
+          child: JournalTestApp(
+            home: Scaffold(body: JournalPage(scene: scene)),
+          ),
         ),
       );
 
@@ -89,7 +91,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: JournalTestApp(home: Scaffold(body: JournalPage(scene: scene))),
+          child: JournalTestApp(
+            home: Scaffold(body: JournalPage(scene: scene)),
+          ),
         ),
       );
 
@@ -126,7 +130,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: JournalTestApp(home: Scaffold(body: JournalPage(scene: scene))),
+          child: JournalTestApp(
+            home: Scaffold(body: JournalPage(scene: scene)),
+          ),
         ),
       );
 
@@ -134,41 +140,42 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('mixed extractions fixture: lift, food, activity, sleep, weight', (
-      tester,
-    ) async {
-      final store = JournalFixtures.mixedExtractions();
-      final container = ProviderContainer(
-        overrides: journalTestOverrides(store),
-      );
-      addTearDown(container.dispose);
+    testWidgets(
+      'mixed extractions fixture: lift, food, activity, sleep, weight',
+      (tester) async {
+        final store = JournalFixtures.mixedExtractions();
+        final container = ProviderContainer(
+          overrides: journalTestOverrides(store),
+        );
+        addTearDown(container.dispose);
 
-      final model = container.read(journalPresentationModelProvider);
-      expect(model.entryCount, 5);
+        final model = container.read(journalPresentationModelProvider);
+        expect(model.entryCount, 5);
 
-      // Check extraction lines in presentation model
-      final liftLines = model.extractionSummaries['entry-lift'];
-      expect(liftLines, isNotNull);
-      expect(liftLines!.first, contains('Bench Press'));
-      expect(liftLines.first, contains('80 KG × 5 × 3'));
+        // Check extraction lines in presentation model
+        final liftLines = model.extractionSummaries['entry-lift'];
+        expect(liftLines, isNotNull);
+        expect(liftLines!.first, contains('Bench Press'));
+        expect(liftLines.first, contains('80 KG × 5 × 3'));
 
-      final foodLines = model.extractionSummaries['entry-food'];
-      expect(foodLines, isNotNull);
-      expect(foodLines!.first, contains('Oatmeal  320 kcal'));
+        final foodLines = model.extractionSummaries['entry-food'];
+        expect(foodLines, isNotNull);
+        expect(foodLines!.first, contains('Oatmeal  320 kcal'));
 
-      final actLines = model.extractionSummaries['entry-act'];
-      expect(actLines, isNotNull);
-      expect(actLines!.first, contains('Run'));
-      expect(actLines.first, contains('5.00 km'));
+        final actLines = model.extractionSummaries['entry-act'];
+        expect(actLines, isNotNull);
+        expect(actLines!.first, contains('Run'));
+        expect(actLines.first, contains('5.00 km'));
 
-      final sleepLines = model.extractionSummaries['entry-sleep'];
-      expect(sleepLines, isNotNull);
-      expect(sleepLines!.first, contains('Sleep  7h 30m  well'));
+        final sleepLines = model.extractionSummaries['entry-sleep'];
+        expect(sleepLines, isNotNull);
+        expect(sleepLines!.first, contains('Sleep  7h 30m  well'));
 
-      final weightLines = model.extractionSummaries['entry-weight'];
-      expect(weightLines, isNotNull);
-      expect(weightLines!.first, contains('82.4 KG'));
-    });
+        final weightLines = model.extractionSummaries['entry-weight'];
+        expect(weightLines, isNotNull);
+        expect(weightLines!.first, contains('82.4 KG'));
+      },
+    );
 
     testWidgets('yesterday pendings fixture: originating day prefix', (
       tester,
@@ -309,7 +316,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const JournalTestApp(home: Scaffold(body: JournalWritingLine())),
+          child: const JournalTestApp(
+            home: Scaffold(body: JournalWritingLine()),
+          ),
         ),
       );
 
@@ -318,11 +327,8 @@ void main() {
       actions.setKeepLocal(true);
       await tester.pump();
 
-      expect(find.text('[ LOCAL ]'), findsOneWidget);
-      expect(
-        container.read(journalSubmissionStateProvider).keepLocal,
-        isTrue,
-      );
+      expect(find.text('LOCAL ONLY'), findsOneWidget);
+      expect(container.read(journalSubmissionStateProvider).keepLocal, isTrue);
 
       // Submit that fails
       await tester.enterText(find.byType(TextField), 'private note');
@@ -330,11 +336,8 @@ void main() {
       await tester.pump();
 
       // On failure, KEEP LOCAL must NOT reset!
-      expect(find.text('[ LOCAL ]'), findsOneWidget);
-      expect(
-        container.read(journalSubmissionStateProvider).keepLocal,
-        isTrue,
-      );
+      expect(find.text('LOCAL ONLY'), findsOneWidget);
+      expect(container.read(journalSubmissionStateProvider).keepLocal, isTrue);
       expect(find.textContaining('NOT SAVED'), findsOneWidget);
       expect(find.text('private note'), findsOneWidget);
 
@@ -347,7 +350,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: workingContainer,
-          child: const JournalTestApp(home: Scaffold(body: JournalWritingLine())),
+          child: const JournalTestApp(
+            home: Scaffold(body: JournalWritingLine()),
+          ),
         ),
       );
 
@@ -444,14 +449,14 @@ void main() {
 
       expect(inputs.isKeyboardOpen, isTrue);
       // When keyboard is open, pending dock height does not squash writing line
-      expect(inputs.effectiveDockHeight, JournalLayoutInputs.writingLineBand);
-      expect(inputs.entryRowHeight, 52.0 * 1.5);
-      expect(inputs.navWordHeight, 22.0 * 1.5);
+      expect(inputs.effectiveDockHeight, 98.0);
+      expect(inputs.entryRowHeight, 100.0 * 1.5);
+      expect(inputs.navWordHeight, 44.0);
 
       // Clamping pending height
       expect(JournalLayoutInputs.calculatePendingHeight(0), 0.0);
-      expect(JournalLayoutInputs.calculatePendingHeight(1), 40.0);
-      expect(JournalLayoutInputs.calculatePendingHeight(2), 108.0);
+      expect(JournalLayoutInputs.calculatePendingHeight(1), 88.0);
+      expect(JournalLayoutInputs.calculatePendingHeight(2), 148.0);
       expect(JournalLayoutInputs.calculatePendingHeight(20), 148.0);
     });
 
@@ -462,35 +467,41 @@ void main() {
       addTearDown(container.dispose);
 
       // Seed draft
-      container.read(journalSubmissionStateProvider.notifier).setDraft(
-        text: 'persisted workout draft',
-        keepLocal: true,
-        replacesEntryId: 'edit-123',
-        requestFocus: true,
-      );
+      container
+          .read(journalSubmissionStateProvider.notifier)
+          .setDraft(
+            text: 'persisted workout draft',
+            keepLocal: true,
+            replacesEntryId: 'edit-123',
+            requestFocus: true,
+          );
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const JournalTestApp(home: Scaffold(body: JournalWritingLine())),
+          child: const JournalTestApp(
+            home: Scaffold(body: JournalWritingLine()),
+          ),
         ),
       );
 
       expect(find.text('persisted workout draft'), findsOneWidget);
       expect(find.text('EDITING'), findsOneWidget);
-      expect(find.text('[ LOCAL ]'), findsOneWidget);
+      expect(find.text('LOCAL ONLY'), findsOneWidget);
 
       // Rebuild the widget
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const JournalTestApp(home: Scaffold(body: JournalWritingLine())),
+          child: const JournalTestApp(
+            home: Scaffold(body: JournalWritingLine()),
+          ),
         ),
       );
 
       expect(find.text('persisted workout draft'), findsOneWidget);
       expect(find.text('EDITING'), findsOneWidget);
-      expect(find.text('[ LOCAL ]'), findsOneWidget);
+      expect(find.text('LOCAL ONLY'), findsOneWidget);
     });
 
     testWidgets('dictation fallback focuses text field without crashing', (
@@ -542,7 +553,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: JournalTestApp(home: Scaffold(body: JournalPage(scene: scene))),
+          child: JournalTestApp(
+            home: Scaffold(body: JournalPage(scene: scene)),
+          ),
         ),
       );
 

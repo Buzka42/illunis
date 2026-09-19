@@ -18,7 +18,8 @@ class JournalPending extends ConsumerWidget {
   /// One estimate row: caption plus DROP / CONFIRM.
   static const double rowBand = JournalLayoutInputs.pendingRowBand;
 
-  static const double confirmAllBand = JournalLayoutInputs.pendingConfirmAllBand;
+  static const double confirmAllBand =
+      JournalLayoutInputs.pendingConfirmAllBand;
 
   /// Maximum height the pending dock may occupy so it never squashes the ground pager.
   static const double maxPendingHeight = JournalLayoutInputs.maxPendingHeight;
@@ -32,46 +33,40 @@ class JournalPending extends ConsumerWidget {
     final pending = figures.unconfirmed.length + figures.unconfirmedActs.length;
     if (pending == 0) return const SizedBox.shrink();
     final actions = ref.read(journalActionsProvider);
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final f in figures.unconfirmed)
-          PendingFoodRow(food: f, actions: actions),
-        for (final a in figures.unconfirmedActs)
-          PendingActivityRow(act: a, actions: actions),
-        if (pending > 1)
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => actions.confirmAll(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text(
-                S.confirmAll,
-                style: Type.label.copyWith(color: Inks.strong),
-              ),
-            ),
-          ),
-      ],
-    );
-    final unbounded = pending * rowBand + (pending > 1 ? confirmAllBand : 0);
-    if (unbounded <= maxHeight) return content;
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: SingleChildScrollView(
+        key: const PageStorageKey('journal-pending'),
         physics: const ClampingScrollPhysics(),
-        child: content,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 6),
+              child: Text('ESTIMATES · $pending', style: Type.label),
+            ),
+            for (final f in figures.unconfirmed)
+              PendingFoodRow(key: ValueKey(f.id), food: f, actions: actions),
+            for (final a in figures.unconfirmedActs)
+              PendingActivityRow(key: ValueKey(a.id), act: a, actions: actions),
+            if (pending > 1)
+              Align(
+                alignment: Alignment.centerRight,
+                child: JournalWord(
+                  S.confirmAll,
+                  onTap: () => actions.confirmAll(),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class PendingFoodRow extends ConsumerWidget {
-  const PendingFoodRow({
-    super.key,
-    required this.food,
-    required this.actions,
-  });
+  const PendingFoodRow({super.key, required this.food, required this.actions});
 
   final NutritionEntry food;
   final JournalActions actions;
@@ -79,29 +74,11 @@ class PendingFoodRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(journalFiguresProvider).day;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              '${pendingDayPrefix(food.day, selected)}${food.label}  ·  ${food.kcal.round()} kcal (${S.est.toLowerCase()})',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Type.caption,
-            ),
-          ),
-          JournalWord(
-            S.drop,
-            faint: true,
-            onTap: () => actions.dropFood(food.id),
-          ),
-          JournalWord(
-            S.confirm,
-            onTap: () => actions.confirmFood(food.id),
-          ),
-        ],
-      ),
+    return _PendingDecision(
+      label: '${pendingDayPrefix(food.day, selected)}${food.label}',
+      evidence: '${food.kcal.round()} kcal (${S.est.toLowerCase()})',
+      drop: () => actions.dropFood(food.id),
+      confirm: () => actions.confirmFood(food.id),
     );
   }
 }
@@ -119,29 +96,50 @@ class PendingActivityRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(journalFiguresProvider).day;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              '${pendingDayPrefix(act.day, selected)}${act.label}  ·  ${act.kcal.round()} kcal (${S.est.toLowerCase()})',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Type.caption,
-            ),
-          ),
-          JournalWord(
-            S.drop,
-            faint: true,
-            onTap: () => actions.dropActivity(act.id),
-          ),
-          JournalWord(
-            S.confirm,
-            onTap: () => actions.confirmActivity(act.id),
-          ),
-        ],
-      ),
+    return _PendingDecision(
+      label: '${pendingDayPrefix(act.day, selected)}${act.label}',
+      evidence: '${act.kcal.round()} kcal (${S.est.toLowerCase()})',
+      drop: () => actions.dropActivity(act.id),
+      confirm: () => actions.confirmActivity(act.id),
     );
   }
+}
+
+class _PendingDecision extends StatelessWidget {
+  const _PendingDecision({
+    required this.label,
+    required this.evidence,
+    required this.drop,
+    required this.confirm,
+  });
+  final String label, evidence;
+  final VoidCallback drop, confirm;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 4, bottom: 4),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: label,
+            children: [
+              TextSpan(
+                text: '  ·  $evidence',
+                style: Type.micro.copyWith(color: Inks.body, height: 1.4),
+              ),
+            ],
+          ),
+          style: Type.caption.copyWith(color: Inks.body, height: 1.4),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            JournalWord(S.drop, faint: true, onTap: drop),
+            JournalWord(S.confirm, onTap: confirm),
+          ],
+        ),
+      ],
+    ),
+  );
 }

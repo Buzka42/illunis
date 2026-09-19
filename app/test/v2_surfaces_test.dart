@@ -90,11 +90,13 @@ void main() {
           of: find.byType(JournalPage),
           matching: find.byType(SingleChildScrollView),
         ),
-        findsNothing,
+        findsWidgets,
       );
       expect(find.text('OLDER'), findsOneWidget);
       final first = find.textContaining('Entry 19:');
       expect(first, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 220));
+      expect(find.text('OLDER').hitTestable(), findsOneWidget);
       await tester.tap(find.text('OLDER'));
       await tester.pump();
       expect(first, findsNothing);
@@ -145,7 +147,7 @@ void main() {
           of: find.byType(JournalPage),
           matching: find.byType(SingleChildScrollView),
         ),
-        findsNothing,
+        findsWidgets,
       );
       expect(
         tester.getSize(find.byType(JournalPending)).height,

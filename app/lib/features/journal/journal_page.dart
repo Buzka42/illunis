@@ -32,48 +32,86 @@ class JournalPage extends ConsumerWidget {
     final n = model.entryCount;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.margin, 0, Space.margin, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SurfaceTitle(S.journal),
-              const Spacer(),
-              Text(n == 1 ? '1 ENTRY' : '$n ENTRIES', style: Type.micro),
-              const SizedBox(width: 14),
-              JournalNavWord(
-                label: S.prev,
-                onTap: actions.prevDay,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const SurfaceTitle(S.journal),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    children: [
+                      Text(
+                        n == 1 ? '1 ENTRY' : '$n ENTRIES',
+                        style: Type.micro,
+                      ),
+                      JournalNavWord(label: S.prev, onTap: actions.prevDay),
+                      JournalNavWord(
+                        label: S.next,
+                        active: model.canGoNext,
+                        onTap: model.canGoNext ? actions.nextDay : null,
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 14),
-              JournalNavWord(
-                label: S.next,
-                active: model.canGoNext,
-                onTap: model.canGoNext ? actions.nextDay : null,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '${model.dateLabel}${model.bedTimeClock == null ? '' : ' · BED ${model.bedTimeClock}'}',
+                  style: Type.micro.copyWith(color: Inks.body),
+                ),
+              ),
+              Expanded(
+                child: model.isEmpty
+                    ? SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 12, right: 44),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                model.isToday
+                                    ? S.journalEmpty
+                                    : S.journalEmptyDay,
+                                style: Type.body.copyWith(
+                                  color: Inks.body,
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                model.pendingCount > 0
+                                    ? 'Your estimates are waiting below.'
+                                    : model.isCatchUp
+                                    ? 'The next line belongs to this day.'
+                                    : 'Begin with a line below.',
+                                style: Type.caption.copyWith(height: 1.5),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : JournalEntryPages(
+                        key: ValueKey(model.selectedDay),
+                        entries: model.orderedEntries,
+                      ),
               ),
             ],
-          ),
-          Container(height: 1, color: Inks.hairline),
-          Text(
-            '${model.dateLabel}${model.bedTimeClock == null ? '' : ' · BED ${model.bedTimeClock}'}',
-            style: Type.micro,
-            maxLines: 1,
-          ),
-          Expanded(
-            child: model.isEmpty
-                ? Align(
-                    alignment: Alignment.topLeft,
-                    child: Text(
-                      model.isToday ? S.journalEmpty : S.journalEmptyDay,
-                      style: Type.caption,
-                    ),
-                  )
-                : JournalEntryPages(
-                    key: ValueKey(model.selectedDay),
-                    entries: model.orderedEntries,
-                  ),
-          ),
-        ],
+          );
+          final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
+          if (constraints.maxHeight < 110 * scale) {
+            return SingleChildScrollView(
+              child: SizedBox(height: 220 * scale, child: content),
+            );
+          }
+          return content;
+        },
       ),
     );
   }
