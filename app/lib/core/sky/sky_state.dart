@@ -12,6 +12,47 @@ export 'sky_weather.dart';
 /// they *look like*. Nothing here is a health record: every vital is already
 /// normalised, and every one of them may be absent.
 ///
+/// A confirmed food or activity mark along the celestial day path.
+@immutable
+class SkyPathDot {
+  const SkyPathDot({
+    required this.timeOfDay,
+    this.weight = 0.0,
+    this.isIntake = true,
+  });
+
+  /// Fraction of the civil day, 0..1.
+  final double timeOfDay;
+
+  /// Normalised weight 0..1.
+  final double weight;
+
+  /// Intake (food) if true, burn (activity) if false.
+  final bool isIntake;
+
+  double get radius => 1.25 + 1.75 * weight;
+  double get alpha => 0.4 + 0.5 * weight;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SkyPathDot &&
+          runtimeType == other.runtimeType &&
+          timeOfDay == other.timeOfDay &&
+          weight == other.weight &&
+          isIntake == other.isIntake;
+
+  @override
+  int get hashCode => Object.hash(timeOfDay, weight, isIntake);
+}
+
+/// Everything the sky is allowed to know.
+///
+/// This is the seam between the 3D layer and the rest of the product. The
+/// producer of a [SkyState] owns what the numbers *mean*; the sky owns what
+/// they *look like*. Nothing here is a health record: every vital is already
+/// normalised, and every one of them may be absent.
+///
 /// Absence is rendered as absence. A `null` recovery is a plain sky, never a
 /// bad day — the first three weeks of real use will have nothing to say.
 @immutable
@@ -28,6 +69,7 @@ class SkyState {
     this.strain,
     this.energyBalance,
     this.weather,
+    this.dots,
   });
 
   /// Fraction of the local civil day, `0` = midnight, `0.5` = noon.
@@ -68,6 +110,10 @@ class SkyState {
   /// source supplies normalised components here, without renderer changes.
   final SkyWeather? weather;
 
+  /// Confirmed intake and activity burn dots along the diurnal sun path.
+  /// Null renders nothing.
+  final List<SkyPathDot>? dots;
+
   bool get hasVitals =>
       sleepScore != null ||
       recovery != null ||
@@ -86,6 +132,7 @@ class SkyState {
     Object? strain = _unset,
     Object? energyBalance = _unset,
     Object? weather = _unset,
+    Object? dots = _unset,
   }) {
     // Moving the day of year moves the epoch with it unless told otherwise.
     final newDay = dayOfYear ?? this.dayOfYear;
@@ -107,6 +154,7 @@ class SkyState {
           ? this.energyBalance
           : (energyBalance as num?)?.toDouble(),
       weather: weather == _unset ? this.weather : weather as SkyWeather?,
+      dots: dots == _unset ? this.dots : dots as List<SkyPathDot>?,
     );
   }
 
@@ -127,6 +175,7 @@ class SkyState {
       strain: _lerpNullable(a.strain, b.strain, t),
       energyBalance: _lerpNullable(a.energyBalance, b.energyBalance, t),
       weather: SkyWeather.lerp(a.weather, b.weather, t),
+      dots: t < 0.5 ? a.dots : b.dots,
     );
   }
 
@@ -156,7 +205,8 @@ class SkyState {
       other.recovery == recovery &&
       other.strain == strain &&
       other.energyBalance == energyBalance &&
-      other.weather == weather;
+      other.weather == weather &&
+      listEquals(other.dots, dots);
 
   @override
   int get hashCode => Object.hash(
@@ -171,6 +221,7 @@ class SkyState {
     strain,
     energyBalance,
     weather,
+    dots == null ? null : Object.hashAll(dots!),
   );
 
   @override
@@ -178,7 +229,7 @@ class SkyState {
       'SkyState(t=${timeOfDay.toStringAsFixed(4)} d=${dayOfYear.round()} '
       'lat=${latitudeDeg.toStringAsFixed(1)} moon=${moonPhase.toStringAsFixed(3)} '
       'sleep=$sleepScore rec=$recovery strain=$strain energy=$energyBalance '
-      'weather=$weather)';
+      'weather=$weather dots=${dots?.length})';
 }
 
 const _unset = Object();

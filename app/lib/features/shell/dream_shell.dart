@@ -9,6 +9,7 @@ import '../../core/platform/host.dart';
 import '../../core/sky/celestial_math.dart';
 import '../../core/sky/celestial_scene.dart';
 import '../../core/sky/sky_view.dart';
+import '../../core/state/app_providers.dart';
 import '../../core/state/sky_state_source.dart';
 import '../../core/state/sleep_record.dart';
 import '../../core/theme/tokens.dart';
@@ -95,6 +96,7 @@ class _DreamShellState extends ConsumerState<DreamShell>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(skyStateProvider);
+    final dots = ref.watch(skyPathDotsProvider);
     final mq = MediaQuery.of(context);
     final horizonY = mq.size.height * kHorizonFraction;
 
@@ -119,7 +121,10 @@ class _DreamShellState extends ConsumerState<DreamShell>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              SkyView(state: state, onScene: (s) => _scene.value = s),
+              SkyView(
+                state: state.copyWith(dots: dots),
+                onScene: (s) => _scene.value = s,
+              ),
               Positioned(
                 left: 0,
                 right: 0,

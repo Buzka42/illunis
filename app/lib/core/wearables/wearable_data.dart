@@ -1,5 +1,55 @@
 import 'package:flutter/foundation.dart';
 
+import '../state/sleep_record.dart';
+
+/// A single stage span within a wearable sleep session.
+@immutable
+class WearableSleepStage {
+  const WearableSleepStage({
+    required this.start,
+    required this.end,
+    required this.stage,
+  });
+
+  final DateTime start;
+  final DateTime end;
+  final SleepStage stage;
+
+  Map<String, Object?> toJson() => {
+    'startTime': start.toIso8601String(),
+    'endTime': end.toIso8601String(),
+    'stage': stage.name,
+  };
+
+  factory WearableSleepStage.fromJson(Map<String, Object?> j) {
+    final startStr = (j['startTime'] ?? j['start']) as String;
+    final endStr = (j['endTime'] ?? j['end']) as String;
+    final rawStage = j['stage'];
+    final SleepStage parsedStage;
+    if (rawStage is int) {
+      parsedStage = switch (rawStage) {
+        5 => SleepStage.deep,
+        6 => SleepStage.rem,
+        1 || 3 || 7 => SleepStage.awake,
+        _ => SleepStage.light,
+      };
+    } else {
+      final s = rawStage?.toString().toLowerCase() ?? 'light';
+      parsedStage = switch (s) {
+        'deep' => SleepStage.deep,
+        'rem' => SleepStage.rem,
+        'awake' => SleepStage.awake,
+        _ => SleepStage.light,
+      };
+    }
+    return WearableSleepStage(
+      start: DateTime.parse(startStr),
+      end: DateTime.parse(endStr),
+      stage: parsedStage,
+    );
+  }
+}
+
 /// Data received from a wearable device (e.g. Android Health Connect).
 /// Every field is nullable; unobserved figures remain null (no estimations).
 @immutable
@@ -10,6 +60,9 @@ class WearableDailyData {
     this.restingHr,
     this.activeMinutes,
     this.caloriesBurned,
+    this.sleepStart,
+    this.sleepEnd,
+    this.sleepStages = const [],
   });
 
   final int? steps;
@@ -17,13 +70,19 @@ class WearableDailyData {
   final int? restingHr;
   final double? activeMinutes;
   final double? caloriesBurned;
+  final DateTime? sleepStart;
+  final DateTime? sleepEnd;
+  final List<WearableSleepStage> sleepStages;
 
   bool get isEmpty =>
       steps == null &&
       sleepHours == null &&
       restingHr == null &&
       activeMinutes == null &&
-      caloriesBurned == null;
+      caloriesBurned == null &&
+      sleepStart == null &&
+      sleepEnd == null &&
+      sleepStages.isEmpty;
 
   Map<String, Object?> toJson() => {
     'steps': steps,
@@ -31,16 +90,36 @@ class WearableDailyData {
     'restingHr': restingHr,
     'activeMinutes': activeMinutes,
     'caloriesBurned': caloriesBurned,
+    if (sleepStart != null) 'sleepStart': sleepStart!.toIso8601String(),
+    if (sleepEnd != null) 'sleepEnd': sleepEnd!.toIso8601String(),
+    if (sleepStages.isNotEmpty)
+      'sleepStages': sleepStages.map((s) => s.toJson()).toList(),
   };
 
-  factory WearableDailyData.fromJson(Map<String, Object?> j) =>
-      WearableDailyData(
-        steps: (j['steps'] as num?)?.toInt(),
-        sleepHours: (j['sleepHours'] as num?)?.toDouble(),
-        restingHr: (j['restingHr'] as num?)?.toInt(),
-        activeMinutes: (j['activeMinutes'] as num?)?.toDouble(),
-        caloriesBurned: (j['caloriesBurned'] as num?)?.toDouble(),
-      );
+  factory WearableDailyData.fromJson(Map<String, Object?> j) {
+    final stagesRaw = j['sleepStages'] as List?;
+    final stages = stagesRaw != null
+        ? [
+            for (final s in stagesRaw)
+              if (s is Map)
+                WearableSleepStage.fromJson(Map<String, Object?>.from(s)),
+          ]
+        : const <WearableSleepStage>[];
+    return WearableDailyData(
+      steps: (j['steps'] as num?)?.toInt(),
+      sleepHours: (j['sleepHours'] as num?)?.toDouble(),
+      restingHr: (j['restingHr'] as num?)?.toInt(),
+      activeMinutes: (j['activeMinutes'] as num?)?.toDouble(),
+      caloriesBurned: (j['caloriesBurned'] as num?)?.toDouble(),
+      sleepStart: j['sleepStart'] != null
+          ? DateTime.tryParse(j['sleepStart'] as String)
+          : null,
+      sleepEnd: j['sleepEnd'] != null
+          ? DateTime.tryParse(j['sleepEnd'] as String)
+          : null,
+      sleepStages: stages,
+    );
+  }
 }
 
 /// Health Connect package name of the Garmin Connect Mobile writer.

@@ -122,6 +122,7 @@ class _SkyViewState extends State<SkyView>
       strain: vitalPart.strain,
       energyBalance: vitalPart.energyBalance,
       weather: vitalPart.weather,
+      dots: target.dots,
     );
     // Decorative time does not change geometry. Reusing an unchanged scene
     // also avoids notifying/rebuilding every surface figure for twinkle.

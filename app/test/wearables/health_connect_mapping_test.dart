@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:illunis/core/db/records.dart';
 import 'package:illunis/core/db/store.dart';
 import 'package:illunis/core/health/rollups.dart';
+import 'package:illunis/core/state/sleep_record.dart';
 import 'package:illunis/core/wearables/life_stats.dart';
 import 'package:illunis/core/wearables/wearable_data.dart';
 
@@ -60,6 +61,47 @@ void main() {
       expect(d.sleepHours, 7.0);
       expect(d.activeMinutes, 30.0);
       expect(d.caloriesBurned, 2000.0);
+    });
+
+    test('parses sleepStages with int and string stage representations', () {
+      final d = WearableDailyData.fromJson({
+        'sleepHours': 7.5,
+        'sleepStart': '2026-09-18T23:00:00.000',
+        'sleepEnd': '2026-09-19T06:30:00.000',
+        'sleepStages': [
+          {
+            'startTime': '2026-09-18T23:00:00.000',
+            'endTime': '2026-09-18T23:30:00.000',
+            'stage': 1, // awake
+          },
+          {
+            'startTime': '2026-09-18T23:30:00.000',
+            'endTime': '2026-09-19T01:00:00.000',
+            'stage': 'deep',
+          },
+          {
+            'startTime': '2026-09-19T01:00:00.000',
+            'endTime': '2026-09-19T02:30:00.000',
+            'stage': 6, // rem
+          },
+          {
+            'startTime': '2026-09-19T02:30:00.000',
+            'endTime': '2026-09-19T06:30:00.000',
+            'stage': 4, // light
+          },
+        ],
+      });
+      expect(d.sleepStart, DateTime(2026, 9, 18, 23, 0));
+      expect(d.sleepEnd, DateTime(2026, 9, 19, 6, 30));
+      expect(d.sleepStages.length, 4);
+      expect(d.sleepStages[0].stage, SleepStage.awake);
+      expect(d.sleepStages[1].stage, SleepStage.deep);
+      expect(d.sleepStages[2].stage, SleepStage.rem);
+      expect(d.sleepStages[3].stage, SleepStage.light);
+
+      final json = d.toJson();
+      expect(json['sleepStart'], '2026-09-18T23:00:00.000');
+      expect((json['sleepStages'] as List).length, 4);
     });
   });
 

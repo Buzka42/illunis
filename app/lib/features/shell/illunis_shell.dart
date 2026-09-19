@@ -95,6 +95,7 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(skyStateProvider);
+    final dots = ref.watch(skyPathDotsProvider);
     final mq = MediaQuery.of(context);
     if (mq.size.width < 100 || mq.size.height < 100) {
       return const SizedBox.shrink();
@@ -132,7 +133,7 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
           fit: StackFit.expand,
           children: [
             SkyView(
-              state: state,
+              state: state.copyWith(dots: dots),
               yawOffsetRad: (_page - 0.5) * _yawPerPage,
               onScene: (s) => _scene.value = s,
             ),

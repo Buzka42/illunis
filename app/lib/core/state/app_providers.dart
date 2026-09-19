@@ -12,7 +12,7 @@ import '../health/rollups.dart';
 import '../journal/marks.dart';
 import '../journal/repository.dart';
 import '../patterns/sweep.dart';
-import '../sky/sky_weather.dart';
+import '../sky/sky_state.dart';
 import '../strength/progress.dart';
 import '../wearables/health_bridge.dart';
 import '../wearables/life_stats.dart';
@@ -265,6 +265,15 @@ final todayEntriesProvider = journalEntriesProvider;
 final timelineMarksProvider = Provider<List<double>>((ref) {
   ref.watch(storeRevisionProvider);
   return timelineMarksOn(
+    ref.watch(storeProvider),
+    dayKey(ref.watch(civilDayProvider)),
+  );
+});
+
+/// Confirmed food and activity dots on the civil day the sky represents.
+final skyPathDotsProvider = Provider<List<SkyPathDot>>((ref) {
+  ref.watch(storeRevisionProvider);
+  return skyPathDotsOn(
     ref.watch(storeProvider),
     dayKey(ref.watch(civilDayProvider)),
   );

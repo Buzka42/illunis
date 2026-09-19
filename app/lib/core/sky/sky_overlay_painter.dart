@@ -73,6 +73,7 @@ class SkyOverlayPainter extends CustomPainter {
         avoid: cam.project(scene.sunDir),
         avoidRadius: SkyShader.sunAngularRadius * cam.focal * 2.6 + 40,
       );
+      _paintDots(canvas, cam, size);
     }
     final edgeIndicators = <_EdgeIndicator>[];
     _paintBody(
@@ -338,6 +339,29 @@ class SkyOverlayPainter extends CustomPainter {
           shadow: shadow,
         );
       }
+    }
+  }
+
+  static const _intakeInk = Color(0xFFA4C9A0);
+  static const _burnInk = Color(0xFFE8A39A);
+
+  void _paintDots(Canvas canvas, SkyCamera cam, Size size) {
+    final dots = scene.state.dots;
+    if (dots == null || dots.isEmpty) return;
+    for (final dot in dots) {
+      final dir = scene.sunDirectionAt(dot.timeOfDay);
+      final p = cam.project(dir);
+      if (p == null || !cam.contains(p)) continue;
+      final below = dir.y < 0;
+      final color = dot.isIntake ? _intakeInk : _burnInk;
+      final alpha = (dot.alpha * (below ? 0.35 : 1.0)).clamp(0.0, 1.0);
+      canvas.drawCircle(
+        p,
+        dot.radius,
+        Paint()
+          ..color = color.withValues(alpha: alpha)
+          ..style = PaintingStyle.fill,
+      );
     }
   }
 

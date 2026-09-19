@@ -247,6 +247,9 @@ class MainActivity : FlutterActivity() {
         }
 
         var sleepHours: Double? = null
+        var sleepStart: String? = null
+        var sleepEnd: String? = null
+        val sleepStages = mutableListOf<Map<String, Any>>()
         if (granted.contains(HealthPermission.getReadPermission(SleepSessionRecord::class))) {
             // Garmin nights span midnight (e.g. 23:00 -> 07:00), so a
             // same-day window misses the session entirely: its startTime
@@ -263,21 +266,49 @@ class MainActivity : FlutterActivity() {
             ).records
             var totalSecs = 0L
             var attributed = 0
+            var primarySession: SleepSessionRecord? = null
+            var maxSessionSecs = 0L
             for (s in sessions) {
                 val endDay = s.endTime.atZone(zone).toLocalDate()
+                val sSecs = java.time.Duration.between(s.startTime, s.endTime).seconds
                 Log.i(
                     TAG,
                     "day=$day sleepSession start=${s.startTime} end=${s.endTime} " +
-                        "endDay=$endDay origin=${s.metadata.dataOrigin.packageName}",
+                        "endDay=$endDay stages=${s.stages.size} origin=${s.metadata.dataOrigin.packageName}",
                 )
                 if (endDay == day) {
-                    totalSecs += java.time.Duration.between(s.startTime, s.endTime).seconds
+                    totalSecs += sSecs
                     attributed++
+                    if (sSecs > maxSessionSecs) {
+                        maxSessionSecs = sSecs
+                        primarySession = s
+                    }
                 }
             }
             Log.i(TAG, "day=$day sleepSessions=${sessions.size} attributed=$attributed")
             if (attributed > 0) {
                 sleepHours = (totalSecs / 3600.0).coerceIn(0.0, 24.0)
+                primarySession?.let { primary ->
+                    sleepStart = primary.startTime.toString()
+                    sleepEnd = primary.endTime.toString()
+                    for (st in primary.stages) {
+                        val stageName = when (st.stage) {
+                            SleepSessionRecord.STAGE_TYPE_DEEP -> "deep"
+                            SleepSessionRecord.STAGE_TYPE_REM -> "rem"
+                            SleepSessionRecord.STAGE_TYPE_AWAKE,
+                            SleepSessionRecord.STAGE_TYPE_OUT_OF_BED,
+                            SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED -> "awake"
+                            else -> "light"
+                        }
+                        sleepStages.add(
+                            mapOf(
+                                "startTime" to st.startTime.toString(),
+                                "endTime" to st.endTime.toString(),
+                                "stage" to stageName,
+                            ),
+                        )
+                    }
+                }
             }
         }
 
@@ -303,6 +334,9 @@ class MainActivity : FlutterActivity() {
         val out: Map<String, Any?> = mapOf(
             "steps" to steps,
             "sleepHours" to sleepHours,
+            "sleepStart" to sleepStart,
+            "sleepEnd" to sleepEnd,
+            "sleepStages" to sleepStages,
             "restingHr" to restingHr,
             "activeMinutes" to activeMinutes,
             "caloriesBurned" to calories,
@@ -311,9 +345,9 @@ class MainActivity : FlutterActivity() {
         )
         Log.i(
             TAG,
-            "day=$day steps=$steps sleepH=$sleepHours rhr=$restingHr " +
-                "activeMin=$activeMinutes kcal=$calories granted=${granted.size} " +
-                "grantedSet=${granted.sorted()} " +
+            "day=$day steps=$steps sleepH=$sleepHours stages=${sleepStages.size} " +
+                "rhr=$restingHr activeMin=$activeMinutes kcal=$calories " +
+                "granted=${granted.size} grantedSet=${granted.sorted()} " +
                 (if (partial) "(partial)" else ""),
         )
         return out

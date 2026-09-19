@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/records.dart';
 import '../../core/db/store.dart';
 import '../../core/journal/marks.dart';
+import '../../core/sky/sky_state.dart';
 import '../../core/state/app_providers.dart';
 
 enum CalorieKind { intake, burn }
@@ -18,6 +19,14 @@ class CalorieMark {
   double get weight => (kcal / 1000).clamp(0.0, 1.0);
   double get radius => 1.25 + 1.75 * weight;
   double get alpha => 0.4 + 0.5 * weight;
+}
+
+extension CalorieMarkToSky on CalorieMark {
+  SkyPathDot toSkyPathDot() => SkyPathDot(
+    timeOfDay: time,
+    weight: weight,
+    isIntake: kind == CalorieKind.intake,
+  );
 }
 
 final calorieMarksProvider = Provider.family<List<CalorieMark>, String>((

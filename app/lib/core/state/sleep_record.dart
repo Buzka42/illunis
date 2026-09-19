@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../db/records.dart';
 import 'app_providers.dart';
+import 'civil_day.dart';
 import 'sky_state_source.dart';
 
 enum SleepStage { awake, light, deep, rem }
@@ -138,7 +140,9 @@ final sleepRecordProvider = Provider<SleepRecord?>((ref) {
   }
   // Journal absent: wearable fallback. lifeStatsProvider already applies the
   // journal-wins rule, so reaching here means the value (if any) is
-  // wearable-sourced. Duration-only: no bed/wake times from the bridge.
+  // wearable-sourced.
+  final day = dayKey(ref.watch(civilDayProvider));
+  final wearable = ref.watch(wearableDailyDataProvider(day)).value;
   final wearableSleep = ref.watch(todayLifeStatsProvider).sleep;
   final hours = wearableSleep.value;
   if (hours == null || hours <= 0) {
@@ -146,8 +150,39 @@ final sleepRecordProvider = Provider<SleepRecord?>((ref) {
     return null;
   }
   debugPrint(
-    'IllunisSleep source=wearable hours=${hours.toStringAsFixed(2)}',
+    'IllunisSleep source=wearable hours=${hours.toStringAsFixed(2)} stages=${wearable?.sleepStages.length ?? 0}',
   );
+
+  if (wearable != null && wearable.sleepStages.isNotEmpty) {
+    final segments = wearable.sleepStages.map((st) {
+      final s = hoursFromCivilMidnight(st.start, day);
+      final e = hoursFromCivilMidnight(st.end, day);
+      return SleepSegment(s, e, st.stage);
+    }).toList();
+    final startH = wearable.sleepStart != null
+        ? hoursFromCivilMidnight(wearable.sleepStart!, day)
+        : segments.first.startHours;
+    final endH = wearable.sleepEnd != null
+        ? hoursFromCivilMidnight(wearable.sleepEnd!, day)
+        : segments.last.endHours;
+    return SleepRecord(
+      startHours: startH,
+      endHours: endH,
+      segments: segments,
+      source: SleepSource.wearable,
+    );
+  }
+
+  if (wearable != null && wearable.sleepStart != null && wearable.sleepEnd != null) {
+    final startH = hoursFromCivilMidnight(wearable.sleepStart!, day);
+    final endH = hoursFromCivilMidnight(wearable.sleepEnd!, day);
+    return SleepRecord(
+      startHours: startH,
+      endHours: endH,
+      source: SleepSource.wearable,
+    );
+  }
+
   const wakeAt = 7.0;
   return SleepRecord(
     startHours: wakeAt - hours,
@@ -155,3 +190,12 @@ final sleepRecordProvider = Provider<SleepRecord?>((ref) {
     source: SleepSource.wearable,
   );
 });
+
+/// Hours from the displayed civil day's midnight.
+/// Negative for timestamps before midnight (yesterday evening),
+/// positive for timestamps on the morning day.
+double hoursFromCivilMidnight(DateTime instant, String day) {
+  final date = dayKeyDate(day);
+  final midnight = DateTime(date.year, date.month, date.day);
+  return instant.toLocal().difference(midnight).inMicroseconds / 3600000000.0;
+}
