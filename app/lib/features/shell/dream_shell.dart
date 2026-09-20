@@ -141,6 +141,8 @@ class _DreamShellState extends ConsumerState<DreamShell>
                 top: mq.padding.top,
                 child: ShellHeader(
                   scene: _scene,
+                  // Nightstand ground carries the large clock; no header clock.
+                  showClock: false,
                   onWordmarkLongPress: kDebugMode
                       ? () => showSkyDebugSheet(context)
                       : null,

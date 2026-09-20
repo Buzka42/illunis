@@ -175,6 +175,17 @@ class _TimelineBarState extends ConsumerState<TimelineBar> {
   }
 }
 
+/// Hour labels on the day track. Narrow bars drop the quarter labels so
+/// nothing clips and nothing collides with the compass scale above.
+List<int> visibleTimelineHours(double width) {
+  if (width < 280) return const [0, 12, 24];
+  return const [0, 6, 12, 18, 24];
+}
+
+/// Hour-label size on the track. Never below 9dp: smaller type collides
+/// with the compass scale instead of reading as a separate instrument.
+const double kTimelineHourLabelSize = 9.0;
+
 class _TimelinePainter extends CustomPainter {
   _TimelinePainter({
     required this.scene,
@@ -193,7 +204,7 @@ class _TimelinePainter extends CustomPainter {
   final double textScale;
 
   static const _pad = Space.margin;
-  static const _trackY = 31.0;
+  static const _trackY = 29.0;
   static const _ink = Inks.full;
   static final Map<String, TextPainter> _cache = {};
 
@@ -219,13 +230,15 @@ class _TimelinePainter extends CustomPainter {
     _paintDaylight(canvas, size, s);
     _paintMarks(canvas, size);
 
-    // Hour scale below the track.
+    // Hour scale below the track. Edge labels anchor inward so nothing
+    // clips; narrow bars drop quarter labels (see visibleTimelineHours).
     final tick = Paint()
       ..color = _ink.withValues(alpha: 0.28)
       ..strokeWidth = 1;
+    final hours = visibleTimelineHours(size.width);
     for (var h = 0; h <= 24; h++) {
       final x = _x(h / 24, size);
-      final major = h % 6 == 0;
+      final major = hours.contains(h);
       canvas.drawLine(
         Offset(x, _trackY + 1.5),
         Offset(x, _trackY + (major ? 5.5 : 3.0)),
@@ -236,7 +249,7 @@ class _TimelinePainter extends CustomPainter {
           canvas,
           h.toString().padLeft(2, '0'),
           Offset(x, _trackY + 8),
-          size: 7.5,
+          size: kTimelineHourLabelSize,
           alpha: 0.38,
           anchor: h == 0
               ? Alignment.topLeft

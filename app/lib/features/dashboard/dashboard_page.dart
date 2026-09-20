@@ -113,7 +113,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           Expanded(
             child: SingleChildScrollView(
               key: const PageStorageKey('dashboard-reading'),
-              padding: const EdgeInsets.only(top: 4, bottom: 16),
+              padding: const EdgeInsets.only(top: 2, bottom: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -127,6 +127,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           ? 4
                           : 2;
                       return Wrap(
+                        key: const ValueKey('dashboard-supporting'),
                         spacing: 8,
                         runSpacing: 12,
                         children: [
@@ -328,7 +329,7 @@ class _Rule extends StatelessWidget {
   const _Rule();
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7),
+    padding: const EdgeInsets.symmetric(vertical: 5),
     child: SizedBox(height: 0.5, child: ColoredBox(color: Inks.hairline)),
   );
 }
@@ -353,7 +354,7 @@ class _ComparisonsSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const _SectionHeading('Energy', trailing: 'KCAL'),
-        const SizedBox(height: 7),
+        const SizedBox(height: 3, key: ValueKey('dashboard-energy')),
         LayoutBuilder(
           builder: (context, constraints) {
             final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
@@ -387,39 +388,42 @@ class _ComparisonsSection extends ConsumerWidget {
             );
           },
         ),
-        const _Rule(),
+        const SizedBox(height: 10),
         const _SectionHeading('Movement', trailing: 'MIN / OBSERVED DAY'),
-        const SizedBox(height: 7),
+        const SizedBox(height: 3, key: ValueKey('dashboard-movement')),
         _MovementLine(
           label: 'LAST 7D',
           window: mv.current,
           maximum: movementMax,
           color: Inks.body,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 3),
         _MovementLine(
           label: 'PREV 7D',
           window: mv.previous,
           maximum: movementMax,
           color: Inks.faint,
         ),
-        const _Rule(),
-        _SectionHeading(S.sleep, trailing: '${sl.observedCount}/7 NIGHTS'),
-        const SizedBox(height: 7),
+        const SizedBox(height: 10),
+        _SectionHeading(
+          S.sleep,
+          trailing:
+              '${sl.observedCount}/7 NIGHTS · ${_composition(sl.sourceCounts)}',
+        ),
+        const SizedBox(height: 3, key: ValueKey('dashboard-sleep')),
         LayoutBuilder(
           builder: (context, constraints) {
             final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
             final wide = constraints.maxWidth >= 280 * scale;
-            final maxHours = sl.maxHours;
-            final ceiling = maxHours == null || maxHours < 10 ? 10.0 : maxHours;
             return Wrap(
+              key: const ValueKey('dashboard-sleep-marks'),
               spacing: 0,
-              runSpacing: 10,
+              runSpacing: 8,
               children: [
                 for (final night in sl.nights)
                   SizedBox(
                     width: constraints.maxWidth / (wide ? 7 : 4),
-                    child: _SleepMark(night: night, maximum: ceiling),
+                    child: _SleepMark(night: night),
                   ),
               ],
             );
@@ -470,18 +474,26 @@ class _EnergyLine extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: Type.label),
-        const SizedBox(height: 3),
+        Row(
+          children: [
+            Text(label, style: Type.label),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                '${_source(value.source)} KCAL${estimated ? ' EST' : ''}',
+                style: Type.micro,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
         Text(
           value.value?.round().toString() ?? S.emptyDash,
           style: Type.figure,
         ),
-        const SizedBox(height: 3),
-        Text(
-          '${_source(value.source)} KCAL${estimated ? ' EST' : ''}',
-          style: Type.micro,
-        ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         _MeasureBar(value: value.value, maximum: maximum, color: color),
         if (pending > 0)
           Padding(
@@ -536,7 +548,7 @@ class _MovementLine extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         _MeasureBar(
           value: window.meanActiveMinutes,
           maximum: maximum,
@@ -559,7 +571,7 @@ class _MeasureBar extends StatelessWidget {
   final Color color;
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 3,
+    height: 2,
     child: LayoutBuilder(
       builder: (context, constraints) {
         final fraction = value == null || maximum == null || maximum! <= 0
@@ -583,9 +595,8 @@ class _MeasureBar extends StatelessWidget {
 }
 
 class _SleepMark extends StatelessWidget {
-  const _SleepMark({required this.night, required this.maximum});
+  const _SleepMark({required this.night});
   final SleepNight night;
-  final double maximum;
   @override
   Widget build(BuildContext context) => Semantics(
     label:
@@ -597,31 +608,13 @@ class _SleepMark extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(night.day.substring(8), style: Type.micro),
-          const SizedBox(height: 4),
-          SizedBox(
-            height: 14,
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              child: SizedBox(
-                width: night.hours == null ? 0 : 1,
-                height: night.hours == null
-                    ? 0
-                    : night.hours == 0
-                    ? 1
-                    : 14 * (night.hours! / maximum).clamp(0.0, 1.0),
-                child: const ColoredBox(color: Inks.cool),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             night.hours == null
                 ? S.emptyDash
                 : '${night.hours!.toStringAsFixed(1)}h',
             style: Type.micro.copyWith(color: Inks.body),
           ),
-          const SizedBox(height: 2),
-          Text(_source(night.source), style: Type.micro),
         ],
       ),
     ),

@@ -8,10 +8,18 @@ import '../../core/theme/typography.dart';
 
 /// Wordmark left; the instrument line right: clock, date, observer.
 class ShellHeader extends StatelessWidget {
-  const ShellHeader({super.key, required this.scene, this.onWordmarkLongPress});
+  const ShellHeader({
+    super.key,
+    required this.scene,
+    this.onWordmarkLongPress,
+    this.showClock = true,
+  });
 
   final ValueListenable<ResolvedScene?> scene;
   final VoidCallback? onWordmarkLongPress;
+
+  /// Nightstand ground carries its own large clock; the header clock hides.
+  final bool showClock;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +49,9 @@ class ShellHeader extends StatelessWidget {
               ValueListenableBuilder<ResolvedScene?>(
                 valueListenable: scene,
                 builder: (context, s, _) {
-                  if (s == null) return const SizedBox.shrink();
+                  if (s == null || !showClock) {
+                    return const SizedBox.shrink();
+                  }
                   final st = s.state;
                   final lat = st.latitudeDeg;
                   final latText =

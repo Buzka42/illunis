@@ -82,4 +82,64 @@ void main() {
       expect(find.text(S.confirmDelete), findsOneWidget);
     },
   );
+
+  testWidgets('settings: enlarged text keeps consent readable', (tester) async {
+    final store = AppStore.memory();
+    addTearDown(store.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: illunisOverrides(store),
+        child: MediaQuery(
+          data: const MediaQueryData(
+            textScaler: TextScaler.linear(2.0),
+            size: Size(360, 640),
+          ),
+          child: _host(),
+        ),
+      ),
+    );
+    await tester.tap(find.text('OPEN'));
+    await tester.pumpAndSettle();
+    final consent = find.textContaining(S.aiConsent);
+    await tester.scrollUntilVisible(consent, 400);
+    await tester.pumpAndSettle();
+    expect(consent, findsOneWidget);
+    // Readable: fully inside the viewport, no clipping.
+    final rect = tester.getRect(consent);
+    expect(rect.top, greaterThanOrEqualTo(0));
+    expect(rect.bottom, lessThanOrEqualTo(640));
+  });
+
+  testWidgets('settings: MORE cue shows only while content continues', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2412);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final store = AppStore.memory();
+    addTearDown(store.dispose);
+    await tester.pumpWidget(
+      ProviderScope(overrides: illunisOverrides(store), child: _host()),
+    );
+    await tester.tap(find.text('OPEN'));
+    await tester.pumpAndSettle();
+    // Full-height sheet: nothing below the fold, no cue.
+    expect(find.text('MORE ↓'), findsNothing);
+  });
+
+  test('settings: import rejects invalid payload, store untouched', () async {
+    // Import behavior unchanged: a bad payload throws and leaves the store
+    // exactly as it was. (Clipboard delivery is platform-owned; the sheet
+    // maps any failure to S.importFailed without touching the store.)
+    final store = AppStore.memory();
+    addTearDown(store.dispose);
+    await expectLater(
+      store.importJson('not json'),
+      throwsA(isA<FormatException>()),
+    );
+    expect(store.summaries, isEmpty);
+  });
 }

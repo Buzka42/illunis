@@ -93,12 +93,12 @@ void main() {
           lessThan(tester.getTopLeft(find.text('SLEEP')).dy),
         );
         if (scenario.data) {
-          expect(find.text('JNL KCAL EST'), findsOneWidget);
+          expect(find.textContaining('JNL KCAL EST'), findsOneWidget);
           expect(find.text('6/7 · JNL 6'), findsOneWidget);
-          expect(find.text('6/7 NIGHTS'), findsOneWidget);
+          expect(find.textContaining('6/7 NIGHTS'), findsOneWidget);
         } else {
-          expect(find.text('0/7 NIGHTS'), findsOneWidget);
-          expect(find.text('— KCAL'), findsNWidgets(2));
+          expect(find.textContaining('0/7 NIGHTS'), findsOneWidget);
+          expect(find.textContaining('— KCAL'), findsNWidgets(2));
         }
         await _capture(tester, boundary, scenario.name);
         final scroll = find.descendant(
