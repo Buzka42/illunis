@@ -24,7 +24,7 @@ class _GuideState extends ConsumerState<_Guide> {
   static const _pages = [
     (
       'MOVE',
-      'Swipe left for Dashboard, right for Journal. Long press the surface title for Settings.\n\nLong day lists use NEWER / OLDER. Tap a journal entry to edit its full text; REVERT removes it and its derived records.',
+      'Swipe left for Dashboard, right for Journal. Long press the surface title for Settings.\n\nLong days scroll as one list. Tap a journal entry to edit its full text; REVERT removes it and its derived records.',
     ),
     (
       'RECORD',
