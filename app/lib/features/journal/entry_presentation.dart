@@ -6,7 +6,6 @@ import '../../core/i18n/strings.dart';
 import '../../core/state/app_providers.dart';
 import '../../core/theme/typography.dart';
 import 'journal_actions.dart';
-import 'journal_layout.dart';
 import 'journal_presentation_model.dart';
 
 /// Interactive word action (e.g. DROP, CONFIRM, REVERT, KEEP LOCAL).
@@ -47,7 +46,7 @@ class JournalWord extends StatelessWidget {
   }
 }
 
-/// Navigation word for pager header and entry pagination (PREV, NEXT, NEWER, OLDER).
+/// Navigation word for the pager header (PREV, NEXT).
 class JournalNavWord extends StatelessWidget {
   const JournalNavWord({
     super.key,
@@ -88,98 +87,38 @@ class JournalNavWord extends StatelessWidget {
   }
 }
 
-/// Paginated list of journal entries with NEWER / OLDER pagination.
-class JournalEntryPages extends StatefulWidget {
-  const JournalEntryPages({super.key, required this.entries});
+/// One continuous list of a day's journal entries — newest first, full prose,
+/// tap to edit, long press to revert. It rides inside the journal record
+/// region's scroll (per-day restoration key), so it sizes to its content and
+/// never nests a second scroller. Submit continuity holds: editing one entry
+/// while another lands keeps the draft on the edited entry (tiles key on id).
+class JournalEntryList extends StatelessWidget {
+  const JournalEntryList({super.key, required this.entries, this.storageKey});
+
   final List<JournalEntry> entries;
 
-  @override
-  State<JournalEntryPages> createState() => _JournalEntryPagesState();
-}
-
-class _JournalEntryPagesState extends State<JournalEntryPages> {
-  int _page = 0;
+  /// Per-day restoration token, carried by the enclosing record scroll.
+  final ValueKey<Object>? storageKey;
 
   @override
-  void didUpdateWidget(JournalEntryPages oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.entries.firstOrNull?.id != widget.entries.firstOrNull?.id) {
-      _page = 0;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, c) {
-      if (widget.entries.isEmpty) return const SizedBox.shrink();
-      final scale = MediaQuery.textScalerOf(context).scale(10) / 10;
-      final count = JournalLayoutInputs(
-        groundHeight: c.maxHeight,
-        keyboardInset: 0,
-        pendingHeight: 0,
-        textScale: scale,
-      ).entriesPerPage(c.maxHeight);
-      final pages = (widget.entries.length / count).ceil();
-      final page = _page.clamp(0, pages - 1);
-      final rows = widget.entries.skip(page * count).take(count).toList();
-      final reduced = MediaQuery.disableAnimationsOf(context);
-      final navigation = Row(
-        children: [
-          JournalNavWord(
-            label: 'NEWER',
-            active: page > 0,
-            onTap: page > 0 ? () => setState(() => _page = page - 1) : null,
-          ),
-          const Spacer(),
-          Text('${page + 1}/$pages', style: Type.micro),
-          const Spacer(),
-          JournalNavWord(
-            label: 'OLDER',
-            active: page + 1 < pages,
-            onTap: page + 1 < pages
-                ? () => setState(() => _page = page + 1)
-                : null,
-          ),
-        ],
-      );
-      if (c.maxHeight < 44) {
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              for (final entry in rows)
-                JournalEntryTile(key: ValueKey(entry.id), entry: entry),
-              if (pages > 1) navigation,
-            ],
-          ),
-        );
-      }
-      return Column(
+  Widget build(BuildContext context) {
+    if (entries.isEmpty) return const SizedBox.shrink();
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(entries.map((e) => e.id).join(':')),
+      tween: Tween(begin: reduced ? 1 : 0.65, end: 1),
+      duration: Duration(milliseconds: reduced ? 0 : 160),
+      builder: (context, opacity, child) =>
+          Opacity(opacity: opacity, child: child),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              key: ValueKey('journal-page-$page-${rows.first.id}'),
-              child: TweenAnimationBuilder<double>(
-                key: ValueKey(rows.map((e) => e.id).join(':')),
-                tween: Tween(begin: reduced ? 1 : 0.65, end: 1),
-                duration: Duration(milliseconds: reduced ? 0 : 160),
-                builder: (context, opacity, child) =>
-                    Opacity(opacity: opacity, child: child),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final entry in rows)
-                      JournalEntryTile(key: ValueKey(entry.id), entry: entry),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (pages > 1) navigation,
+          for (final entry in entries)
+            JournalEntryTile(key: ValueKey(entry.id), entry: entry),
         ],
-      );
-    },
-  );
+      ),
+    );
+  }
 }
 
 /// Single journal entry row displaying time, prose, actions and extracts.

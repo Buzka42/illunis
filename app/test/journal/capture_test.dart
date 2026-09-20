@@ -221,6 +221,11 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 50));
+    // The writer rides in the journal ground flow: go to the journal, then
+    // check the IME-lifted ground holds without overflow.
+    await tester.drag(find.byType(PageView).first, const Offset(600, 0));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(TextField), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

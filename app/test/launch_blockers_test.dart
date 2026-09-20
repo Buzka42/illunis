@@ -13,9 +13,10 @@ import 'package:illunis/main.dart';
 void main() {
   group('Launch Blocker 1: Pending dock clamp', () {
     test('heightFor clamps at maxPendingHeight for high item counts', () {
-      // Geometry: 1×88, +44 confirm-all past 1 item, clamp 148 (Astra rhythm).
+      // Geometry: header 26 + one 96 stacked row each, +44 confirm-all
+      // past 1 item, clamp 148.
       expect(JournalPending.heightFor(0), 0.0);
-      expect(JournalPending.heightFor(1), 88.0);
+      expect(JournalPending.heightFor(1), 26.0 + 96.0);
       expect(JournalPending.heightFor(2), 148.0);
       expect(JournalPending.heightFor(3), 148.0);
       expect(JournalPending.heightFor(10), 148.0);

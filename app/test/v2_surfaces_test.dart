@@ -92,17 +92,24 @@ void main() {
         ),
         findsWidgets,
       );
-      expect(find.text('OLDER'), findsOneWidget);
+      // One continuous list: no footer pager, newest first, oldest reachable.
+      expect(find.text('NEWER'), findsNothing);
+      expect(find.text('OLDER'), findsNothing);
       final first = find.textContaining('Entry 19:');
       expect(first, findsOneWidget);
       await tester.pump(const Duration(milliseconds: 220));
-      expect(find.text('OLDER').hitTestable(), findsOneWidget);
-      await tester.tap(find.text('OLDER'));
+      await tester.ensureVisible(find.textContaining('Entry 0:'));
       await tester.pump();
-      expect(first, findsNothing);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.textContaining('Entry 0:'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await _capture(tester, boundary, 'journal');
-      await tester.longPress(find.text('JOURNAL'));
+      // The record region scrolls as one: bring the title back and let the
+      // scroll settle before the settings long-press.
+      await tester.ensureVisible(find.text('JOURNAL').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.longPress(find.text('JOURNAL').first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('SETTINGS'), findsOneWidget);

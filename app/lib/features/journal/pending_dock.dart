@@ -16,7 +16,14 @@ class JournalPending extends ConsumerWidget {
   final double maxHeight;
 
   /// One estimate row: caption plus DROP / CONFIRM.
+  ///
+  /// The 116dp action lane stacks DROP above CONFIRM (two 44dp targets),
+  /// so a row is the stacked actions plus row padding; the flexible
+  /// caption column beside it is usually shorter.
   static const double rowBand = JournalLayoutInputs.pendingRowBand;
+
+  /// Header band: the `ESTIMATES · n` line plus its padding.
+  static const double headerBand = JournalLayoutInputs.pendingHeaderBand;
 
   static const double confirmAllBand =
       JournalLayoutInputs.pendingConfirmAllBand;
@@ -55,6 +62,7 @@ class JournalPending extends ConsumerWidget {
                 alignment: Alignment.centerRight,
                 child: JournalWord(
                   S.confirmAll,
+                  key: const ValueKey('pending-confirm-all'),
                   onTap: () => actions.confirmAll(),
                 ),
               ),
@@ -75,6 +83,7 @@ class PendingFoodRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(journalFiguresProvider).day;
     return _PendingDecision(
+      id: food.id,
       label: '${pendingDayPrefix(food.day, selected)}${food.label}',
       evidence: '${food.kcal.round()} kcal (${S.est.toLowerCase()})',
       drop: () => actions.dropFood(food.id),
@@ -97,6 +106,7 @@ class PendingActivityRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(journalFiguresProvider).day;
     return _PendingDecision(
+      id: act.id,
       label: '${pendingDayPrefix(act.day, selected)}${act.label}',
       evidence: '${act.kcal.round()} kcal (${S.est.toLowerCase()})',
       drop: () => actions.dropActivity(act.id),
@@ -107,39 +117,60 @@ class PendingActivityRow extends ConsumerWidget {
 
 class _PendingDecision extends StatelessWidget {
   const _PendingDecision({
+    required this.id,
     required this.label,
     required this.evidence,
     required this.drop,
     required this.confirm,
   });
-  final String label, evidence;
+  final String id, label, evidence;
   final VoidCallback drop, confirm;
+
+  /// Fixed action lane: DROP above CONFIRM, each a 44dp target. The lane
+  /// never squeezes the words abreast, so long captions at large text
+  /// scales cannot push the actions out of the dock.
+  static const double actionLaneWidth = 116.0;
+
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 4, bottom: 4),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text.rich(
-          TextSpan(
-            text: label,
-            children: [
+  Widget build(BuildContext context) {
+    final actions = [
+      JournalWord(
+        S.drop,
+        key: ValueKey('pending-drop-$id'),
+        faint: true,
+        onTap: drop,
+      ),
+      JournalWord(S.confirm, key: ValueKey('pending-confirm-$id'), onTap: confirm),
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text.rich(
               TextSpan(
-                text: '  ·  $evidence',
-                style: Type.micro.copyWith(color: Inks.body, height: 1.4),
+                text: label,
+                children: [
+                  TextSpan(
+                    text: '  ·  $evidence',
+                    style: Type.micro.copyWith(color: Inks.body, height: 1.4),
+                  ),
+                ],
               ),
-            ],
+              style: Type.caption.copyWith(color: Inks.body, height: 1.4),
+            ),
           ),
-          style: Type.caption.copyWith(color: Inks.body, height: 1.4),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            JournalWord(S.drop, faint: true, onTap: drop),
-            JournalWord(S.confirm, onTap: confirm),
-          ],
-        ),
-      ],
-    ),
-  );
+          SizedBox(
+            width: actionLaneWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: actions,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

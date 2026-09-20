@@ -18,7 +18,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.drag(find.byType(PageView).first, const Offset(600, 0));
     await tester.pump();
+    // In-page targets need the pager ballistic fully finished (the old
+    // shell overlay buttons did not); the synthetic drag creeps.
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(seconds: 2));
 
     final save = find.text('SAVE');
     expect(save, findsOneWidget);

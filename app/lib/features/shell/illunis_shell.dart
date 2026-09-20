@@ -103,45 +103,35 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
     final horizonY = mq.size.height * kHorizonFraction;
 
     final ime = mq.viewInsets.bottom;
-    final onJournal = (1 - _page).clamp(0.0, 1.0);
-    final captureBottom = math.max(mq.padding.bottom + 6, ime);
-    final figures = ref.watch(journalFiguresProvider);
-    final pending = figures.unconfirmed.length + figures.unconfirmedActs.length;
+    final groundTop = horizonY + kCompassBandHeight + TimelineBar.height;
+    // ONE ground: the shell reserves the rect above the keyboard / system
+    // nav; JournalPage spends it (record + pending dock + writer) from a
+    // single budget in layout flow. No overlay dock — disjoint by
+    // construction, opaque matte carried by the journal surface itself.
+    //
+    // The measured writer height sizes the keyboard lift: with the IME up,
+    // the top rises so the full writer (editing / error bands included)
+    // stays above the keyboard with its submit target reachable.
     final submission = ref.watch(journalSubmissionStateProvider);
     final scale = mq.textScaler.scale(10) / 10;
-    final writingHeight = JournalLayoutInputs.writingHeight(
+    final writerH = JournalLayoutInputs.writingHeight(
       scale,
       editing: submission.replacesEntryId != null,
       error:
           submission.submitError != null ||
           ref.watch(storeProvider).lastPersistenceError != null,
     );
-    final groundTop = horizonY + kCompassBandHeight + TimelineBar.height;
-    final layout = JournalLayoutInputs(
-      groundHeight: mq.size.height - groundTop - mq.padding.bottom - 6,
-      keyboardInset: ime,
-      pendingHeight: JournalPending.heightFor(pending),
-      textScale: scale,
-    );
-    final pendingHeight = math.min(
-      layout.pendingHeight,
-      math.max(
-        0.0,
-        math.min(
-          layout.groundHeight - writingHeight - 48,
-          math.max(56.0, layout.groundHeight - writingHeight - 96),
-        ),
-      ),
-    );
-    final journalDock =
-        writingHeight + (layout.isKeyboardOpen ? 0 : pendingHeight);
-    final surfaceBottom = layout.isKeyboardOpen
-        ? captureBottom + writingHeight + 18
-        : mq.padding.bottom + 6 + journalDock * onJournal;
-    final surfaceTop = layout.isKeyboardOpen
+    final surfaceBottom = math.max(mq.padding.bottom + 6, ime);
+    final surfaceTop = ime > 8
         ? math.min(
             groundTop,
-            math.max(mq.padding.top + 72, mq.size.height - surfaceBottom - 140),
+            math.max(
+              mq.padding.top + 72,
+              mq.size.height -
+                  surfaceBottom -
+                  writerH -
+                  JournalLayoutInputs.pageBottomChrome,
+            ),
           )
         : groundTop;
     final transition = Duration(milliseconds: mq.disableAnimations ? 0 : 180);
@@ -176,7 +166,7 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
               top: horizonY + kCompassBandHeight,
               child: TimelineBar(scene: _scene),
             ),
-            // The writing plane rises with the keyboard; celestial geometry stays fixed.
+            // The writing plane: one ground rect above keyboard / nav.
             AnimatedPositioned(
               duration: transition,
               curve: Curves.easeOutCubic,
@@ -184,18 +174,13 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
               right: 0,
               top: surfaceTop,
               bottom: surfaceBottom,
-              child: ColoredBox(
-                color: layout.isKeyboardOpen
-                    ? const Color(0xFF07090D)
-                    : Colors.transparent,
-                child: PageView(
-                  controller: _controller,
-                  physics: const ClampingScrollPhysics(),
-                  children: [
-                    JournalPage(scene: _scene),
-                    DashboardPage(scene: _scene, state: state),
-                  ],
-                ),
+              child: PageView(
+                controller: _controller,
+                physics: const ClampingScrollPhysics(),
+                children: [
+                  JournalPage(scene: _scene),
+                  DashboardPage(scene: _scene, state: state),
+                ],
               ),
             ),
             Positioned(
@@ -207,52 +192,6 @@ class _IllunisShellState extends ConsumerState<IllunisShell>
                 onWordmarkLongPress: kDebugMode
                     ? () => showSkyDebugSheet(context)
                     : null,
-              ),
-            ),
-            AnimatedPositioned(
-              duration: transition,
-              curve: Curves.easeOutCubic,
-              left: 0,
-              right: 0,
-              bottom: captureBottom,
-              child: IgnorePointer(
-                ignoring: onJournal < 0.5 && ime < 8,
-                child: Opacity(
-                  opacity: ime > 8 ? 1 : onJournal,
-                  child: ColoredBox(
-                    color: const Color(
-                      0xFF07090D,
-                    ).withValues(alpha: ime > 8 ? 0.92 : 0),
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        Space.margin,
-                        ime > 8 ? 10 : 0,
-                        Space.margin,
-                        ime > 8 ? 8 : 0,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (mq.disableAnimations)
-                            if (ime < 8)
-                              JournalPending(maxHeight: pendingHeight)
-                            else
-                              const SizedBox.shrink()
-                          else
-                            AnimatedSize(
-                              duration: transition,
-                              curve: Curves.easeOutCubic,
-                              alignment: Alignment.bottomCenter,
-                              child: ime < 8
-                                  ? JournalPending(maxHeight: pendingHeight)
-                                  : const SizedBox.shrink(),
-                            ),
-                          const JournalWritingLine(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               ),
             ),
           ],

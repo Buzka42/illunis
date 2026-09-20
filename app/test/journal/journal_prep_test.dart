@@ -76,7 +76,7 @@ void main() {
       expect(model.canGoNext, isFalse);
     });
 
-    testWidgets('dense day fixture: 25 entries pagination with NEWER/OLDER', (
+    testWidgets('dense day fixture: 25 entries read as one continuous list', (
       tester,
     ) async {
       final store = JournalFixtures.denseDay();
@@ -101,18 +101,174 @@ void main() {
       expect(model.entryCount, 25);
       expect(find.text('25 ENTRIES'), findsOneWidget);
 
-      // Pagination indicator should be visible
-      expect(find.textContaining('/'), findsOneWidget);
-      expect(find.text('OLDER'), findsOneWidget);
-
-      // Tap OLDER to paginate
-      await tester.tap(find.text('OLDER'));
+      // One continuous list: no footer pager, newest first, all reachable.
+      expect(find.text('NEWER'), findsNothing);
+      expect(find.text('OLDER'), findsNothing);
+      expect(find.textContaining('Entry item 24 -'), findsOneWidget);
+      await tester.ensureVisible(find.textContaining('Entry item 0 -'));
       await tester.pump();
-      expect(find.text('NEWER'), findsOneWidget);
+      expect(find.textContaining('Entry item 0 -'), findsOneWidget);
+    });
 
-      // Tap NEWER to return to top
-      await tester.tap(find.text('NEWER'));
+    testWidgets('six short entries read as one day with no footer pager', (
+      tester,
+    ) async {
+      final store = AppStore.memory();
+      final now = DateTime.now();
+      for (var i = 0; i < 6; i++) {
+        store.journal.add(
+          JournalEntry(
+            id: 'short-$i',
+            at: DateTime(now.year, now.month, now.day, 8 + i, 5),
+            text: 'short note $i',
+          ),
+        );
+      }
+      final container = ProviderContainer(
+        overrides: journalTestOverrides(store),
+      );
+      addTearDown(container.dispose);
+      final scene = ValueNotifier<ResolvedScene?>(null);
+      addTearDown(scene.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: JournalTestApp(
+            home: Scaffold(body: JournalPage(scene: scene)),
+          ),
+        ),
+      );
+
+      expect(find.text('NEWER'), findsNothing);
+      expect(find.text('OLDER'), findsNothing);
+      for (var i = 0; i < 6; i++) {
+        expect(find.text('short note $i'), findsOneWidget);
+      }
+    });
+
+    testWidgets('empty past days stay writable', (tester) async {
+      final store = AppStore.memory();
+      final container = ProviderContainer(
+        overrides: journalTestOverrides(store),
+      );
+      addTearDown(container.dispose);
+      final scene = ValueNotifier<ResolvedScene?>(null);
+      addTearDown(scene.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: JournalTestApp(
+            home: Scaffold(body: JournalPage(scene: scene)),
+          ),
+        ),
+      );
+
+      container.read(journalActionsProvider).prevDay();
       await tester.pump();
+      final model = container.read(journalPresentationModelProvider);
+      expect(model.isToday, isFalse);
+      expect(model.isEmpty, isTrue);
+      expect(find.text(S.journalEmptyDay), findsOneWidget);
+      // The writer rides in the ground flow, even with nothing recorded.
+      expect(find.byType(TextField), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ground regions hold disjoint rects under load', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2000);
+      tester.view.devicePixelRatio = 2.5;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final store = JournalFixtures.yesterdayPendings();
+      final now = DateTime.now();
+      for (var i = 0; i < 4; i++) {
+        store.journal.add(
+          JournalEntry(
+            id: 'g-$i',
+            at: DateTime(now.year, now.month, now.day, 9 + i, 0),
+            text: 'ground note $i with enough prose to take vertical room',
+          ),
+        );
+      }
+      final container = ProviderContainer(
+        overrides: journalTestOverrides(store),
+      );
+      addTearDown(container.dispose);
+      final scene = ValueNotifier<ResolvedScene?>(null);
+      addTearDown(scene.dispose);
+
+      // Editing + error bands at once: the writer is at its tallest.
+      container
+          .read(journalSubmissionStateProvider.notifier)
+          .setDraft(text: 'revise', keepLocal: false, replacesEntryId: 'g-0');
+      container
+          .read(journalSubmissionStateProvider.notifier)
+          .onError('offline');
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: JournalTestApp(
+            home: Scaffold(body: JournalPage(scene: scene)),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final selectedDay = container
+          .read(journalPresentationModelProvider)
+          .selectedDay;
+      final record = tester.getRect(
+        find.byKey(PageStorageKey('journal-record-$selectedDay')),
+      );
+      final dock = tester.getRect(find.byType(JournalPending));
+      final writer = tester.getRect(find.byType(JournalWritingLine));
+      expect(record.overlaps(dock), isFalse);
+      expect(record.overlaps(writer), isFalse);
+      expect(dock.overlaps(writer), isFalse);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ground stays disjoint with the keyboard open', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2412);
+      tester.view.devicePixelRatio = 3;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 800);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+      final store = JournalFixtures.yesterdayPendings();
+      final container = ProviderContainer(
+        overrides: journalTestOverrides(store),
+      );
+      addTearDown(container.dispose);
+      final scene = ValueNotifier<ResolvedScene?>(null);
+      addTearDown(scene.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: JournalTestApp(
+            home: Scaffold(
+              resizeToAvoidBottomInset: false,
+              body: JournalPage(scene: scene),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Pending hides under the keyboard; record and writer stay disjoint.
+      expect(find.byType(JournalPending), findsNothing);
+      final record = tester.getRect(find.byType(SingleChildScrollView).first);
+      final writer = tester.getRect(find.byType(JournalWritingLine));
+      expect(record.overlaps(writer), isFalse);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('long prose fixture: compact multiline layout without error', (
@@ -199,6 +355,83 @@ void main() {
       expect(find.textContaining('YESTERDAY  ·  evening walk'), findsOneWidget);
       expect(find.textContaining('protein shake'), findsOneWidget);
       expect(find.text('CONFIRM ALL'), findsOneWidget);
+    });
+
+    testWidgets('pending lane: fixed lane, ID-bound keys, stacked actions', (
+      tester,
+    ) async {
+      final store = JournalFixtures.yesterdayPendings();
+      final container = ProviderContainer(
+        overrides: journalTestOverrides(store),
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const JournalTestApp(home: Scaffold(body: JournalPending())),
+        ),
+      );
+
+      // ID-bound CONFIRM / DROP keys for the first unconfirmed food row.
+      final model = container.read(journalPresentationModelProvider);
+      final firstId = model.unconfirmedFood.first.id;
+      expect(
+        find.byKey(ValueKey('pending-confirm-$firstId')),
+        findsOneWidget,
+      );
+      expect(find.byKey(ValueKey('pending-drop-$firstId')), findsOneWidget);
+
+      // Every action target is at least 44dp.
+      for (final key in [
+        ValueKey('pending-confirm-$firstId'),
+        ValueKey('pending-drop-$firstId'),
+        const ValueKey('pending-confirm-all'),
+      ]) {
+        final box = tester.getSize(find.byKey(key));
+        expect(box.width, greaterThanOrEqualTo(44));
+        expect(box.height, greaterThanOrEqualTo(44));
+      }
+
+      // CONFIRM ALL is reachable inside the dock's internal scroll.
+      await tester.ensureVisible(find.byKey(const ValueKey('pending-confirm-all')));
+      await tester.pump();
+      expect(
+        tester.getRect(find.byKey(const ValueKey('pending-confirm-all'))),
+        isNotNull,
+      );
+    });
+
+    testWidgets('pending lane holds at 2x text scale without overflow', (
+      tester,
+    ) async {
+      final store = JournalFixtures.yesterdayPendings();
+      final container = ProviderContainer(
+        overrides: journalTestOverrides(store),
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(2.0)),
+            child: JournalTestApp(home: Scaffold(body: JournalPending())),
+          ),
+        ),
+      );
+
+      // Stacked: DROP sits above CONFIRM in the fixed 116dp lane.
+      final model = container.read(journalPresentationModelProvider);
+      final firstId = model.unconfirmedFood.first.id;
+      final dropRect = tester.getRect(
+        find.byKey(ValueKey('pending-drop-$firstId')),
+      );
+      final confirmRect = tester.getRect(
+        find.byKey(ValueKey('pending-confirm-$firstId')),
+      );
+      expect(dropRect.bottom, lessThanOrEqualTo(confirmRect.top + 1));
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -450,12 +683,29 @@ void main() {
       expect(inputs.isKeyboardOpen, isTrue);
       // When keyboard is open, pending dock height does not squash writing line
       expect(inputs.effectiveDockHeight, 98.0);
-      expect(inputs.entryRowHeight, 100.0 * 1.5);
-      expect(inputs.navWordHeight, 44.0);
 
-      // Clamping pending height
+      // Single ground budget: dock never overlaps the writer and never
+      // squeezes the record below the minimum.
+      expect(
+        JournalLayoutInputs.pendingClamp(
+          groundHeight: 400,
+          writingHeight: 98.0,
+          want: 148.0,
+        ),
+        148.0,
+      );
+      expect(
+        JournalLayoutInputs.pendingClamp(
+          groundHeight: 160,
+          writingHeight: 98.0,
+          want: 148.0,
+        ),
+        160 - 98.0 - 48.0,
+      );
+
+      // Clamping pending height: header + one stacked row band each.
       expect(JournalLayoutInputs.calculatePendingHeight(0), 0.0);
-      expect(JournalLayoutInputs.calculatePendingHeight(1), 88.0);
+      expect(JournalLayoutInputs.calculatePendingHeight(1), 26.0 + 96.0);
       expect(JournalLayoutInputs.calculatePendingHeight(2), 148.0);
       expect(JournalLayoutInputs.calculatePendingHeight(20), 148.0);
     });

@@ -121,8 +121,12 @@ freshness limit. GPS remains unimplemented. The bundled star catalog still has
 no runtime fetch. See `WEATHER_V2.md`.
 
 Dashboard now retains fixed stat positions with `—` for absent values and labels
-for journal, wearable, rule, AI and mock provenance. Journal entries paginate;
-short windows and enlarged text can scroll. Bottom navigation is removed;
+for journal, wearable, rule, AI and mock provenance. A journal day is one
+continuous entry list (newest first, full prose, per-day scroll position);
+entry pagination (NEWER / OLDER + page counter) was removed 2026-09-20 —
+six short entries read as one day with no footer pager, and empty past
+days stay writable. Short windows and enlarged text can scroll. Bottom
+navigation is removed;
 swiping and title long-press remain the navigation contract.
 
 Daily summaries render as sky letters from day one. Learned findings require
