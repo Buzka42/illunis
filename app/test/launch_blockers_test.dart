@@ -99,12 +99,11 @@ void main() {
       await tester.tap(find.text('kawa 200ml'));
       await tester.pump();
 
-      final draft = container.read(journalDraftProvider);
-      expect(draft, isNotNull);
-      expect(draft!.replacesEntryId, 'entry-original');
+      final sub = container.read(journalSubmissionStateProvider);
+      expect(sub.replacesEntryId, 'entry-original');
       final h = now.hour.toString().padLeft(2, '0');
       final m = now.minute.toString().padLeft(2, '0');
-      expect(draft.text, '$h:$m kawa 200ml');
+      expect(sub.draftText, '$h:$m kawa 200ml');
       await tester.pumpWidget(const SizedBox.shrink());
       container.dispose();
     });
